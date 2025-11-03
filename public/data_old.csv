@@ -1,0 +1,308 @@
+ID,First,Last,Gen,Spouse,Divorced,Mother,Father,DOB,DOD,Branch
+
+1,Jamila,Hamway,1,2,FALSE,,,,,OG
+
+2,Naim,Tahan,1,1,FALSE,,,,,OG
+
+3,Josephine,Homsany,2,4,FALSE,1,2,,,Homsany
+
+4,George,Homsany,2,3,FALSE,,,,,Homsany
+
+5,Mary,Petriello,2,6,FALSE,1,2,,,Petriello
+
+6,Frank,Petriello,2,5,FALSE,,,,,Petriello
+
+7,Basil,Tahan,2,8,FALSE,1,2,,,B Tahan
+
+8,Jean,Tahan,2,7,FALSE,,,,,B Tahan
+
+9,Albert,Tahan,2,10,FALSE,1,2,,,A Tahan
+
+10,Joan,Tahan,2,9,FALSE,,,,,A Tahan
+
+11,Harry,Tahan,2,,FALSE,1,2,,,Other
+
+12,George,Homsany,3,14,FALSE,3,4,,,Homsany
+
+13,Jaci,Homsany,3,12,TRUE,,,,,Homsany
+
+14,Patricia,Homsany,3,12,FALSE,,,,,Homsany
+
+15,Shirley,Karaty,3,16,FALSE,3,4,,,Homsany
+
+16,Raymond,Karaty,3,15,FALSE,,,9/24/1936,7/14/2023,Homsany
+
+17,Jean,Marmo,3,18,FALSE,3,4,,,Homsany
+
+18,George,Marmo,3,17,FALSE,,,,,Homsany
+
+19,Fran,Atieh,3,20,FALSE,5,6,,,Petriello
+
+20,Louis,Atieh,3,19,FALSE,,,,,Petriello
+
+21,Joseph,Petriello,3,22,FALSE,5,6,,,Petriello
+
+22,Denise,Petriello,3,21,FALSE,,,,,Petriello
+
+23,Jane,Petriello,3,24,TRUE,5,6,,,Petriello
+
+24,Ken,Hawryschuck,3,23,TRUE,,,,,Petriello
+
+25,Elaine,Farraye,3,26,FALSE,8,7,,,B Tahan
+
+26,Tony,Farraye,3,25,FALSE,,,,,B Tahan
+
+27,Kathy,Pospiech,3,28,FALSE,8,7,,,B Tahan
+
+28,Steve,Pospiech,3,27,FALSE,,,,,B Tahan
+
+29,Norman,Tahan,3,30,TRUE,8,7,,,B Tahan
+
+30,Kathy,Tahan,3,29,TRUE,,,,,B Tahan
+
+31,David,Tahan,3,32,FALSE,8,7,,,B Tahan
+
+32,Mimi,Tahan,3,31,FALSE,,,,,B Tahan
+
+33,Sharon,Olivo,3,34,FALSE,8,7,,,B Tahan
+
+34,Jimmy,Olivo,3,33,FALSE,,,,,B Tahan
+
+35,Patricia,Tahan,3,,FALSE,8,7,,,B Tahan
+
+36,Brian,Tahan,3,37,FALSE,8,7,,,B Tahan
+
+37,Heather,Tahan,3,36,FALSE,,,,,B Tahan
+
+38,Albie,Tahan,3,39,FALSE,10,9,,,A Tahan
+
+39,Ken,Hauser,3,38,FALSE,,,,,A Tahan
+
+40,Michele,Tahan,3,41,TRUE,10,9,,,A Tahan
+
+41,Kevin,Fahrenfeld,3,40,TRUE,,,,,A Tahan
+
+42,Mark,Tahan,3,43,FALSE,10,9,,,A Tahan
+
+43,Deirdre,Tahan,3,42,FALSE,,,,,A Tahan
+
+44,Lisa,Scangarello,3,45,FALSE,10,9,,,A Tahan
+
+45,Carmen,Scangarello,3,44,FALSE,,,,,A Tahan
+
+46,Gerry,Homsany,4,47,FALSE,13,12,,,Homsany
+
+47,Kalli,Homsany,4,46,FALSE,,,,,Homsany
+
+48,Greg,Homsany,4,,FALSE,13,12,,,Homsany
+
+49,Gess,Homsany,4,50,FALSE,13,12,,,Homsany
+
+50,Tania,Homsany,4,49,FALSE,,,,,Homsany
+
+51,Georgia,Homsany,4,,FALSE,14,12,,,Homsany
+
+52,Gerame,Homsany,4,53,FALSE,14,12,,,Homsany
+
+53,Katie,Homsany,4,52,FALSE,,,,,Homsany
+
+54,Gessica,Russo,4,55,FALSE,14,12,,,Homsany
+
+55,Vinny,Russo,4,54,FALSE,,,,,Homsany
+
+56,Garrett,Homsany,4,,FALSE,14,12,,,Homsany
+
+57,Raymond,Karaty,4,58,FALSE,15,16,,,Homsany
+
+58,Dawn,Karaty,4,57,FALSE,,,,,Homsany
+
+59,Charlene,Karaty,4,,FALSE,15,16,,,Homsany
+
+60,Steve,Karaty,4,61,FALSE,15,16,9/24/1971,,Homsany
+
+61,Laura,Karaty,4,60,FALSE,,,1/24/1972,,Homsany
+
+62,Brad,Marmo,4,63,FALSE,17,18,,,Homsany
+
+63,Andrea,Marmo,4,62,FALSE,,,,,Homsany
+
+64,Audrey,Hayek,4,65,FALSE,17,18,,,Homsany
+
+65,Matt,Hayek,4,64,FALSE,,,,,Homsany
+
+66,Dave,Marmo,4,67,FALSE,17,18,,,Homsany
+
+67,Lexie,Marmo,4,66,FALSE,,,,,Homsany
+
+68,Deena,Graham,4,69,FALSE,19,20,,,Petriello
+
+69,Jack,Graham,4,68,FALSE,,,,,Petriello
+
+70,LJ,Atieh,4,71,FALSE,19,20,,,Petriello
+
+71,John,Lear,4,70,FALSE,,,,,Petriello
+
+72,Lauren,Gonzales,4,73,FALSE,19,20,,,Petriello
+
+73,Orlando,Gonzales,4,72,FALSE,,,,,Petriello
+
+74,Matt,Petriello,4,75,FALSE,22,21,,,Petriello
+
+75,Missy,Petriello,4,74,FALSE,,,,,Petriello
+
+76,Jeff,Petriello,4,,FALSE,22,21,,,Petriello
+
+77,Mary,Cornish,4,78,FALSE,23,24,,,Petriello
+
+78,Duayne,Cornish,4,77,FALSE,,,,,Petriello
+
+79,Dean,Hawryschuck,4,,FALSE,23,24,,,Petriello
+
+80,Matt,Farraye,4,81,FALSE,25,26,,,B Tahan
+
+81,Heather,Farraye,4,80,FALSE,,,,,B Tahan
+
+82,Nancy,Pospiech,4,83,TRUE,27,28,,,B Tahan
+
+83,Chris,Fisher,4,82,TRUE,,,,,B Tahan
+
+84,Jamie,Beins,4,85,FALSE,27,28,,,B Tahan
+
+85,Jay,Beins,4,84,FALSE,,,,,B Tahan
+
+86,Carrie,Lauria,4,87,FALSE,27,28,,,B Tahan
+
+87,AJ,Lauria,4,86,FALSE,,,,,B Tahan
+
+88,Jeff,Pospiech,4,89,FALSE,27,28,,,B Tahan
+
+89,Jessica,Pospiech,4,88,FALSE,,,,,B Tahan
+
+90,Nicole,Fekhoury,4,91,FALSE,30,29,,,B Tahan
+
+91,Elias,Fekhoury,4,90,FALSE,,,,,B Tahan
+
+92,Joe,Tahan,4,93,FALSE,30,29,,,B Tahan
+
+93,Mary,Tahan,4,92,FALSE,,,,,B Tahan
+
+94,Kelsey,Banos,4,95,FALSE,32,31,,,B Tahan
+
+95,Jay,Banos,4,94,FALSE,,,,,B Tahan
+
+96,Mike,Tahan,4,,FALSE,32,31,,,B Tahan
+
+97,Julie,Murphy,4,98,FALSE,32,31,,,B Tahan
+
+98,Steve,Murphy,4,97,FALSE,,,,,B Tahan
+
+99,Tyler,Tahan,4,,FALSE,37,36,,,B Tahan
+
+100,Avery,Tahan,4,,FALSE,37,36,,,B Tahan
+
+101,Melissa,Tahan,4,,FALSE,43,42,,,A Tahan
+
+102,Danielle,Tahan,4,,FALSE,43,42,,,A Tahan
+
+103,Brianna,Tahan,4,,FALSE,44,45,,,A Tahan
+
+104,Leigha,Fahrenfeld,4,,FALSE,40,41,,,A Tahan
+
+105,KJ,Fahrenfeld,4,,FALSE,40,41,,,A Tahan
+
+106,Geran,Homsany,5,,FALSE,47,46,,,Homsany
+
+107,Gio,Homsany,5,,FALSE,50,49,,,Homsany
+
+108,Camilla,Homsany,5,,FALSE,53,52,,,Homsany
+
+109,Avelina,Homsany,5,,FALSE,53,52,,,Homsany
+
+110,Josephine,Russo,5,,FALSE,54,55,,,Homsany
+
+111,Genevieve,Russo,5,,FALSE,54,55,,,Homsany
+
+112,Elle,Russo,5,,FALSE,54,55,,,Homsany
+
+113,Jenna,Karaty,5,,FALSE,58,57,,,Homsany
+
+114,Ethan,Karaty,5,,FALSE,58,57,,,Homsany
+
+115,Evan,Karaty,5,,FALSE,58,57,,,Homsany
+
+116,Shawn,Karaty,5,,FALSE,59,,,,Homsany
+
+117,Kayla,Karaty,5,,FALSE,61,60,10/6/1999,,Homsany
+
+118,Ryan,Karaty,5,,FALSE,61,60,2/7/2001,,Homsany
+
+119,Troy,Karaty,5,,FALSE,61,60,2/7/2001,,Homsany
+
+120,Austin,Marmo,5,,FALSE,63,62,,,Homsany
+
+121,Adam,Marmo,5,,FALSE,63,62,,,Homsany
+
+122,Ben,Hayek,5,,FALSE,64,65,,,Homsany
+
+123,Max,Hayek,5,,TRUE,64,65,,,Homsany
+
+124,Jack,Hayek,5,,FALSE,64,65,,,Homsany
+
+125,Grant,Marmo,5,,FALSE,67,66,,,Homsany
+
+126,Logan,Marmo,5,,FALSE,67,66,,,Homsany
+
+127,Delaney,Marmo,5,,FALSE,67,66,,,Homsany
+
+128,Everly,Marmo,5,,FALSE,67,66,,,Homsany
+
+129,Jack,Graham,5,,FALSE,68,69,,,Petriello
+
+130,Noah,Graham,5,,FALSE,68,69,,,Petriello
+
+131,Quinn,Petriello,5,,FALSE,75,74,,,Petriello
+
+132,Luke,Petriello,5,,FALSE,75,74,,,Petriello
+
+133,Dominic,Cornish,5,,FALSE,77,78,,,Petriello
+
+134,Scarlett,Farraye,5,,FALSE,81,80,,,B Tahan
+
+135,Connor,Farraye,5,,FALSE,81,80,,,B Tahan
+
+136,Evyn,Fisher,5,,FALSE,82,83,,,B Tahan
+
+137,Nolyn,Fisher,5,,FALSE,82,83,,,B Tahan
+
+138,Adrian,Beins,5,,FALSE,84,85,,,B Tahan
+
+139,Gavin,Beins,5,,FALSE,84,85,,,B Tahan
+
+140,Damon,Beins,5,,FALSE,84,85,,,B Tahan
+
+141,Preston,Beins,5,,FALSE,84,85,,,B Tahan
+
+142,Owen,Lauria,5,,FALSE,86,87,,,B Tahan
+
+143,Kaylee,Lauria,5,,FALSE,86,87,,,B Tahan
+
+144,Cody,Lauria,5,,FALSE,86,87,,,B Tahan
+
+145,Anna,Pospiech,5,,FALSE,89,88,,,B Tahan
+
+146,Nilo,Fekhoury,5,,FALSE,90,91,,,B Tahan
+
+147,Nicolas,Fekhoury,5,,FALSE,90,91,,,B Tahan
+
+148,Noura,Fekhoury,5,,FALSE,90,91,,,B Tahan
+
+149,Leia,Tahan,5,,FALSE,93,92,,,B Tahan
+
+150,Thomas,Tahan,5,,FALSE,93,92,,,B Tahan
+
+151,Nico,Banos,5,,FALSE,94,95,,,B Tahan
+
+152,Leo,Banos,5,,FALSE,94,95,,,B Tahan
+
+153,Mina,Murphy,5,,FALSE,97,98,,,B Tahan
+
