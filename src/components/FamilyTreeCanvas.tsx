@@ -238,9 +238,6 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
 
   const trimmedSearchValue = searchValue.trim()
   const showSearchResults = searchFocused && trimmedSearchValue.length > 0
-  const activeSearchResultId =
-    searchActiveIndex !== null ? searchMatches[searchActiveIndex]?.id ?? null : null
-
   useEffect(() => {
     if (!showSearchResults || searchMatches.length === 0) {
       setSearchActiveIndex(null)
