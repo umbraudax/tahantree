@@ -36,13 +36,12 @@ const FamilyTree = () => {
     )
   }
 
-  const branchCount = new Set(data.units.map((unit) => unit.branch)).size
   const generationCount = data.people.reduce((max, person) => Math.max(max, person.generation), 0)
+  const currentCount = data.people.reduce((total, person) => (person.dod ? total : total + 1), 0)
 
   const stats = [
     { key: 'people', label: 'People', value: data.people.length },
-    { key: 'units', label: 'Family Units', value: data.units.length },
-    { key: 'branches', label: 'Branches', value: branchCount },
+    { key: 'current', label: 'Current', value: currentCount },
     { key: 'generations', label: 'Generations', value: generationCount },
   ]
 

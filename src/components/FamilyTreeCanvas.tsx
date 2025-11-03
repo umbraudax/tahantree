@@ -1217,6 +1217,17 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     ? { width: 'min(360px, calc(100vw - 32px))' }
     : undefined
 
+  const mobileControlSheetStyle: CSSProperties | undefined = isMobile
+    ? {
+        maxHeight: '75vh',
+        transform: isControlSheetOpen ? `translateY(${controlSheetDragOffset}px)` : undefined,
+      }
+    : undefined
+
+  const mobileControlSheetContentStyle: CSSProperties | undefined = isMobile
+    ? { maxHeight: 'calc(75vh - 120px)' }
+    : undefined
+
   const parentChildLinks = useMemo(() => {
     const links: Array<{
       id: string
@@ -2056,7 +2067,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
             className={`fixed inset-x-0 bottom-0 z-50 transform ${
               isControlSheetDragging ? '' : 'transition-transform duration-300 ease-out'
             } ${isControlSheetOpen ? 'translate-y-0' : 'translate-y-full'}`}
-            style={{ transform: isControlSheetOpen ? `translateY(${controlSheetDragOffset}px)` : undefined }}
+            style={mobileControlSheetStyle}
             role="dialog"
             aria-label="Family tree controls"
           >
@@ -2075,7 +2086,10 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
                   <span className="block h-1.5 w-14 rounded-full bg-white/60" />
                 </div>
               </div>
-              <div className="max-h-[65vh] space-y-4 overflow-y-auto pr-1 text-xs text-white">
+              <div
+                className="space-y-4 overflow-y-auto pr-1 text-xs text-white"
+                style={mobileControlSheetContentStyle}
+              >
                 <form className="flex w-full flex-wrap items-start gap-2" onSubmit={handleSearchSubmit}>
                   <div className="relative w-full flex-1">
                     <input
