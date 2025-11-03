@@ -2,14 +2,20 @@ import { useSyncExternalStore } from 'react'
 
 export type Breakpoint = 'palm' | 'handset' | 'tablet' | 'desktop'
 
+type Orientation = 'portrait' | 'landscape'
+
 interface BreakpointState {
   width: number
+  height: number
   breakpoint: Breakpoint
   isMobile: boolean
   isTablet: boolean
   isDesktop: boolean
   isNarrowPhone: boolean
   isLargePhone: boolean
+  orientation: Orientation
+  isLandscape: boolean
+  isPortrait: boolean
 }
 
 const PALM_MAX = 359
@@ -24,24 +30,31 @@ const resolveBreakpoint = (width: number): Breakpoint => {
 }
 
 let cachedWidth: number | null = null
+let cachedHeight: number | null = null
 let cachedSnapshot: BreakpointState | null = null
 
-const snapshotFromWidth = (width: number): BreakpointState => {
-  if (cachedSnapshot && cachedWidth === width) {
+const snapshotFromDimensions = (width: number, height: number): BreakpointState => {
+  if (cachedSnapshot && cachedWidth === width && cachedHeight === height) {
     return cachedSnapshot
   }
 
   const breakpoint = resolveBreakpoint(width)
+  const orientation: Orientation = width >= height ? 'landscape' : 'portrait'
 
   cachedWidth = width
+  cachedHeight = height
   cachedSnapshot = {
     width,
+    height,
     breakpoint,
     isMobile: breakpoint === 'palm' || breakpoint === 'handset',
     isTablet: breakpoint === 'tablet',
     isDesktop: breakpoint === 'desktop',
     isNarrowPhone: width <= PALM_MAX,
     isLargePhone: width > PALM_MAX && width <= HANDSET_MAX,
+    orientation,
+    isLandscape: orientation === 'landscape',
+    isPortrait: orientation === 'portrait',
   }
 
   return cachedSnapshot
@@ -49,13 +62,13 @@ const snapshotFromWidth = (width: number): BreakpointState => {
 
 const getClientSnapshot = () => {
   if (typeof window === 'undefined') {
-    return snapshotFromWidth(TABLET_MAX + 1)
+    return snapshotFromDimensions(TABLET_MAX + 1, TABLET_MAX + 1)
   }
 
-  return snapshotFromWidth(window.innerWidth)
+  return snapshotFromDimensions(window.innerWidth, window.innerHeight)
 }
 
-const getServerSnapshot = () => snapshotFromWidth(TABLET_MAX + 1)
+const getServerSnapshot = () => snapshotFromDimensions(TABLET_MAX + 1, TABLET_MAX + 1)
 
 const subscribe = (listener: () => void) => {
   if (typeof window === 'undefined') {

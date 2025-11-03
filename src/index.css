@@ -15,9 +15,11 @@ body {
 }
 
 @supports (padding: max(0px)) {
-  body {
-    padding-left: max(env(safe-area-inset-left), 0px);
-    padding-right: max(env(safe-area-inset-right), 0px);
+  @media (orientation: portrait) {
+    body {
+      padding-left: max(env(safe-area-inset-left), 0px);
+      padding-right: max(env(safe-area-inset-right), 0px);
+    }
   }
 }
 

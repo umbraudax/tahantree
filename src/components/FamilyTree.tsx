@@ -1,8 +1,11 @@
 import FamilyTreeCanvas from './FamilyTreeCanvas'
 import { useFamilyData } from '../hooks/useFamilyData'
+import { useBreakpoint } from '../hooks/useBreakpoint'
 
 const FamilyTree = () => {
   const { data, loading, error } = useFamilyData()
+  const { isMobile, isLandscape } = useBreakpoint()
+  const isMobileLandscape = isMobile && isLandscape
 
   if (loading) {
     return (
@@ -48,11 +51,17 @@ const FamilyTree = () => {
       <div className="border-b border-white/10 bg-black px-4 py-3 xs:px-5 sm:px-6 md:px-8 md:py-4">
         <div className="mx-auto w-full max-w-6xl text-xs text-white">
           <details className="group rounded-2xl border border-white/10 bg-black/60 px-4 py-3 backdrop-blur-sm transition-colors md:hidden">
-            <summary className="flex cursor-pointer items-center justify-between gap-3 text-white/80">
+            <summary
+              className={`flex cursor-pointer items-center ${
+                isMobileLandscape ? 'justify-center' : 'justify-between'
+              } gap-3 text-white/80`}
+            >
               <span className="text-[11px] font-semibold uppercase tracking-[0.35em]">Family Overview</span>
-              <span className="inline-flex min-w-[3.5rem] justify-end text-sm font-semibold text-white">
-                {data.people.length}
+              {!isMobileLandscape && (
+                <span className="inline-flex min-w-[3.5rem] justify-end text-sm font-semibold text-white">
+                  {data.people.length}
                 </span>
+              )}
             </summary>
             <div className="mt-3 grid grid-cols-2 gap-3 text-white">
               {stats.map((stat) => (

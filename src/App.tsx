@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 
+import { useBreakpoint } from './hooks/useBreakpoint'
+
 import FamilyTree from './components/FamilyTree'
 
 const tutorialSections = [
@@ -43,6 +45,8 @@ const tutorialSections = [
 
 const App = () => {
   const [isTutorialOpen, setTutorialOpen] = useState(false)
+  const { isMobile, isLandscape } = useBreakpoint()
+  const isMobileLandscape = isMobile && isLandscape
 
   useEffect(() => {
     if (!isTutorialOpen) return
@@ -81,7 +85,11 @@ const App = () => {
     <div className="flex min-h-screen flex-col bg-black text-white pb-safe-b">
       <header className="border-b border-white/10 bg-black px-4 py-4 xs:px-5 sm:px-6 sm:py-5 md:px-8 md:py-6 pt-safe-t">
         <div className="mx-auto flex w-full max-w-6xl flex-col items-center gap-3 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight xs:text-[26px] sm:text-3xl md:text-[34px]">
+          <h1
+            className={`font-semibold tracking-tight ${
+              isMobileLandscape ? 'text-xl xs:text-[22px] sm:text-2xl' : 'text-2xl xs:text-[26px] sm:text-3xl md:text-[34px]'
+            }`}
+          >
             Hamway &amp; Tahan Family Tree
           </h1>
         </div>

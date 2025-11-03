@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { ChangeEvent, FormEvent, KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent } from 'react'
+import type {
+  ChangeEvent,
+  CSSProperties,
+  FormEvent,
+  KeyboardEvent as ReactKeyboardEvent,
+  PointerEvent as ReactPointerEvent,
+} from 'react'
 import { select } from 'd3-selection'
 import { zoom, zoomIdentity, type ZoomTransform } from 'd3-zoom'
 
@@ -168,8 +174,9 @@ const calculateAge = (person: Person): number | null => {
 // }
 
 export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
-  const { isMobile, isTablet } = useBreakpoint()
-  const layoutDensity = isMobile ? 'compact' : isTablet ? 'cozy' : 'default'
+  const { isMobile, isTablet, isLandscape } = useBreakpoint()
+  const isMobileLandscape = isMobile && isLandscape
+  const layoutDensity = isMobileLandscape ? 'cozy' : isMobile ? 'compact' : isTablet ? 'cozy' : 'default'
   const layout = useFamilyLayout(graph, { density: layoutDensity })
   const svgRef = useRef<SVGSVGElement | null>(null)
   const innerRef = useRef<SVGGElement | null>(null)
@@ -1206,6 +1213,10 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     ? 'ring-2 ring-white/40 ring-offset-4 ring-offset-black'
     : ''
 
+  const floatingToolbarStyle: CSSProperties | undefined = isMobileLandscape
+    ? { width: 'min(360px, calc(100vw - 32px))' }
+    : undefined
+
   const parentChildLinks = useMemo(() => {
     const links: Array<{
       id: string
@@ -1765,8 +1776,13 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       </svg>
       <div
         className={`pointer-events-none absolute z-30 ${
-          isMobile ? 'left-3 right-3 top-3' : 'left-6 top-6 w-[360px]'
+          isMobileLandscape
+            ? 'left-4 top-4 max-w-[360px]'
+            : isMobile
+            ? 'left-3 right-3 top-3'
+            : 'left-6 top-6 w-[360px]'
         } flex flex-col gap-3 text-xs text-white`}
+        style={floatingToolbarStyle}
       >
         <div className="pointer-events-auto rounded-2xl border border-white/20 bg-black/80 px-4 py-3 shadow-[0_20px_40px_rgba(0,0,0,0.7)] backdrop-blur">
           <div className="flex items-center justify-between gap-2">
@@ -1798,7 +1814,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
           </div>
 
           {isMobile ? (
-            !isControlSheetOpen && (
+            !isControlSheetOpen && !isMobileLandscape && (
               <button
                 type="button"
                 onClick={toggleLegend}
@@ -1893,11 +1909,11 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
         </div>
       </div>
 
-      {isLegendOpen && isMobile && (
+      {isLegendOpen && isMobile && !isMobileLandscape && (
         <div className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm" onClick={toggleLegend} />
       )}
 
-      {!isMobile && (
+      {(!isMobile || isMobileLandscape) && (
         <button
           type="button"
           onClick={toggleLegend}
