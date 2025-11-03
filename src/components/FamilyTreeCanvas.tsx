@@ -815,6 +815,19 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     )
   }, [])
 
+  const panView = useCallback((dx: number, dy: number) => {
+    if (!svgRef.current || !zoomBehaviorRef.current) return
+    select(svgRef.current).call(zoomBehaviorRef.current.translateBy as never, dx, dy)
+  }, [])
+
+  const legendShortcutActiveRef = useRef(false)
+  const legendShortcutRestoreRef = useRef(false)
+  const isLegendOpenRef = useRef(isLegendOpen)
+
+  useEffect(() => {
+    isLegendOpenRef.current = isLegendOpen
+  }, [isLegendOpen])
+
   useEffect(() => {
     if (isMobile) return
     if (typeof window === 'undefined' || typeof document === 'undefined') return
@@ -866,12 +879,57 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
         resetView()
         return
       }
+
+      if (key === 'l' || key === 'L') {
+        if (legendShortcutActiveRef.current) return
+        legendShortcutActiveRef.current = true
+        legendShortcutRestoreRef.current = isLegendOpenRef.current
+        if (!isLegendOpenRef.current) {
+          setLegendOpen(true)
+        }
+        event.preventDefault()
+        return
+      }
+
+      const panDistance = event.shiftKey ? 240 : 160
+      switch (key) {
+        case 'ArrowUp':
+          event.preventDefault()
+          panView(0, -panDistance)
+          return
+        case 'ArrowDown':
+          event.preventDefault()
+          panView(0, panDistance)
+          return
+        case 'ArrowLeft':
+          event.preventDefault()
+          panView(-panDistance, 0)
+          return
+        case 'ArrowRight':
+          event.preventDefault()
+          panView(panDistance, 0)
+          return
+      }
     }
 
     window.addEventListener('keydown', handleGlobalShortcut)
 
+    const handleGlobalKeyUp = (event: KeyboardEvent) => {
+      if (event.key !== 'l' && event.key !== 'L') return
+      if (!legendShortcutActiveRef.current) return
+      legendShortcutActiveRef.current = false
+      const shouldClose = !legendShortcutRestoreRef.current
+      legendShortcutRestoreRef.current = false
+      if (shouldClose) {
+        setLegendOpen(false)
+      }
+    }
+
+    window.addEventListener('keyup', handleGlobalKeyUp)
+
     return () => {
       window.removeEventListener('keydown', handleGlobalShortcut)
+      window.removeEventListener('keyup', handleGlobalKeyUp)
     }
   }, [
     assignLastSearchResultToRole,
@@ -879,6 +937,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     focusSearchInput,
     isMobile,
     lastSearchResultId,
+    panView,
     setLastSearchResultId,
     setSearchActiveIndex,
     setSearchFeedback,
@@ -1549,33 +1608,33 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
                   </text>
                 ) : (
                   <>
-                    <text
-                      x={width / 2}
-                      y={72}
-                      textAnchor="middle"
-                      className="fill-white text-[11px] uppercase tracking-[0.3em]"
-                      opacity={textOpacity}
-                    >
-                      {person.branch}
-                    </text>
-                    <text
-                      x={width / 2}
-                      y={86}
-                      textAnchor="middle"
-                      className="fill-white text-[11px] uppercase"
-                      opacity={textOpacity}
-                    >
-                      ·
-                    </text>
-                    <text
-                      x={width / 2}
-                      y={100}
-                      textAnchor="middle"
-                      className="fill-white text-[11px] uppercase tracking-[0.3em]"
-                      opacity={textOpacity}
-                    >
-                      Gen {person.generation}
-                    </text>
+                <text
+                  x={width / 2}
+                  y={72}
+                  textAnchor="middle"
+                  className="fill-white text-[11px] uppercase tracking-[0.3em]"
+                  opacity={textOpacity}
+                >
+                  {person.branch}
+                </text>
+                <text
+                  x={width / 2}
+                  y={86}
+                  textAnchor="middle"
+                  className="fill-white text-[11px] uppercase"
+                  opacity={textOpacity}
+                >
+                  ·
+                </text>
+                <text
+                  x={width / 2}
+                  y={100}
+                  textAnchor="middle"
+                  className="fill-white text-[11px] uppercase tracking-[0.3em]"
+                  opacity={textOpacity}
+                >
+                  Gen {person.generation}
+                </text>
                   </>
                 )}
                 {(personIsA || personIsB) && (
