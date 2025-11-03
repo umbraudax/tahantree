@@ -199,6 +199,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   const controlSheetDragState = useRef<{ pointerId: number | null; startY: number }>({ pointerId: null, startY: 0 })
   const controlSheetDragOffsetRef = useRef(0)
   const overscrollRestoreRef = useRef<{ html: string; body: string } | null>(null)
+  const [isControlSheetDragging, setControlSheetDragging] = useState(false)
   const [lastSearchResultId, setLastSearchResultId] = useState<string | null>(null)
   const searchInputRef = useRef<HTMLInputElement | null>(null)
   const searchResultsRef = useRef<HTMLDivElement | null>(null)
@@ -523,6 +524,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     setControlSheetDragOffset(0)
     controlSheetDragOffsetRef.current = 0
     controlSheetDragState.current = { pointerId: null, startY: 0 }
+    setControlSheetDragging(false)
     setControlSheetOpen(true)
   }, [])
 
@@ -532,6 +534,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     setControlSheetDragOffset(0)
     controlSheetDragOffsetRef.current = 0
     controlSheetDragState.current = { pointerId: null, startY: 0 }
+    setControlSheetDragging(false)
   }, [])
 
   useEffect(() => {
@@ -564,6 +567,22 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       }
     }
   }, [isControlSheetOpen, isMobile])
+
+  useEffect(() => {
+    if (!isMobile) return
+    if (!isControlSheetDragging) return
+    if (typeof document === 'undefined') return
+
+    const preventTouchMove = (event: TouchEvent) => {
+      event.preventDefault()
+    }
+
+    document.addEventListener('touchmove', preventTouchMove, { passive: false })
+
+    return () => {
+      document.removeEventListener('touchmove', preventTouchMove)
+    }
+  }, [isControlSheetDragging, isMobile])
 
   const beginSelection = useCallback(
     (target: 'selectA' | 'selectB') => {
@@ -716,10 +735,12 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       if (!isControlSheetOpen) return
       if (event.pointerType !== 'touch') return
       event.preventDefault()
+      event.stopPropagation()
       controlSheetDragState.current = { pointerId: event.pointerId, startY: event.clientY }
       controlSheetDragOffsetRef.current = 0
       setControlSheetDragOffset(0)
       event.currentTarget.setPointerCapture(event.pointerId)
+      setControlSheetDragging(true)
     },
     [isControlSheetOpen],
   )
@@ -727,6 +748,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   const handleControlSheetDragMove = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
     if (controlSheetDragState.current.pointerId !== event.pointerId) return
     event.preventDefault()
+    event.stopPropagation()
     const offset = Math.max(0, event.clientY - controlSheetDragState.current.startY)
     controlSheetDragOffsetRef.current = offset
     setControlSheetDragOffset(offset)
@@ -737,7 +759,8 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       if (controlSheetDragState.current.pointerId !== event.pointerId) return
       event.currentTarget.releasePointerCapture(event.pointerId)
       const offset = controlSheetDragOffsetRef.current
-      if (offset > 48) {
+      setControlSheetDragging(false)
+      if (offset > 32) {
         closeControlSheet()
       } else {
         setControlSheetDragOffset(0)
@@ -754,6 +777,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     controlSheetDragOffsetRef.current = 0
     controlSheetDragState.current = { pointerId: null, startY: 0 }
     setControlSheetDragOffset(0)
+    setControlSheetDragging(false)
   }, [])
 
   const handlePersonPointerEnter = useCallback(
@@ -1628,9 +1652,9 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
 
           <div
             id="mobile-control-sheet"
-            className={`fixed inset-x-0 bottom-0 z-50 transform transition-transform duration-300 ease-out ${
-              isControlSheetOpen ? 'translate-y-0' : 'translate-y-full'
-            }`}
+            className={`fixed inset-x-0 bottom-0 z-50 transform ${
+              isControlSheetDragging ? '' : 'transition-transform duration-300 ease-out'
+            } ${isControlSheetOpen ? 'translate-y-0' : 'translate-y-full'}`}
             style={{ transform: isControlSheetOpen ? `translateY(${controlSheetDragOffset}px)` : undefined }}
             role="dialog"
             aria-label="Family tree controls"
