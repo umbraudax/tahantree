@@ -515,8 +515,12 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       setSelectionMode('none')
       setSelectedPersonId(personId)
       setSearchAssignTarget(null)
+
+      if (isMobile) {
+        openControlSheet()
+      }
     },
-    [],
+    [isMobile, openControlSheet],
   )
 
   const updateHoveredSelectionHalf = useCallback(
@@ -575,14 +579,11 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
 
       if (searchAssignTarget) {
         assignPersonToRole(person.id, searchAssignTarget)
-        if (isMobile) {
-          closeControlSheet()
-        }
       } else {
         setSelectedPersonId(person.id)
       }
     },
-    [assignPersonToRole, centerOnPerson, closeControlSheet, isMobile, searchAssignTarget],
+    [assignPersonToRole, centerOnPerson, searchAssignTarget],
   )
 
   const handleSearchSubmit = useCallback(
@@ -608,14 +609,11 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
 
       if (searchAssignTarget) {
         assignPersonToRole(match.id, searchAssignTarget)
-        if (isMobile) {
-          closeControlSheet()
-        }
       } else {
         setSelectedPersonId(match.id)
       }
     },
-    [assignPersonToRole, centerOnPerson, closeControlSheet, isMobile, searchAssignTarget, searchMatches, searchValue],
+    [assignPersonToRole, centerOnPerson, searchAssignTarget, searchMatches, searchValue],
   )
 
   const handleCanvasBackgroundClick = useCallback(() => {
@@ -685,6 +683,15 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       : selectionMode === 'selectB'
       ? 'Tap a person to set Person B'
       : null
+  const selectionRingClass = isMobile
+    ? selectionMode === 'selectA'
+      ? 'ring-4 ring-emerald-400/70 ring-offset-4 ring-offset-black'
+      : selectionMode === 'selectB'
+      ? 'ring-4 ring-sky-400/70 ring-offset-4 ring-offset-black'
+      : ''
+    : isSelecting
+    ? 'ring-2 ring-white/40 ring-offset-4 ring-offset-black'
+    : ''
 
   const parentChildLinks = useMemo(() => {
     const links: Array<{
@@ -910,12 +917,8 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   }
 
   return (
-    <div
-      className={`relative h-full w-full bg-black text-white ${
-        isSelecting ? 'ring-2 ring-white/40 ring-offset-4 ring-offset-black' : ''
-      }`}
-    >
-      {selectionMessage && (
+    <div className={`relative h-full w-full bg-black text-white ${selectionRingClass}`}>
+      {!isMobile && selectionMessage && (
         <div className="pointer-events-none absolute inset-x-0 top-0 z-40 flex justify-center pt-4">
           <div className="rounded-full border border-white/30 bg-black/70 px-4 py-2 text-[10px] uppercase tracking-[0.3em] text-white">
             {selectionMessage}
@@ -1446,16 +1449,6 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
 
       {isMobile && (
         <>
-          <button
-            type="button"
-            onClick={() => (isControlSheetOpen ? closeControlSheet() : openControlSheet())}
-            className="fixed bottom-6 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full border border-white/25 bg-white/15 text-[10px] font-semibold uppercase tracking-[0.3em] text-white shadow-[0_16px_32px_rgba(0,0,0,0.65)] backdrop-blur transition hover:bg-white/25"
-            aria-expanded={isControlSheetOpen}
-            aria-controls="mobile-control-sheet"
-          >
-            {isControlSheetOpen ? 'Close' : 'Tools'}
-          </button>
-
           <div
             className={`fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity duration-200 ${
               isControlSheetOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
@@ -1469,7 +1462,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
               isControlSheetOpen ? 'translate-y-0' : 'translate-y-full'
             }`}
             role="dialog"
-            aria-label="Family tree tools"
+            aria-label="Family tree controls"
           >
             <div className="rounded-t-3xl border border-white/20 bg-black/90 px-5 pb-6 pt-4 shadow-[0_-12px_40px_rgba(0,0,0,0.7)] backdrop-blur">
               <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-white/20" />
