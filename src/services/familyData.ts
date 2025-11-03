@@ -148,16 +148,71 @@ const getParentUnitId = (
   return motherUnit ?? fatherUnit
 }
 
-const finalizeUnit = (unit: FamilyUnit): void => {
+const finalizeUnit = (unit: FamilyUnit, unitLookup: Map<string, FamilyUnit>): void => {
   unit.childIds = Array.from(new Set(unit.childIds))
   unit.childIds.sort((a, b) => {
-    const left = Number.parseInt(a.replace(/^unit-/, ''), 10)
-    const right = Number.parseInt(b.replace(/^unit-/, ''), 10)
-    if (Number.isNaN(left) || Number.isNaN(right)) {
-      return a.localeCompare(b)
+    const leftUnit = unitLookup.get(a)
+    const rightUnit = unitLookup.get(b)
+
+    const branchPriority = (childUnit?: FamilyUnit): number => {
+      if (!childUnit) return 2
+      if (childUnit.branch === unit.branch) return 0
+      if (childUnit.branch.toLowerCase() === 'other') return 2
+      return 1
     }
-    return left - right
+
+    const leftPriority = branchPriority(leftUnit)
+    const rightPriority = branchPriority(rightUnit)
+    if (leftPriority !== rightPriority) {
+      return leftPriority - rightPriority
+    }
+
+    const parseNumericId = (value?: string): number => {
+      if (!value) return Number.POSITIVE_INFINITY
+      const numeric = Number.parseInt(value, 10)
+      return Number.isFinite(numeric) ? numeric : Number.POSITIVE_INFINITY
+    }
+
+    const leftPrimary = leftUnit?.memberIds[0]
+    const rightPrimary = rightUnit?.memberIds[0]
+    const leftNumeric = parseNumericId(leftPrimary)
+    const rightNumeric = parseNumericId(rightPrimary)
+    if (leftNumeric !== rightNumeric) {
+      return leftNumeric - rightNumeric
+    }
+
+    return a.localeCompare(b)
   })
+}
+
+const incrementNestedCounter = (store: Map<string, Map<string, number>>, source: string, target: string) => {
+  let entry = store.get(source)
+  if (!entry) {
+    entry = new Map<string, number>()
+    store.set(source, entry)
+  }
+  entry.set(target, (entry.get(target) ?? 0) + 1)
+}
+
+const attachUnitToParent = (
+  unit: FamilyUnit,
+  parentId: string,
+  units: Map<string, FamilyUnit>,
+) => {
+  const parentUnit = units.get(parentId)
+  if (!parentUnit) return
+
+  if (unit.parentId && unit.parentId !== parentId) {
+    const previousParent = units.get(unit.parentId)
+    if (previousParent) {
+      previousParent.childIds = previousParent.childIds.filter((childId) => childId !== unit.id)
+    }
+  }
+
+  unit.parentId = parentId
+  if (!parentUnit.childIds.includes(unit.id)) {
+    parentUnit.childIds.push(unit.id)
+  }
 }
 
 export const loadFamilyGraph = async (url = DATA_URL): Promise<FamilyGraph> => {
@@ -212,6 +267,16 @@ export const loadFamilyGraph = async (url = DATA_URL): Promise<FamilyGraph> => {
     }
 
     parentUnit.childIds.push(unitId)
+  }
+
+  const coParentCounts = new Map<string, Map<string, number>>()
+  for (const person of people) {
+    const motherUnitId = person.motherId ? personToUnit.get(person.motherId) : undefined
+    const fatherUnitId = person.fatherId ? personToUnit.get(person.fatherId) : undefined
+    if (!motherUnitId || !fatherUnitId || motherUnitId === fatherUnitId) continue
+
+    incrementNestedCounter(coParentCounts, motherUnitId, fatherUnitId)
+    incrementNestedCounter(coParentCounts, fatherUnitId, motherUnitId)
   }
 
   for (const unit of units.values()) {
@@ -291,15 +356,53 @@ export const loadFamilyGraph = async (url = DATA_URL): Promise<FamilyGraph> => {
     const bestParentUnit = units.get(bestParentId)
     if (!bestParentUnit) continue
 
-    unit.parentId = bestParentId
-    bestParentUnit.childIds.push(unit.id)
+    attachUnitToParent(unit, bestParentId, units)
+  }
+
+  for (const unit of units.values()) {
+    if (unit.parentId) continue
+
+    const coParents = coParentCounts.get(unit.id)
+    if (!coParents || coParents.size === 0) continue
+
+    const ranked = Array.from(coParents.entries())
+      .map(([candidateId, weight]) => {
+        const candidateUnit = units.get(candidateId)
+        return {
+          candidateId,
+          weight,
+          candidateUnit,
+        }
+      })
+      .filter((entry) => entry.candidateUnit)
+      .sort((left, right) => {
+        if (right.weight !== left.weight) {
+          return right.weight - left.weight
+        }
+
+        const rightChildren = right.candidateUnit?.childIds.length ?? 0
+        const leftChildren = left.candidateUnit?.childIds.length ?? 0
+        if (rightChildren !== leftChildren) {
+          return rightChildren - leftChildren
+        }
+
+        return left.candidateId.localeCompare(right.candidateId)
+      })
+
+    const bestCoParent = ranked[0]
+    if (!bestCoParent) continue
+
+    const parentFromCoParent = bestCoParent.candidateUnit?.parentId
+    if (!parentFromCoParent || parentFromCoParent === unit.id) continue
+
+    attachUnitToParent(unit, parentFromCoParent, units)
   }
 
   const unitsById: Record<string, FamilyUnit> = {}
   const unitList: FamilyUnit[] = []
 
   for (const unit of units.values()) {
-    finalizeUnit(unit)
+    finalizeUnit(unit, units)
     unitsById[unit.id] = unit
     unitList.push(unit)
   }

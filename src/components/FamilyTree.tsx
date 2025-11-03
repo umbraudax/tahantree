@@ -40,29 +40,33 @@ const FamilyTree = () => {
     <div className="flex h-full w-full flex-col text-white">
       <div className="border-b border-white/10 bg-black px-6 py-2">
         <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-4 text-xs text-white">
-          <div className="flex items-center gap-2">
-            <span className="rounded-full border border-white/20 bg-black px-2 py-1 text-[10px] uppercase tracking-[0.3em] text-white">
-              People
-            </span>
-            <span className="text-base font-semibold text-white">{data.people.length}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="rounded-full border border-white/20 bg-black px-2 py-1 text-[10px] uppercase tracking-[0.3em] text-white">
-              Family Units
-            </span>
-            <span className="text-base font-semibold text-white">{data.units.length}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="rounded-full border border-white/20 bg-black px-2 py-1 text-[10px] uppercase tracking-[0.3em] text-white">
-              Branches
-            </span>
-            <span className="text-base font-semibold text-white">{branchCount}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="rounded-full border border-white/20 bg-black px-2 py-1 text-[10px] uppercase tracking-[0.3em] text-white">
-              Generations
-            </span>
-            <span className="text-base font-semibold text-white">{generationCount}</span>
+          <div className="w-full flex justify-center">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="rounded-full border border-white/20 bg-black px-2 py-1 text-[10px] uppercase tracking-[0.3em] text-white">
+                  People
+                </span>
+                <span className="text-base font-semibold text-white">{data.people.length}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="rounded-full border border-white/20 bg-black px-2 py-1 text-[10px] uppercase tracking-[0.3em] text-white">
+                  Family Units
+                </span>
+                <span className="text-base font-semibold text-white">{data.units.length}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="rounded-full border border-white/20 bg-black px-2 py-1 text-[10px] uppercase tracking-[0.3em] text-white">
+                  Branches
+                </span>
+                <span className="text-base font-semibold text-white">{branchCount}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="rounded-full border border-white/20 bg-black px-2 py-1 text-[10px] uppercase tracking-[0.3em] text-white">
+                  Generations
+                </span>
+                <span className="text-base font-semibold text-white">{generationCount}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

@@ -1,20 +1,28 @@
-import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { ChangeEvent, FormEvent } from 'react'
 import { select } from 'd3-selection'
 import { zoom, zoomIdentity, type ZoomTransform } from 'd3-zoom'
 
+import {
+  computeUnitDimensions,
+  CORNER_RADIUS,
+  GROUP_PADDING,
+  PERSON_GAP,
+  PERSON_HEIGHT,
+  PERSON_WIDTH,
+  SPOUSE_GAP_EXTRA,
+} from '../constants/layout'
 import { useFamilyLayout } from '../hooks/useFamilyLayout'
 import type { FamilyGraph, FamilyUnit, Person } from '../types/family'
 import { getBranchColor, withAlpha } from '../utils/colors'
 import { describeRelationship } from '../utils/relationships'
-
-const PERSON_WIDTH = 150
-const PERSON_HEIGHT = 130
-const PERSON_GAP = 32
-const GROUP_PADDING = 16
-const CORNER_RADIUS = 16
 const slugifyBranch = (branch: string) => branch.toLowerCase().replace(/[^a-z0-9]+/g, '-')
 const MIN_SCALE = 0.35
 const MAX_SCALE = 2.5
+const SPOUSE_LINK_PADDING = 12
+const SPOUSE_COLOR_MARRIED = '#d16bf6'
+const SPOUSE_COLOR_DIVORCED = '#ff4d6d'
+const SPOUSE_DASHARRAY_DIVORCED = '10 6'
 
 interface Point {
   x: number
@@ -56,9 +64,9 @@ interface FamilyTreeCanvasProps {
 }
 
 const computeUnitLayout = (unit: FamilyUnit, expanded: Set<string>): UnitLayoutBox => {
-  const memberCount = Math.max(unit.members.length, 1)
-  const width = GROUP_PADDING * 2 + memberCount * PERSON_WIDTH + (memberCount - 1) * PERSON_GAP
-  const height = GROUP_PADDING * 2 + PERSON_HEIGHT
+  const hasSpouseBond = Boolean(unit.spouseBond)
+  const { width, height } = computeUnitDimensions(unit.members.length, hasSpouseBond)
+  const horizontalGap = hasSpouseBond ? PERSON_GAP + SPOUSE_GAP_EXTRA : PERSON_GAP
 
   const segments: UnitLayoutSegment[] = []
   let currentX = GROUP_PADDING
@@ -73,7 +81,7 @@ const computeUnitLayout = (unit: FamilyUnit, expanded: Set<string>): UnitLayoutB
       height: PERSON_HEIGHT,
       expanded: expandedState,
     })
-    currentX += PERSON_WIDTH + PERSON_GAP
+    currentX += PERSON_WIDTH + horizontalGap
   }
 
   if (unit.members.length === 0) {
@@ -123,7 +131,7 @@ const tooltipLines = (person: Person, graph: FamilyGraph): string[] => {
   const lines = [person.fullName]
   const life = formatLifeSpan(person)
   if (life) lines.push(life)
-  lines.push(`Sex: ${getSexLabel(person.sex)}`)
+  lines.push(getSexLabel(person.sex))
 
   if (person.spouseId) {
     const spouse = graph.peopleById[person.spouseId]
@@ -271,7 +279,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
 
     const zoomBehavior = zoom<SVGSVGElement, unknown>()
       .scaleExtent([MIN_SCALE, MAX_SCALE])
-      .on('zoom', (event) => {
+      .on('zoom', (event: { transform: ZoomTransform }) => {
         transformRef.current = event.transform
         innerRef.current?.setAttribute('transform', event.transform.toString())
       })
@@ -565,25 +573,16 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     return links
   }, [graph.people, graph.personToUnitId, personGeometries])
 
-  const computeCoupleColor = useCallback((personId: string, spouseId: string) => {
-    const [first, second] = [personId, spouseId].sort()
-    let hash = 0
-    const key = `${first}-${second}`
-    for (let index = 0; index < key.length; index += 1) {
-      hash = (hash * 31 + key.charCodeAt(index)) % 360
-    }
-    const hue = hash
-    return `hsl(${hue}deg, 65%, 65%)`
-  }, [])
-
   const spouseLines = useMemo(() => {
     const lines: Array<{
       id: string
+      d: string
       x1: number
       y1: number
       x2: number
       y2: number
       color: string
+      dasharray?: string
       personId: string
       spouseId: string
     }> = []
@@ -601,20 +600,74 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       const spouseGeometry = personGeometries[spouseId]
       if (!personGeometry || !spouseGeometry) continue
 
+      const unitId = graph.personToUnitId[person.id]
+      const unit = unitId ? graph.unitsById[unitId] : undefined
+      const spouseBondType = unit?.spouseBond?.type
+      const inferredBondType: 'married' | 'divorced' = spouseBondType
+        ? spouseBondType
+        : person.divorced || graph.peopleById[spouseId]?.divorced
+        ? 'divorced'
+        : 'married'
+
+      let leftGeometry = personGeometry
+      let rightGeometry = spouseGeometry
+      if (
+        spouseGeometry.center.x < personGeometry.center.x ||
+        (spouseGeometry.center.x === personGeometry.center.x && spouseGeometry.center.y < personGeometry.center.y)
+      ) {
+        leftGeometry = spouseGeometry
+        rightGeometry = personGeometry
+      }
+
+      const yStart = leftGeometry.center.y
+      const yEnd = rightGeometry.center.y
+      const availableSpan = rightGeometry.bounds.left - leftGeometry.bounds.right
+      const padding = Math.min(SPOUSE_LINK_PADDING, Math.max(availableSpan / 4, 0))
+      const xStartCandidate = leftGeometry.bounds.right + padding
+      const xEndCandidate = rightGeometry.bounds.left - padding
+      const useEdge = Number.isFinite(xStartCandidate) && xStartCandidate < xEndCandidate
+      const x1 = useEdge ? xStartCandidate : leftGeometry.center.x
+      const x2 = useEdge ? xEndCandidate : rightGeometry.center.x
+
+      const horizontalDistance = Math.max(x2 - x1, 0)
+      const verticalDistance = yEnd - yStart
+      let path: string
+
+      if (horizontalDistance < 12) {
+        const directionY = verticalDistance === 0 ? 1 : Math.sign(verticalDistance)
+        const bendMagnitude = Math.max(Math.abs(verticalDistance) * 0.5, 48)
+        const midX = (x1 + x2) / 2
+        const controlOffsetX = Math.max(Math.min(bendMagnitude * 0.3, 60), 18)
+        const controlY1 = yStart + directionY * bendMagnitude
+        const controlY2 = yEnd - directionY * bendMagnitude
+        path = `M${x1},${yStart} C${midX - controlOffsetX},${controlY1} ${midX + controlOffsetX},${controlY2} ${x2},${yEnd}`
+      } else {
+        const baseBend = Math.max(Math.min(horizontalDistance * 0.42, 160), 36)
+        const bend = Math.min(baseBend, horizontalDistance / 2)
+        const influenceY = verticalDistance * 0.25
+        const controlX1 = x1 + bend
+        const controlX2 = x2 - bend
+        const controlY1 = yStart + influenceY
+        const controlY2 = yEnd - influenceY
+        path = `M${x1},${yStart} C${controlX1},${controlY1} ${controlX2},${controlY2} ${x2},${yEnd}`
+      }
+
       lines.push({
         id: `spouse-${pairKey}`,
-        x1: personGeometry.center.x,
-        y1: personGeometry.center.y,
-        x2: spouseGeometry.center.x,
-        y2: spouseGeometry.center.y,
-        color: computeCoupleColor(person.id, spouseId),
+        d: path,
+        x1,
+        y1: yStart,
+        x2,
+        y2: yEnd,
+        color: inferredBondType === 'divorced' ? SPOUSE_COLOR_DIVORCED : SPOUSE_COLOR_MARRIED,
+        dasharray: inferredBondType === 'divorced' ? SPOUSE_DASHARRAY_DIVORCED : undefined,
         personId: person.id,
         spouseId,
       })
     }
 
     return lines
-  }, [graph.people, personGeometries, computeCoupleColor])
+  }, [graph.people, graph.peopleById, graph.personToUnitId, graph.unitsById, personGeometries])
 
   const handleTooltip = (person: Person, event: React.PointerEvent) => {
     setTooltip({ person, clientX: event.clientX, clientY: event.clientY })
@@ -745,18 +798,18 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
               ? (highlightContext?.highlightPeople.has(line.personId) ?? false) &&
                 (highlightContext?.highlightPeople.has(line.spouseId) ?? false)
               : false
-            const strokeOpacity = highlightActive ? (lineHighlighted ? 0.95 : 0.25) : 0.9
+            const strokeOpacity = highlightActive ? (lineHighlighted ? 0.95 : 0.3) : 0.85
 
             return (
-              <line
+              <path
                 key={line.id}
-                x1={line.x1}
-                y1={line.y1}
-                x2={line.x2}
-                y2={line.y2}
+                d={line.d}
+                fill="none"
                 stroke={line.color}
                 strokeWidth={4}
                 strokeOpacity={strokeOpacity}
+                strokeDasharray={line.dasharray}
+                strokeLinecap="round"
               />
             )
           })}
@@ -1071,9 +1124,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
         </div>
       </div>
 
-      <div className="pointer-events-none absolute left-4 bottom-4 rounded-full border border-white/20 bg-black px-3 py-1 text-white shadow-[0_16px_32px_rgba(0,0,0,0.65)]">
-        Scroll to zoom, drag the background to pan.
-      </div>
+    
 
       <div className="pointer-events-none absolute right-4 top-4 flex flex-col gap-3 text-xs text-white">
         <div className="pointer-events-auto rounded-2xl border border-white/20 bg-black p-4 shadow-[0_24px_60px_rgba(0,0,0,0.75)]">
