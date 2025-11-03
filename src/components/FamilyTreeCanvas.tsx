@@ -526,6 +526,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     controlSheetDragState.current = { pointerId: null, startY: 0 }
     setControlSheetDragging(false)
     setControlSheetOpen(true)
+    searchInputRef.current?.blur()
   }, [])
 
   const closeControlSheet = useCallback(() => {
@@ -1660,16 +1661,20 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
             aria-label="Family tree controls"
           >
             <div className="rounded-t-3xl border border-white/20 bg-black/90 px-5 pb-6 pt-4 shadow-[0_-12px_40px_rgba(0,0,0,0.7)] backdrop-blur">
-              <div
-                className="mx-auto mb-4 h-1.5 w-12 cursor-grab rounded-full bg-white/20 active:cursor-grabbing"
-                role="button"
-                aria-label="Drag to close"
-                onPointerDown={handleControlSheetDragStart}
-                onPointerMove={handleControlSheetDragMove}
-                onPointerUp={handleControlSheetDragEnd}
-                onPointerCancel={handleControlSheetDragCancel}
-                style={{ touchAction: 'none' }}
-              />
+              <div className="mb-4 flex justify-center">
+                <div
+                  className="flex h-14 w-32 cursor-grab items-center justify-center rounded-full bg-white/10 active:cursor-grabbing"
+                  role="button"
+                  aria-label="Drag to close"
+                  onPointerDown={handleControlSheetDragStart}
+                  onPointerMove={handleControlSheetDragMove}
+                  onPointerUp={handleControlSheetDragEnd}
+                  onPointerCancel={handleControlSheetDragCancel}
+                  style={{ touchAction: 'none' }}
+                >
+                  <span className="block h-1.5 w-14 rounded-full bg-white/60" />
+                </div>
+              </div>
               <div className="max-h-[65vh] space-y-4 overflow-y-auto pr-1 text-xs text-white">
                 <form className="flex w-full flex-wrap items-start gap-2" onSubmit={handleSearchSubmit}>
                   <div className="relative w-full flex-1">
@@ -1846,7 +1851,6 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
             type="button"
             onClick={() => {
               openControlSheet()
-              focusSearchInput()
             }}
             className="fixed bottom-4 right-4 z-50 grid h-14 w-14 place-items-center rounded-full border border-white/20 bg-black/80 text-3xl text-white shadow-[0_20px_40px_rgba(0,0,0,0.6)] transition hover:bg-white/15"
           >
@@ -1862,7 +1866,6 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
               setHoveredPersonId(null)
               setTooltip(null)
               openControlSheet()
-              focusSearchInput()
             }}
             className="fixed bottom-4 right-4 z-50 grid h-14 w-14 place-items-center rounded-full border border-white/20 bg-black/80 text-3xl text-white shadow-[0_20px_40px_rgba(0,0,0,0.6)] transition hover:bg-white/15"
           >
