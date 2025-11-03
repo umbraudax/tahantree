@@ -1535,7 +1535,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
                   className="fill-white text-[12px] tracking-wide"
                   opacity={textOpacity}
                 >
-                  {getSexLabel(person.sex)}
+                  Birth/Death Date
                 </text>
                 {relationshipLabel ? (
                   <text
