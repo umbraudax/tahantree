@@ -229,9 +229,29 @@ export const describeRelationship = (
     return formatAuntUncleTitle(fromPerson, auntUncleDepth)
   }
 
+  if (fromPerson.spouseId) {
+    const spouse = graph.peopleById[fromPerson.spouseId]
+    if (spouse) {
+      const spouseAuntUncleDepth = findCollateralDepth(graph, childrenByParentId, spouse.id, ancestorsOfTo)
+      if (spouseAuntUncleDepth !== null) {
+        return formatAuntUncleTitle(fromPerson, spouseAuntUncleDepth)
+      }
+    }
+  }
+
   const nieceNephewDepth = findCollateralDepth(graph, childrenByParentId, toId, ancestorsOfFrom)
   if (nieceNephewDepth !== null) {
     return formatNieceNephewTitle(fromPerson, nieceNephewDepth)
+  }
+
+  if (toPerson.spouseId) {
+    const spouse = graph.peopleById[toPerson.spouseId]
+    if (spouse) {
+      const spouseNieceNephewDepth = findCollateralDepth(graph, childrenByParentId, spouse.id, ancestorsOfFrom)
+      if (spouseNieceNephewDepth !== null) {
+        return formatNieceNephewTitle(fromPerson, spouseNieceNephewDepth)
+      }
+    }
   }
 
   const sharedAncestors: Array<{ depthA: number; depthB: number }> = []

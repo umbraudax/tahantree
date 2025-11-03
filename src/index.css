@@ -20,3 +20,15 @@ body {
     padding-right: max(env(safe-area-inset-right), 0px);
   }
 }
+
+@media (max-width: 768px) {
+  html,
+  body {
+    overflow: hidden;
+    overscroll-behavior: contain;
+  }
+
+  body {
+    touch-action: manipulation;
+  }
+}

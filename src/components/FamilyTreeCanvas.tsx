@@ -54,12 +54,6 @@ interface PersonGeometry {
   bounds: { left: number; top: number; right: number; bottom: number }
 }
 
-interface TooltipState {
-  person: Person
-  clientX: number
-  clientY: number
-}
-
 interface FamilyTreeCanvasProps {
   graph: FamilyGraph
 }
@@ -128,35 +122,6 @@ const getSexLabel = (sex: Person['sex']): string => {
   }
 }
 
-const tooltipLines = (person: Person, graph: FamilyGraph): string[] => {
-  const lines = [person.fullName]
-  const life = formatLifeSpan(person)
-  if (life) lines.push(life)
-  lines.push(getSexLabel(person.sex))
-
-  const parents: string[] = []
-  if (person.fatherId) {
-    const father = graph.peopleById[person.fatherId]
-    if (father) parents.push(father.fullName)
-  }
-  if (person.motherId) {
-    const mother = graph.peopleById[person.motherId]
-    if (mother) parents.push(mother.fullName)
-  }
-  if (parents.length > 0) {
-    lines.push(`Parents: ${parents.join(' & ')}`)
-  }
-
-  if (person.spouseId) {
-    const spouse = graph.peopleById[person.spouseId]
-    const spouseLabel = person.divorced ? 'Former spouse' : 'Spouse'
-    lines.push(`${spouseLabel}: ${spouse ? spouse.fullName : person.spouseId}`)
-  }
-
-  lines.push(`Branch: ${person.branch}`)
-  return lines
-}
-
 export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   const { isMobile, isTablet } = useBreakpoint()
   const layoutDensity = isMobile ? 'compact' : isTablet ? 'cozy' : 'default'
@@ -169,7 +134,6 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   const hasInitializedTransform = useRef(false)
   const touchExpandedRef = useRef<string | null>(null)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
-  const [tooltip, setTooltip] = useState<TooltipState | null>(null)
   const [searchValue, setSearchValue] = useState('')
   const [searchFeedback, setSearchFeedback] = useState<string | null>(null)
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null)
@@ -179,9 +143,20 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   const [hoveredPersonId, setHoveredPersonId] = useState<string | null>(null)
   const [isControlSheetOpen, setControlSheetOpen] = useState(false)
   const [isLegendOpen, setLegendOpen] = useState(!isMobile)
+  const [searchAssignTarget, setSearchAssignTarget] = useState<'A' | 'B' | null>(null)
   const searchInputRef = useRef<HTMLInputElement | null>(null)
   const searchResultsRef = useRef<HTMLDivElement | null>(null)
   const [searchFocused, setSearchFocused] = useState(false)
+
+  useEffect(() => {
+    if (isMobile) {
+      setControlSheetOpen(false)
+      setLegendOpen(false)
+    } else {
+      setLegendOpen(true)
+    }
+    setSearchAssignTarget(null)
+  }, [isMobile])
 
   useEffect(() => {
     if (!isMobile) {
@@ -444,16 +419,93 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     }
   }
 
+  const openControlSheet = useCallback(() => {
+    setControlSheetOpen(true)
+    setSearchAssignTarget(null)
+  }, [])
+
+  const closeControlSheet = useCallback(() => {
+    setControlSheetOpen(false)
+    setSearchFocused(false)
+    setSearchAssignTarget(null)
+  }, [])
+
+  const beginSelection = useCallback(
+    (target: 'selectA' | 'selectB') => {
+      setSelectionMode(target)
+      setSearchAssignTarget(null)
+      if (isMobile) {
+        closeControlSheet()
+      }
+    },
+    [closeControlSheet, isMobile],
+  )
+
+  const clearSelections = useCallback(() => {
+    setNodeAId(null)
+    setNodeBId(null)
+    setSelectionMode('none')
+    setSelectedPersonId(null)
+    setSearchAssignTarget(null)
+    collapseAllDetails()
+  }, [collapseAllDetails])
+
+  const toggleLegend = () => {
+    setLegendOpen((current) => !current)
+  }
+
+  const assignPersonToRole = useCallback(
+    (personId: string, role: 'A' | 'B') => {
+      if (role === 'A') {
+        setNodeAId(personId)
+      } else {
+        setNodeBId(personId)
+      }
+      setSelectionMode('none')
+      setSelectedPersonId(personId)
+      setSearchAssignTarget(null)
+    },
+    [],
+  )
+
+  const focusSearchInput = useCallback(() => {
+    if (typeof window === 'undefined') return
+    window.requestAnimationFrame(() => {
+      searchInputRef.current?.focus()
+      searchInputRef.current?.select()
+    })
+  }, [])
+
+  const startSearchAssignment = useCallback(
+    (role: 'A' | 'B') => {
+      if (!isControlSheetOpen) {
+        openControlSheet()
+      }
+      setSearchAssignTarget(role)
+      setSearchFocused(true)
+      focusSearchInput()
+    },
+    [focusSearchInput, isControlSheetOpen, openControlSheet],
+  )
+
   const handleSearchResultSelect = useCallback(
     (person: Person) => {
       setSearchValue(person.fullName)
       setSearchFeedback(null)
-      setSelectedPersonId(person.id)
       centerOnPerson(person.id)
       setSearchFocused(false)
       searchInputRef.current?.blur()
+
+      if (searchAssignTarget) {
+        assignPersonToRole(person.id, searchAssignTarget)
+        if (isMobile) {
+          closeControlSheet()
+        }
+      } else {
+        setSelectedPersonId(person.id)
+      }
     },
-    [centerOnPerson],
+    [assignPersonToRole, centerOnPerson, closeControlSheet, isMobile, searchAssignTarget],
   )
 
   const handleSearchSubmit = useCallback(
@@ -471,56 +523,31 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
         return
       }
 
+      setSearchValue(match.fullName)
       setSearchFeedback(null)
-      setSelectedPersonId(match.id)
       centerOnPerson(match.id)
       setSearchFocused(false)
       searchInputRef.current?.blur()
+
+      if (searchAssignTarget) {
+        assignPersonToRole(match.id, searchAssignTarget)
+        if (isMobile) {
+          closeControlSheet()
+        }
+      } else {
+        setSelectedPersonId(match.id)
+      }
     },
-    [centerOnPerson, searchMatches, searchValue],
+    [assignPersonToRole, centerOnPerson, closeControlSheet, isMobile, searchAssignTarget, searchMatches, searchValue],
   )
-
-  const beginSelection = useCallback((target: 'selectA' | 'selectB') => {
-    setSelectionMode((current) => (current === target ? 'none' : target))
-  }, [])
-
-  const clearSelections = useCallback(() => {
-    setNodeAId(null)
-    setNodeBId(null)
-    setSelectionMode('none')
-    setSelectedPersonId(null)
-    collapseAllDetails()
-  }, [collapseAllDetails])
-
-  const openControlSheet = () => {
-    setControlSheetOpen(true)
-  }
-
-  const closeControlSheet = () => {
-    setControlSheetOpen(false)
-    setSearchFocused(false)
-  }
-
-  const toggleLegend = () => {
-    setLegendOpen((current) => !current)
-  }
 
   const handleCanvasBackgroundClick = useCallback(() => {
     setSelectionMode('none')
     setSelectedPersonId(null)
     collapseAllDetails()
     setHoveredPersonId(null)
+    setSearchAssignTarget(null)
   }, [collapseAllDetails])
-
-  const handleSelectPersonRole = useCallback((personId: string, role: 'A' | 'B') => {
-    if (role === 'A') {
-      setNodeAId(personId)
-    } else {
-      setNodeBId(personId)
-    }
-    setSelectionMode('none')
-    setSelectedPersonId(personId)
-  }, [])
 
   const handlePersonPointerEnter = useCallback(
     (personId: string, event: React.PointerEvent<SVGGElement>) => {
@@ -565,8 +592,17 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   const personB = nodeBId ? graph.peopleById[nodeBId] ?? null : null
   const isSelectingA = selectionMode === 'selectA'
   const isSelectingB = selectionMode === 'selectB'
+  const isSearchAssigningA = searchAssignTarget === 'A'
+  const isSearchAssigningB = searchAssignTarget === 'B'
   const personALabel = personA?.fullName ?? '—'
   const personBLabel = personB?.fullName ?? '—'
+  const isSelecting = selectionMode !== 'none'
+  const selectionMessage =
+    selectionMode === 'selectA'
+      ? 'Tap a person to set Person A'
+      : selectionMode === 'selectB'
+      ? 'Tap a person to set Person B'
+      : null
 
   const parentChildLinks = useMemo(() => {
     const links: Array<{
@@ -730,19 +766,6 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     return lines
   }, [graph.people, graph.peopleById, graph.personToUnitId, graph.unitsById, personGeometries])
 
-  const handleTooltip = (person: Person, event: React.PointerEvent) => {
-    setTooltip({ person, clientX: event.clientX, clientY: event.clientY })
-  }
-
-  const updateTooltipPosition = (event: React.PointerEvent) => {
-    setTooltip((current) => {
-      if (!current) return current
-      return { ...current, clientX: event.clientX, clientY: event.clientY }
-    })
-  }
-
-  const clearTooltip = () => setTooltip(null)
-
   const handlePersonClick = (
     personId: string,
     event: React.PointerEvent<SVGGElement> | React.MouseEvent<SVGGElement>,
@@ -750,16 +773,12 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     event.stopPropagation()
 
     if (selectionMode === 'selectA') {
-      setNodeAId(personId)
-      setSelectionMode('none')
-      setSelectedPersonId(personId)
+      assignPersonToRole(personId, 'A')
       return
     }
 
     if (selectionMode === 'selectB') {
-      setNodeBId(personId)
-      setSelectionMode('none')
-      setSelectedPersonId(personId)
+      assignPersonToRole(personId, 'B')
       return
     }
 
@@ -795,7 +814,18 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   }
 
   return (
-    <div className="relative h-full w-full bg-black text-white">
+    <div
+      className={`relative h-full w-full bg-black text-white ${
+        isSelecting ? 'ring-2 ring-white/40 ring-offset-4 ring-offset-black' : ''
+      }`}
+    >
+      {selectionMessage && (
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-40 flex justify-center pt-4">
+          <div className="rounded-full border border-white/30 bg-black/70 px-4 py-2 text-[10px] uppercase tracking-[0.3em] text-white">
+            {selectionMessage}
+          </div>
+        </div>
+      )}
       <svg
         ref={svgRef}
         className="h-full w-full touch-none select-none"
@@ -938,7 +968,6 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
 
             const detailContent = detailLines.length > 0 ? detailLines : ['Details unavailable']
             const showDetailLines = isTouchExpanded || isSelected
-            const showActionButtons = isTouchExpanded || isHovered || isSelected
 
             return (
               <g
@@ -951,12 +980,9 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
                 onClick={(event) => handlePersonClick(person.id, event)}
                 onPointerEnter={(event) => {
                   handlePersonPointerEnter(person.id, event)
-                  handleTooltip(person, event)
                 }}
-                onPointerMove={updateTooltipPosition}
                 onPointerLeave={() => {
                   handlePersonPointerLeave(person.id)
-                  clearTooltip()
                 }}
                 style={{ opacity: personDimmed ? 0.3 : 1 }}
               >
@@ -1024,63 +1050,11 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
                     ))}
                   </text>
                 )}
-                {showActionButtons && (
-                  <g transform={`translate(${width / 2 - 60}, ${height - 32})`}>
-                    {(['A', 'B'] as const).map((role, index) => {
-                      const isActive = role === 'A' ? personIsA : personIsB
-                      const translateX = index * 70
-                      return (
-                        <g
-                          key={role}
-                          transform={`translate(${translateX}, 0)`}
-                          onClick={(event) => {
-                            event.stopPropagation()
-                            handleSelectPersonRole(person.id, role)
-                          }}
-                          className="cursor-pointer"
-                        >
-                          <rect
-                            width={58}
-                            height={24}
-                            rx={12}
-                            fill={withAlpha(branchColor, isActive ? 0.55 : 0.25)}
-                            stroke={withAlpha(branchColor, isActive ? 0.85 : 0.4)}
-                            strokeWidth={isActive ? 2 : 1.4}
-                          />
-                          <text
-                            x={29}
-                            y={16}
-                            textAnchor="middle"
-                            className="fill-white text-[11px] font-semibold tracking-wide"
-                          >
-                            {role === 'A' ? 'Set A' : 'Set B'}
-                          </text>
-                        </g>
-                      )
-                    })}
-                  </g>
-                )}
               </g>
             )
           })}
         </g>
       </svg>
-
-      {tooltip && (
-        <div
-          className="pointer-events-none absolute z-50 rounded-lg border border-white/20 bg-black px-3 py-2 text-xs text-white shadow-[0_12px_32px_rgba(0,0,0,0.65)]"
-          style={{ left: tooltip.clientX + 16, top: tooltip.clientY + 16 }}
-        >
-          <div className="font-semibold">{tooltip.person.fullName}</div>
-          <div className="mt-1 space-y-1">
-            {tooltipLines(tooltip.person, graph)
-              .slice(1)
-              .map((line) => (
-              <div key={line}>{line}</div>
-            ))}
-          </div>
-        </div>
-      )}
 
       <div
         className={`pointer-events-none absolute z-30 ${
@@ -1119,7 +1093,10 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
           {isMobile ? (
             <button
               type="button"
-              onClick={openControlSheet}
+              onClick={() => {
+                openControlSheet()
+                focusSearchInput()
+              }}
               className="mt-3 w-full rounded-full border border-white/20 bg-white/10 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-white transition hover:bg-white/20"
             >
               Search &amp; Select
@@ -1195,6 +1172,11 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
                   Search
                 </button>
               </form>
+              {searchAssignTarget && !isMobile && (
+                <div className="mt-2 rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-white/80">
+                  Assigning to Person {searchAssignTarget}
+                </div>
+              )}
               {searchFeedback && (
                 <div className="mt-2 rounded-full border border-white/20 bg-black px-3 py-1 text-[11px] text-white">
                   {searchFeedback}
@@ -1337,7 +1319,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
           >
             <div className="rounded-t-3xl border border-white/20 bg-black/90 px-5 pb-6 pt-4 shadow-[0_-12px_40px_rgba(0,0,0,0.7)] backdrop-blur">
               <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-white/20" />
-              <div className="space-y-4 text-xs text-white">
+              <div className="max-h-[65vh] space-y-4 overflow-y-auto pr-1 text-xs text-white">
                 <form className="flex w-full flex-wrap items-start gap-2" onSubmit={handleSearchSubmit}>
                   <div className="relative w-full flex-1">
                     <input
@@ -1407,6 +1389,11 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
                     Search
                   </button>
                 </form>
+                {searchAssignTarget && (
+                  <div className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-white/80">
+                    Assigning to Person {searchAssignTarget}
+                  </div>
+                )}
                 {searchFeedback && (
                   <div className="rounded-full border border-white/20 bg-black px-3 py-1 text-[11px] text-white">
                     {searchFeedback}
@@ -1423,13 +1410,28 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
                       <div className="text-[10px] uppercase tracking-[0.3em] text-white/60">Person A</div>
                       <div className="mt-1 text-sm font-semibold text-white">{personALabel}</div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => beginSelection('selectA')}
-                      className="rounded-full border border-white/25 bg-white/10 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.3em] text-white transition hover:bg-white/20"
-                    >
-                      {isSelectingA ? 'Selecting…' : 'Select'}
-                    </button>
+                  <div className="flex flex-col items-end gap-2">
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => beginSelection('selectA')}
+                        className="rounded-full border border-white/25 bg-white/10 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.3em] text-white transition hover:bg-white/20"
+                      >
+                        {isSelectingA ? 'Selecting…' : 'Select'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => startSearchAssignment('A')}
+                        className={`rounded-full px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.3em] transition ${
+                          isSearchAssigningA
+                            ? 'border border-white/50 bg-white/10 text-white'
+                            : 'border border-white/25 bg-black/40 text-white hover:bg-white/10'
+                        }`}
+                      >
+                        + Search
+                      </button>
+                    </div>
+                  </div>
                   </div>
 
                   <div
@@ -1441,13 +1443,28 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
                       <div className="text-[10px] uppercase tracking-[0.3em] text-white/60">Person B</div>
                       <div className="mt-1 text-sm font-semibold text-white">{personBLabel}</div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => beginSelection('selectB')}
-                      className="rounded-full border border-white/25 bg-white/10 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.3em] text-white transition hover:bg-white/20"
-                    >
-                      {isSelectingB ? 'Selecting…' : 'Select'}
-                    </button>
+                  <div className="flex flex-col items-end gap-2">
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => beginSelection('selectB')}
+                        className="rounded-full border border-white/25 bg-white/10 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.3em] text-white transition hover:bg-white/20"
+                      >
+                        {isSelectingB ? 'Selecting…' : 'Select'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => startSearchAssignment('B')}
+                        className={`rounded-full px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.3em] transition ${
+                          isSearchAssigningB
+                            ? 'border border-white/50 bg-white/10 text-white'
+                            : 'border border-white/25 bg-black/40 text-white hover:bg-white/10'
+                        }`}
+                      >
+                        + Search
+                      </button>
+                    </div>
+                  </div>
                   </div>
                 </div>
 
