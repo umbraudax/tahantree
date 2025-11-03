@@ -1452,10 +1452,8 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
                                   }}
                                 >
                                   <span className="text-sm font-semibold text-white">{person.fullName}</span>
-                                  <span className="flex flex-col items-center text-center text-[11px] uppercase tracking-[0.25em] text-white/60">
-                                    <span>{person.branch}</span>
-                                    <span>·</span>
-                                    <span>Gen {person.generation}</span>
+                                  <span className="text-[11px] uppercase tracking-[0.25em] text-white/60">
+                                    {person.branch} · Gen {person.generation}
                                   </span>
                                   {life && <span className="text-[11px] text-white/40">{life}</span>}
                                 </button>
@@ -1696,10 +1694,8 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
                                     }}
                                   >
                                     <span className="text-sm font-semibold text-white">{person.fullName}</span>
-                                    <span className="flex flex-col items-center text-center text-[11px] uppercase tracking-[0.25em] text-white/60">
-                                      <span>{person.branch}</span>
-                                      <span>·</span>
-                                      <span>Gen {person.generation}</span>
+                                    <span className="text-[11px] uppercase tracking-[0.25em] text-white/60">
+                                      {person.branch} · Gen {person.generation}
                                     </span>
                                     {life && <span className="text-[11px] text-white/40">{life}</span>}
                                   </button>
