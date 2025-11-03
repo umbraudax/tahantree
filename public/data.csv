@@ -57,7 +57,7 @@ ID,First,Last,Sex,Gen,Spouse,Divorced,Mother,Father,DOB,DOD,Branch
 56,Garrett,Homsany,M,4,,FALSE,14,12,,,Homsany
 57,Raymond,Karaty,M,4,58,FALSE,15,16,,,Homsany
 58,Dawn,Karaty,F,4,57,FALSE,,,,,Homsany
-59,Charlene,Karaty,F,4,,FALSE,15,16,,,Homsany
+59,Charlene,Karaty,F,4,,FALSE,15,16,7/22/1970,,Homsany
 60,Steve,Karaty,M,4,61,FALSE,15,16,9/24/1971,,Homsany
 61,Laura,Karaty,F,4,60,FALSE,,,1/24/1972,,Homsany
 62,Brad,Marmo,M,4,63,FALSE,17,18,,,Homsany
@@ -114,7 +114,7 @@ ID,First,Last,Sex,Gen,Spouse,Divorced,Mother,Father,DOB,DOD,Branch
 113,Jenna,Karaty,F,5,,FALSE,58,57,,,Homsany
 114,Ethan,Karaty,M,5,,FALSE,58,57,,,Homsany
 115,Evan,Karaty,M,5,,FALSE,58,57,,,Homsany
-116,Shawn,Karaty,M,5,,FALSE,59,,,,Homsany
+116,Shawn,Karaty,M,5,,FALSE,59,,4/21/2006,,Homsany
 117,Kayla,Karaty,F,5,,FALSE,61,60,10/6/1999,,Homsany
 118,Ryan,Karaty,M,5,,FALSE,61,60,2/7/2001,,Homsany
 119,Troy,Karaty,M,5,,FALSE,61,60,2/7/2001,,Homsany

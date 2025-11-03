@@ -39,6 +39,165 @@ const parseSex = (value?: string): PersonSex => {
   return 'unknown'
 }
 
+const buildFullName = (firstName: string, lastName: string, suffix?: string): string => {
+  const base = `${firstName}${lastName ? ` ${lastName}` : ''}`.trim()
+  return suffix ? `${base} ${suffix}` : base
+}
+
+const toRomanNumeral = (value: number): string => {
+  if (value <= 0) return ''
+  const numerals: Array<{ value: number; symbol: string }> = [
+    { value: 1000, symbol: 'M' },
+    { value: 900, symbol: 'CM' },
+    { value: 500, symbol: 'D' },
+    { value: 400, symbol: 'CD' },
+    { value: 100, symbol: 'C' },
+    { value: 90, symbol: 'XC' },
+    { value: 50, symbol: 'L' },
+    { value: 40, symbol: 'XL' },
+    { value: 10, symbol: 'X' },
+    { value: 9, symbol: 'IX' },
+    { value: 5, symbol: 'V' },
+    { value: 4, symbol: 'IV' },
+    { value: 1, symbol: 'I' },
+  ]
+
+  let remainder = value
+  let result = ''
+
+  for (const numeral of numerals) {
+    while (remainder >= numeral.value) {
+      result += numeral.symbol
+      remainder -= numeral.value
+    }
+    if (remainder === 0) break
+  }
+
+  return result
+}
+
+const getSuffixForRank = (rank: number): string | null => {
+  if (rank === 0) return 'Sr.'
+  if (rank === 1) return 'Jr.'
+  const numeral = toRomanNumeral(rank + 1)
+  return numeral ? numeral : null
+}
+
+const parseDateValue = (value?: string): number | null => {
+  if (!value) return null
+  const parsed = Date.parse(value)
+  if (Number.isNaN(parsed)) return null
+  return parsed
+}
+
+const compareBySeniority = (left: Person, right: Person): number => {
+  if (left.generation !== right.generation) {
+    return left.generation - right.generation
+  }
+
+  const leftDob = parseDateValue(left.dob)
+  const rightDob = parseDateValue(right.dob)
+
+  const leftHasDob = leftDob !== null
+  const rightHasDob = rightDob !== null
+
+  if (leftHasDob && rightHasDob && leftDob !== rightDob) {
+    return leftDob - rightDob
+  }
+
+  if (leftHasDob && !rightHasDob) return -1
+  if (!leftHasDob && rightHasDob) return 1
+
+  return left.numericId - right.numericId
+}
+
+const assignNameSuffixes = (people: Person[]): void => {
+  const groups = new Map<string, Person[]>()
+
+  for (const person of people) {
+    const key = `${person.firstName.toLowerCase()}|${person.lastName.toLowerCase()}`
+    let group = groups.get(key)
+    if (!group) {
+      group = []
+      groups.set(key, group)
+    }
+    group.push(person)
+  }
+
+  for (const group of groups.values()) {
+    if (group.length <= 1) continue
+
+    const idsInGroup = new Set(group.map((person) => person.id))
+    const adjacency = new Map<string, Set<string>>()
+    const lookup = new Map(group.map((person) => [person.id, person] as const))
+
+    const ensureAdjacency = (id: string) => {
+      if (!adjacency.has(id)) {
+        adjacency.set(id, new Set())
+      }
+    }
+
+    for (const person of group) {
+      for (const parentId of [person.fatherId, person.motherId]) {
+        if (!parentId) continue
+        if (!idsInGroup.has(parentId)) continue
+
+        ensureAdjacency(person.id)
+        ensureAdjacency(parentId)
+
+        adjacency.get(person.id)!.add(parentId)
+        adjacency.get(parentId)!.add(person.id)
+      }
+    }
+
+    const visited = new Set<string>()
+
+    for (const person of group) {
+      if (visited.has(person.id)) continue
+
+      if (!adjacency.has(person.id)) {
+        visited.add(person.id)
+        continue
+      }
+
+      const stack: string[] = [person.id]
+      const component: Person[] = []
+
+      while (stack.length > 0) {
+        const currentId = stack.pop()!
+        if (visited.has(currentId)) continue
+        visited.add(currentId)
+
+        const currentPerson = lookup.get(currentId)
+        if (!currentPerson) continue
+        component.push(currentPerson)
+
+        const neighbors = adjacency.get(currentId)
+        if (!neighbors) continue
+
+        for (const neighborId of neighbors) {
+          if (!visited.has(neighborId)) {
+            stack.push(neighborId)
+          }
+        }
+      }
+
+      if (component.length <= 1) {
+        continue
+      }
+
+      component.sort(compareBySeniority)
+
+      component.forEach((member, index) => {
+        const suffix = getSuffixForRank(index)
+        if (!suffix) return
+        member.suffix = suffix
+        member.fullName = buildFullName(member.firstName, member.lastName, member.suffix)
+      })
+    }
+  }
+}
+
 const toPerson = (row: RawRow): Person | null => {
   const id = cleanValue(row.ID)
   if (!id) return null
@@ -60,7 +219,7 @@ const toPerson = (row: RawRow): Person | null => {
     numericId: Number.parseInt(id, 10),
     firstName,
     lastName,
-    fullName: `${firstName}${lastName ? ` ${lastName}` : ''}`.trim(),
+    fullName: buildFullName(firstName, lastName),
     sex,
     generation: Number.isFinite(generation) ? generation : 0,
     spouseId,
@@ -233,6 +392,8 @@ export const loadFamilyGraph = async (url = DATA_URL): Promise<FamilyGraph> => {
     people.push(person)
     peopleById[person.id] = person
   }
+
+  assignNameSuffixes(people)
 
   const units = new Map<string, FamilyUnit>()
   const personToUnit = new Map<string, string>()

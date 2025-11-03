@@ -131,6 +131,31 @@ const formatLifeSpan = (person: Person): string | null => {
   return dob ? `Born ${dob}` : `Died ${dod}`
 }
 
+const parseDateString = (value?: string): Date | null => {
+  if (!value) return null
+  const timestamp = Date.parse(value)
+  if (Number.isNaN(timestamp)) return null
+  return new Date(timestamp)
+}
+
+const calculateAge = (person: Person): number | null => {
+  const birthDate = parseDateString(person.dob)
+  if (!birthDate) return null
+
+  const endDate = parseDateString(person.dod) ?? new Date()
+  if (endDate < birthDate) return null
+
+  let age = endDate.getFullYear() - birthDate.getFullYear()
+  const beforeBirthday =
+    endDate.getMonth() < birthDate.getMonth() ||
+    (endDate.getMonth() === birthDate.getMonth() && endDate.getDate() < birthDate.getDate())
+  if (beforeBirthday) {
+    age -= 1
+  }
+
+  return age >= 0 ? age : null
+}
+
 // const getSexLabel = (sex: Person['sex']): string => {
 //   switch (sex) {
 //     case 'male':
@@ -562,9 +587,36 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       highlightPeople.add(personId)
     }
 
+    const maybeAddCurrentSpouse = (person: Person) => {
+      const spouseId = person.spouseId
+      if (!spouseId) return
+
+      const spouse = graph.peopleById[spouseId]
+      if (!spouse) return
+
+      let bondType: 'married' | 'divorced' | undefined
+      const unitId = graph.personToUnitId[person.id]
+      if (unitId) {
+        const unit = graph.unitsById[unitId]
+        const bond = unit?.spouseBond
+        if (bond && bond.partnerIds.includes(person.id) && bond.partnerIds.includes(spouseId)) {
+          bondType = bond.type
+        }
+      }
+
+      const isCurrentSpouse = bondType
+        ? bondType === 'married'
+        : !person.divorced && !spouse.divorced
+
+      if (!isCurrentSpouse) return
+
+      highlightPeople.add(spouseId)
+    }
+
     highlightPeople.add(selected.id)
     maybeAddPerson(selected.motherId)
     maybeAddPerson(selected.fatherId)
+    maybeAddCurrentSpouse(selected)
 
     const parentIds = [selected.motherId, selected.fatherId].filter((value): value is string => Boolean(value))
     for (const parentId of parentIds) {
@@ -591,7 +643,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     }
 
     return { highlightPeople, highlightUnits }
-  }, [highlightSourceId, graph.peopleById, graph.personToUnitId, childrenByParentId])
+  }, [highlightSourceId, graph.peopleById, graph.personToUnitId, graph.unitsById, childrenByParentId])
 
   const highlightActive = Boolean(hoveredPersonId)
 
@@ -600,10 +652,28 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     if (!highlightContext) return new Map<string, string>()
 
     const labels = new Map<string, string>()
+    const hoveredPerson: Person | undefined = graph.peopleById[hoveredPersonId]
     for (const personId of highlightContext.highlightPeople) {
       if (personId === hoveredPersonId) continue
-      if (!graph.peopleById[personId]) continue
-      labels.set(personId, describeRelationship(graph, personId, hoveredPersonId))
+      const person: Person | undefined = graph.peopleById[personId]
+      if (!person) continue
+
+      let label = describeRelationship(graph, personId, hoveredPersonId)
+      const isSpousePair =
+        person.spouseId === hoveredPersonId || hoveredPerson?.spouseId === personId
+
+      if (isSpousePair) {
+        const normalized = label.toLowerCase()
+        if (normalized === 'husband' || normalized === 'wife' || normalized === 'spouse') {
+          const divorced = person.divorced || hoveredPerson?.divorced
+          if (divorced) {
+            const capitalized = label.charAt(0).toUpperCase() + label.slice(1)
+            label = `Former ${capitalized}`
+          }
+        }
+      }
+
+      labels.set(personId, label)
     }
 
     return labels
@@ -1504,6 +1574,34 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
 
             const relationshipLabel = hoverRelationshipLabels.get(person.id) ?? null
 
+            const rawDob = person.dob ?? ''
+            const rawDod = person.dod ?? ''
+            const hasDob = rawDob.trim().length > 0
+            const hasDod = rawDod.trim().length > 0
+            const birthDisplay = hasDob ? rawDob : 'Birth Date'
+            const ageYears = calculateAge(person)
+            const ageDisplay = ageYears !== null ? `${ageYears}` : null
+            const nameY = 32
+            const setLabelY = Math.max(16, nameY - 16)
+            const infoLineStartY = nameY + 28
+            const infoLineSpacing = 14
+            const infoLines: Array<{ key: string; text: string }> = []
+            if (ageDisplay) {
+              infoLines.push({ key: 'age', text: ageDisplay })
+              infoLines.push({ key: 'dot', text: '·' })
+            }
+            infoLines.push({ key: 'birth', text: birthDisplay })
+            if (hasDod) {
+              infoLines.push({ key: 'dash', text: '—' })
+              infoLines.push({ key: 'death', text: rawDod })
+            }
+            const relationshipLabelY = Math.max(nameY + 44, height / 2 - 16)
+            const generationBadgeRadius = 20
+            const generationBadgeCx = width
+            const generationBadgeCy = height
+            const generationBadgeTextX = width - generationBadgeRadius * 0.45
+            const generationBadgeTextY = height - generationBadgeRadius * 0.45
+
             const parents: string[] = []
             if (person.fatherId) {
               const father = graph.peopleById[person.fatherId]
@@ -1570,7 +1668,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
                     />
                     <text
                       x={hoveredHalf === 'left' ? width / 4 : (width * 3) / 4}
-                      y={height - 18}
+                      y={setLabelY}
                       textAnchor="middle"
                       className="fill-white text-[11px] font-semibold uppercase tracking-[0.25em]"
                     >
@@ -1578,28 +1676,39 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
                     </text>
                   </g>
                 )}
+                <g style={{ pointerEvents: 'none' }} clipPath={`url(#${clipPathId})`}>
+                  <circle
+                    cx={generationBadgeCx}
+                    cy={generationBadgeCy}
+                    r={generationBadgeRadius}
+                    fill="rgba(0, 0, 0, 0.82)"
+                    stroke={withAlpha(branchColor, 0.55)}
+                    strokeWidth={1.2}
+                  />
+                  <text
+                    x={generationBadgeTextX}
+                    y={generationBadgeTextY}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    className="fill-white text-[12px] font-semibold"
+                  >
+                    {person.generation}
+                  </text>
+                </g>
                 <text
                   x={width / 2}
-                  y={34}
+                  y={nameY}
                   textAnchor="middle"
-                  className="fill-white text-[16px] font-semibold tracking-wide"
+                  className="fill-white text-[15px] font-semibold tracking-wide"
                   opacity={textOpacity}
+                  style={{ letterSpacing: '0.02em' }}
                 >
                   {person.fullName}
-                </text>
-                <text
-                  x={width / 2}
-                  y={52}
-                  textAnchor="middle"
-                  className="fill-white text-[12px] tracking-wide"
-                  opacity={textOpacity}
-                >
-                  Birth/Death Date
                 </text>
                 {relationshipLabel ? (
                   <text
                     x={width / 2}
-                    y={86}
+                    y={relationshipLabelY}
                     textAnchor="middle"
                     className="fill-white text-[11px] uppercase tracking-[0.3em]"
                     opacity={textOpacity}
@@ -1607,35 +1716,19 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
                     {relationshipLabel}
                   </text>
                 ) : (
-                  <>
-                <text
-                  x={width / 2}
-                  y={72}
-                  textAnchor="middle"
-                  className="fill-white text-[11px] uppercase tracking-[0.3em]"
-                  opacity={textOpacity}
-                >
-                  {person.branch}
-                </text>
-                <text
-                  x={width / 2}
-                  y={86}
-                  textAnchor="middle"
-                  className="fill-white text-[11px] uppercase"
-                  opacity={textOpacity}
-                >
-                  ·
-                </text>
-                <text
-                  x={width / 2}
-                  y={100}
-                  textAnchor="middle"
-                  className="fill-white text-[11px] uppercase tracking-[0.3em]"
-                  opacity={textOpacity}
-                >
-                  Gen {person.generation}
-                </text>
-                  </>
+                  infoLines.map((line, index) => (
+                    <text
+                      key={line.key}
+                      x={width / 2}
+                      y={infoLineStartY + infoLineSpacing * index}
+                      textAnchor="middle"
+                      className="fill-white text-[11px] uppercase tracking-[0.3em]"
+                      opacity={textOpacity}
+
+                    >
+                      {line.text}
+                    </text>
+                  ))
                 )}
                 {(personIsA || personIsB) && (
                   <g transform={`translate(${width - 42}, 12)`}>
