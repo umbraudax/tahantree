@@ -235,6 +235,8 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     if (!svgElement) return
 
     const activePointers = new Set<number>()
+    const edgeGuardPointers = new Set<number>()
+    const EDGE_GUARD_PX = 72
     let restore: {
       htmlTouchAction: string
       bodyTouchAction: string
@@ -242,8 +244,22 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       bodyOverscrollBehavior: string
     } | null = null
 
+    const listenerOptions: AddEventListenerOptions = { passive: false, capture: true }
+
     const preventTouchMove = (event: TouchEvent) => {
-      if (activePointers.size === 0) return
+      if (activePointers.size === 0 && edgeGuardPointers.size === 0) return
+      event.preventDefault()
+    }
+
+    const preventEdgeTouchStart = (event: TouchEvent) => {
+      if (!svgElement.contains(event.target as Node)) return
+      const touch = event.changedTouches[0]
+      if (!touch) return
+      const viewportWidth = window.innerWidth || svgElement.getBoundingClientRect().width || 0
+      const isNearEdge =
+        touch.clientX <= EDGE_GUARD_PX || (viewportWidth > 0 && touch.clientX >= viewportWidth - EDGE_GUARD_PX)
+      if (!isNearEdge) return
+      lockInteractions()
       event.preventDefault()
     }
 
@@ -261,7 +277,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       bodyElement.style.touchAction = 'none'
       htmlElement.style.overscrollBehavior = 'contain'
       bodyElement.style.overscrollBehavior = 'contain'
-      document.addEventListener('touchmove', preventTouchMove, { passive: false })
+      document.addEventListener('touchmove', preventTouchMove, listenerOptions)
     }
 
     const releaseInteractions = () => {
@@ -273,38 +289,75 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       htmlElement.style.overscrollBehavior = restore.htmlOverscrollBehavior
       bodyElement.style.overscrollBehavior = restore.bodyOverscrollBehavior
       restore = null
-      document.removeEventListener('touchmove', preventTouchMove)
+      edgeGuardPointers.clear()
+      document.removeEventListener('touchmove', preventTouchMove, listenerOptions)
     }
 
     const handlePointerDown = (event: PointerEvent) => {
       if (event.pointerType !== 'touch') return
-      activePointers.add(event.pointerId)
       lockInteractions()
+      const viewportWidth = window.innerWidth || svgElement.getBoundingClientRect().width || 0
+      const isNearEdge =
+        event.clientX <= EDGE_GUARD_PX || (viewportWidth > 0 && event.clientX >= viewportWidth - EDGE_GUARD_PX)
+      if (isNearEdge) {
+        edgeGuardPointers.add(event.pointerId)
+        event.preventDefault()
+      }
+      activePointers.add(event.pointerId)
+      if (svgElement.setPointerCapture) {
+        try {
+          svgElement.setPointerCapture(event.pointerId)
+        } catch {
+          // Ignore capture errors
+        }
+      }
+    }
+
+    const handlePointerMove = (event: PointerEvent) => {
+      if (event.pointerType !== 'touch') return
+      if (edgeGuardPointers.has(event.pointerId)) {
+        event.preventDefault()
+      }
     }
 
     const handlePointerRelease = (event: PointerEvent) => {
       if (event.pointerType !== 'touch') return
       activePointers.delete(event.pointerId)
+      edgeGuardPointers.delete(event.pointerId)
+      if (svgElement.hasPointerCapture && svgElement.hasPointerCapture(event.pointerId)) {
+        try {
+          svgElement.releasePointerCapture(event.pointerId)
+        } catch {
+          // Ignore release errors
+        }
+      }
       if (activePointers.size === 0) {
         releaseInteractions()
       }
     }
 
     svgElement.addEventListener('pointerdown', handlePointerDown)
+    svgElement.addEventListener('pointermove', handlePointerMove)
     svgElement.addEventListener('pointerup', handlePointerRelease)
     svgElement.addEventListener('pointercancel', handlePointerRelease)
     svgElement.addEventListener('pointerleave', handlePointerRelease)
+    svgElement.addEventListener('touchstart', preventEdgeTouchStart, listenerOptions)
+    window.addEventListener('pointermove', handlePointerMove)
     window.addEventListener('pointerup', handlePointerRelease)
     window.addEventListener('pointercancel', handlePointerRelease)
 
     return () => {
       svgElement.removeEventListener('pointerdown', handlePointerDown)
+      svgElement.removeEventListener('pointermove', handlePointerMove)
       svgElement.removeEventListener('pointerup', handlePointerRelease)
       svgElement.removeEventListener('pointercancel', handlePointerRelease)
       svgElement.removeEventListener('pointerleave', handlePointerRelease)
+      svgElement.removeEventListener('touchstart', preventEdgeTouchStart, listenerOptions)
+      window.removeEventListener('pointermove', handlePointerMove)
       window.removeEventListener('pointerup', handlePointerRelease)
       window.removeEventListener('pointercancel', handlePointerRelease)
       activePointers.clear()
+      edgeGuardPointers.clear()
       releaseInteractions()
     }
   }, [isMobile])
@@ -749,6 +802,19 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     [assignPersonToRole, focusSearchInput, graph.peopleById, lastSearchResultId],
   )
 
+  const zoomByFactor = useCallback((factor: number) => {
+    if (!svgRef.current || !zoomBehaviorRef.current) return
+    select(svgRef.current).call(zoomBehaviorRef.current.scaleBy as never, factor)
+  }, [])
+
+  const resetView = useCallback(() => {
+    if (!svgRef.current || !zoomBehaviorRef.current) return
+    select(svgRef.current).call(
+      zoomBehaviorRef.current.transform as never,
+      initialTransformRef.current,
+    )
+  }, [])
+
   useEffect(() => {
     if (isMobile) return
     if (typeof window === 'undefined' || typeof document === 'undefined') return
@@ -794,6 +860,12 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
         clearSelections()
         return
       }
+
+      if (key === 'r' || key === 'R') {
+        event.preventDefault()
+        resetView()
+        return
+      }
     }
 
     window.addEventListener('keydown', handleGlobalShortcut)
@@ -812,6 +884,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     setSearchFeedback,
     setSearchFocused,
     setSearchValue,
+    resetView,
   ])
 
   const handleSearchResultSelect = useCallback(
@@ -1209,18 +1282,6 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     [assignPersonToRole, selectionMode],
   )
 
-  const zoomByFactor = (factor: number) => {
-    if (!svgRef.current || !zoomBehaviorRef.current) return
-    select(svgRef.current).call(zoomBehaviorRef.current.scaleBy as never, factor)
-  }
-
-  const resetView = () => {
-    if (!svgRef.current || !zoomBehaviorRef.current) return
-    select(svgRef.current).call(
-      zoomBehaviorRef.current.transform as never,
-      initialTransformRef.current,
-    )
-  }
   if (!layout) {
     return (
       <div className="flex h-full items-center justify-center text-sm text-white">
