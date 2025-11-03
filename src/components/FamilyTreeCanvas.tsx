@@ -131,16 +131,16 @@ const formatLifeSpan = (person: Person): string | null => {
   return dob ? `Born ${dob}` : `Died ${dod}`
 }
 
-const getSexLabel = (sex: Person['sex']): string => {
-  switch (sex) {
-    case 'male':
-      return 'Male'
-    case 'female':
-      return 'Female'
-    default:
-      return 'Unknown'
-  }
-}
+// const getSexLabel = (sex: Person['sex']): string => {
+//   switch (sex) {
+//     case 'male':
+//       return 'Male'
+//     case 'female':
+//       return 'Female'
+//     default:
+//       return 'Unknown'
+//   }
+// }
 
 export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   const { isMobile, isTablet } = useBreakpoint()
