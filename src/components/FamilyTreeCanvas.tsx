@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { ChangeEvent, FormEvent } from 'react'
+import type { ChangeEvent, FormEvent, PointerEvent as ReactPointerEvent } from 'react'
 import { select } from 'd3-selection'
 import { zoom, zoomIdentity, type ZoomTransform } from 'd3-zoom'
 
@@ -24,6 +24,24 @@ const SPOUSE_LINK_PADDING = 12
 const SPOUSE_COLOR_MARRIED = '#d16bf6'
 const SPOUSE_COLOR_DIVORCED = '#ff4d6d'
 const SPOUSE_DASHARRAY_DIVORCED = '10 6'
+const sanitizeId = (value: string) => value.replace(/[^a-zA-Z0-9_-]/g, '-')
+
+type SelectionHalf = 'left' | 'right'
+
+const computeSelectionHalf = (event: ReactPointerEvent<SVGGElement>): SelectionHalf => {
+  const target = event.currentTarget as SVGGElement
+  const rect = target.getBoundingClientRect()
+  if (rect.width <= 0) {
+    return 'left'
+  }
+  const relativeX = event.clientX - rect.left
+  return relativeX <= rect.width / 2 ? 'left' : 'right'
+}
+
+const SELECTION_A_HOVER_FILL = 'rgba(16,185,129,0.38)'
+const SELECTION_B_HOVER_FILL = 'rgba(59,130,246,0.38)'
+const SELECTION_A_HOVER_FILL_ACTIVE = 'rgba(16,185,129,0.6)'
+const SELECTION_B_HOVER_FILL_ACTIVE = 'rgba(59,130,246,0.6)'
 
 interface Point {
   x: number
@@ -122,6 +140,35 @@ const getSexLabel = (sex: Person['sex']): string => {
   }
 }
 
+const tooltipLines = (person: Person, graph: FamilyGraph): string[] => {
+  const lines = [person.fullName]
+  const life = formatLifeSpan(person)
+  if (life) lines.push(life)
+  lines.push(getSexLabel(person.sex))
+
+  const parents: string[] = []
+  if (person.fatherId) {
+    const father = graph.peopleById[person.fatherId]
+    if (father) parents.push(father.fullName)
+  }
+  if (person.motherId) {
+    const mother = graph.peopleById[person.motherId]
+    if (mother) parents.push(mother.fullName)
+  }
+  if (parents.length > 0) {
+    lines.push(`Parents: ${parents.join(' & ')}`)
+  }
+
+  if (person.spouseId) {
+    const spouse = graph.peopleById[person.spouseId]
+    const spouseLabel = person.divorced ? 'Former spouse' : 'Spouse'
+    lines.push(`${spouseLabel}: ${spouse ? spouse.fullName : person.spouseId}`)
+  }
+
+  lines.push(`Branch: ${person.branch}`)
+  return lines
+}
+
 export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   const { isMobile, isTablet } = useBreakpoint()
   const layoutDensity = isMobile ? 'compact' : isTablet ? 'cozy' : 'default'
@@ -134,6 +181,10 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   const hasInitializedTransform = useRef(false)
   const touchExpandedRef = useRef<string | null>(null)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  const [tooltip, setTooltip] = useState<{ person: Person; clientX: number; clientY: number } | null>(null)
+  const [hoveredSelection, setHoveredSelection] = useState<{ personId: string; half: 'left' | 'right' } | null>(
+    null,
+  )
   const [searchValue, setSearchValue] = useState('')
   const [searchFeedback, setSearchFeedback] = useState<string | null>(null)
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null)
@@ -468,6 +519,32 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     [],
   )
 
+  const updateHoveredSelectionHalf = useCallback(
+    (personId: string, event: ReactPointerEvent<SVGGElement>) => {
+      if (event.pointerType === 'touch') return
+      const half = computeSelectionHalf(event)
+      setHoveredSelection({ personId, half })
+    },
+    [],
+  )
+
+  const handleTooltip = useCallback((person: Person, event: ReactPointerEvent<SVGGElement>) => {
+    if (event.pointerType === 'touch') return
+    setTooltip({ person, clientX: event.clientX, clientY: event.clientY })
+  }, [])
+
+  const updateTooltipPosition = useCallback((event: ReactPointerEvent<SVGGElement>) => {
+    if (event.pointerType === 'touch') return
+    setTooltip((current) => {
+      if (!current) return current
+      return { ...current, clientX: event.clientX, clientY: event.clientY }
+    })
+  }, [])
+
+  const clearTooltip = useCallback(() => {
+    setTooltip(null)
+  }, [])
+
   const focusSearchInput = useCallback(() => {
     if (typeof window === 'undefined') return
     window.requestAnimationFrame(() => {
@@ -547,14 +624,17 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     collapseAllDetails()
     setHoveredPersonId(null)
     setSearchAssignTarget(null)
+    setHoveredSelection(null)
+    setTooltip(null)
   }, [collapseAllDetails])
 
   const handlePersonPointerEnter = useCallback(
-    (personId: string, event: React.PointerEvent<SVGGElement>) => {
+    (personId: string, event: ReactPointerEvent<SVGGElement>) => {
       if (event.pointerType === 'touch') return
+      updateHoveredSelectionHalf(personId, event)
       setHoveredPersonId(personId)
     },
-    [setHoveredPersonId],
+    [setHoveredPersonId, updateHoveredSelectionHalf],
   )
 
   const handlePersonPointerLeave = useCallback(
@@ -562,12 +642,14 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       if (touchExpandedRef.current === personId) return
       collapsePerson(personId)
       setHoveredPersonId((current) => (current === personId ? null : current))
+      setHoveredSelection((current) => (current?.personId === personId ? null : current))
+      clearTooltip()
     },
-    [collapsePerson],
+    [collapsePerson, clearTooltip],
   )
 
   const handlePersonPointerDown = useCallback(
-    (personId: string, event: React.PointerEvent<SVGGElement>) => {
+    (personId: string, event: ReactPointerEvent<SVGGElement>) => {
       if (event.pointerType !== 'touch') return
 
       setExpanded(() => {
@@ -766,28 +848,42 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     return lines
   }, [graph.people, graph.peopleById, graph.personToUnitId, graph.unitsById, personGeometries])
 
-  const handlePersonClick = (
-    personId: string,
-    event: React.PointerEvent<SVGGElement> | React.MouseEvent<SVGGElement>,
-  ) => {
-    event.stopPropagation()
+  const handlePersonPointerUp = useCallback(
+    (personId: string, event: ReactPointerEvent<SVGGElement>) => {
+      event.stopPropagation()
 
-    if (selectionMode === 'selectA') {
-      assignPersonToRole(personId, 'A')
-      return
-    }
+      if (event.pointerType === 'touch') {
+        if (selectionMode === 'selectA') {
+          assignPersonToRole(personId, 'A')
+          return
+        }
 
-    if (selectionMode === 'selectB') {
-      assignPersonToRole(personId, 'B')
-      return
-    }
+        if (selectionMode === 'selectB') {
+          assignPersonToRole(personId, 'B')
+          return
+        }
 
-    if (selectedPersonId === personId) {
-      setSelectedPersonId(null)
-    } else {
-      setSelectedPersonId(personId)
-    }
-  }
+        setSelectedPersonId((current) => (current === personId ? null : personId))
+        return
+      }
+
+      if (selectionMode === 'selectA') {
+        assignPersonToRole(personId, 'A')
+        return
+      }
+
+      if (selectionMode === 'selectB') {
+        assignPersonToRole(personId, 'B')
+        return
+      }
+
+      const half = computeSelectionHalf(event)
+      const role = half === 'left' ? 'A' : 'B'
+      assignPersonToRole(personId, role)
+      setHoveredSelection({ personId, half })
+    },
+    [assignPersonToRole, selectionMode],
+  )
 
   const zoomByFactor = (factor: number) => {
     if (!svgRef.current || !zoomBehaviorRef.current) return
@@ -914,10 +1010,22 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
             const isTouchExpanded = expanded.has(person.id)
             const isHovered = hoveredPersonId === person.id
             const isSelected = selectedPersonId === person.id
-            const personHighlighted = highlightContext?.highlightPeople.has(person.id) ?? false
-            const personDimmed = highlightActive && !personHighlighted
+            const hoveredHalf = hoveredSelection?.personId === person.id ? hoveredSelection.half : null
+            const clipPathId = `person-card-clip-${sanitizeId(person.id)}`
             const personIsA = nodeAId === person.id
             const personIsB = nodeBId === person.id
+            const hoveredRole = hoveredHalf ? (hoveredHalf === 'left' ? 'A' : 'B') : null
+            const hoveredFill = hoveredRole
+              ? hoveredRole === 'A'
+                ? personIsA
+                  ? SELECTION_A_HOVER_FILL_ACTIVE
+                  : SELECTION_A_HOVER_FILL
+                : personIsB
+                ? SELECTION_B_HOVER_FILL_ACTIVE
+                : SELECTION_B_HOVER_FILL
+              : null
+            const personHighlighted = highlightContext?.highlightPeople.has(person.id) ?? false
+            const personDimmed = highlightActive && !personHighlighted
 
             const emphasisState = isTouchExpanded || isSelected
             const hoverEmphasis = isHovered && !emphasisState
@@ -967,7 +1075,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
             }
 
             const detailContent = detailLines.length > 0 ? detailLines : ['Details unavailable']
-            const showDetailLines = isTouchExpanded || isSelected
+            const showDetailLines = isTouchExpanded
 
             return (
               <g
@@ -977,15 +1085,25 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
                 onPointerDown={(event) => {
                   handlePersonPointerDown(person.id, event)
                 }}
-                onClick={(event) => handlePersonClick(person.id, event)}
                 onPointerEnter={(event) => {
                   handlePersonPointerEnter(person.id, event)
+                  handleTooltip(person, event)
+                }}
+                onPointerMove={(event) => {
+                  updateHoveredSelectionHalf(person.id, event)
+                  updateTooltipPosition(event)
                 }}
                 onPointerLeave={() => {
                   handlePersonPointerLeave(person.id)
                 }}
+                onPointerUp={(event) => handlePersonPointerUp(person.id, event)}
                 style={{ opacity: personDimmed ? 0.3 : 1 }}
               >
+                <defs>
+                  <clipPath id={clipPathId}>
+                    <rect width={width} height={height} rx={CORNER_RADIUS} />
+                  </clipPath>
+                </defs>
                 <rect
                   width={width}
                   height={height}
@@ -995,6 +1113,26 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
                   strokeWidth={strokeWidth}
                   filter={`url(#glow-${slugifyBranch(unit.branch)})`}
                 />
+                {hoveredHalf && hoveredRole && hoveredFill && (
+                  <g style={{ pointerEvents: 'none' }}>
+                    <rect
+                      x={hoveredHalf === 'left' ? 0 : width / 2}
+                      y={0}
+                      width={width / 2}
+                      height={height}
+                      fill={hoveredFill}
+                      clipPath={`url(#${clipPathId})`}
+                    />
+                    <text
+                      x={hoveredHalf === 'left' ? width / 4 : (width * 3) / 4}
+                      y={height - 18}
+                      textAnchor="middle"
+                      className="fill-white text-[11px] font-semibold uppercase tracking-[0.25em]"
+                    >
+                      Set {hoveredRole}
+                    </text>
+                  </g>
+                )}
                 <text
                   x={width / 2}
                   y={34}
@@ -1055,6 +1193,22 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
           })}
         </g>
       </svg>
+
+      {tooltip && (
+        <div
+          className="pointer-events-none absolute z-50 rounded-lg border border-white/20 bg-black px-3 py-2 text-xs text-white shadow-[0_12px_32px_rgba(0,0,0,0.65)]"
+          style={{ left: tooltip.clientX + 16, top: tooltip.clientY + 16 }}
+        >
+          <div className="font-semibold">{tooltip.person.fullName}</div>
+          <div className="mt-1 space-y-1">
+            {tooltipLines(tooltip.person, graph)
+              .slice(1)
+              .map((line) => (
+                <div key={line}>{line}</div>
+              ))}
+          </div>
+        </div>
+      )}
 
       <div
         className={`pointer-events-none absolute z-30 ${

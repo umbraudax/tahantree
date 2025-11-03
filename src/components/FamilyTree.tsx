@@ -52,7 +52,7 @@ const FamilyTree = () => {
               <span className="text-[11px] font-semibold uppercase tracking-[0.35em]">Family Overview</span>
               <span className="inline-flex min-w-[3.5rem] justify-end text-sm font-semibold text-white">
                 {data.people.length}
-              </span>
+                </span>
             </summary>
             <div className="mt-3 grid grid-cols-2 gap-3 text-white">
               {stats.map((stat) => (
@@ -62,11 +62,11 @@ const FamilyTree = () => {
                 >
                   <span className="text-[10px] font-semibold uppercase tracking-[0.3em] text-white/60">
                     {stat.label}
-                  </span>
+                </span>
                   <span className="text-base font-semibold text-white">{stat.value}</span>
-                </div>
+              </div>
               ))}
-            </div>
+              </div>
           </details>
 
           <div className="hidden items-center justify-center gap-5 text-white md:flex">
