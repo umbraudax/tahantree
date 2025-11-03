@@ -14,7 +14,6 @@ const tutorialSections = [
   {
     title: 'Understand each person',
     points: [
-      'Every card displays the person’s branch, generation, sex, and relation tags when assigned as Person A or B.',
       'Color glows reflect each branch. When you focus or hover someone, their parents, siblings, spouse, and children glow with them.',
     ],
   },
@@ -127,10 +126,6 @@ const App = () => {
             <div className="pr-3">
               <div className="mr-12 flex flex-col gap-3">
                 <h2 className="text-2xl font-semibold text-white">How to use the family tree</h2>
-                <p className="text-sm text-white/80">
-                  This guided tour covers every interactive control available today so you can confidently explore, search,
-                  and compare anyone in the Hamway &amp; Tahan family tree.
-                </p>
               </div>
             </div>
 
@@ -138,15 +133,6 @@ const App = () => {
               <div className="space-y-4 pr-3">{tutorialContent}</div>
             </div>
 
-            <div className="mt-6 flex flex-col gap-2 rounded-2xl border border-white/15 bg-white/5 px-5 py-4 text-sm text-white/80">
-              <div className="text-sm font-semibold uppercase tracking-[0.3em] text-white/70">
-                Tips
-              </div>
-              <p>
-                Need a refresher later? Tap the question mark button in the bottom-left corner anytime. The tutorial works on
-                both desktop and mobile, and you can close it with the × button or by tapping outside the panel.
-              </p>
-            </div>
           </div>
         </div>
       )}
