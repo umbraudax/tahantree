@@ -180,7 +180,6 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   const zoomBehaviorRef = useRef<ReturnType<typeof zoom<SVGSVGElement, unknown>> | null>(null)
   const initialTransformRef = useRef<ZoomTransform>(zoomIdentity)
   const hasInitializedTransform = useRef(false)
-  const touchExpandedRef = useRef<string | null>(null)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [tooltip, setTooltip] = useState<{ person: Person; clientX: number; clientY: number } | null>(null)
   const [hoveredSelection, setHoveredSelection] = useState<{ personId: string; half: 'left' | 'right' } | null>(
@@ -303,7 +302,6 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
 
   const collapseAllDetails = useCallback(() => {
     setExpanded(() => new Set())
-    touchExpandedRef.current = null
   }, [])
 
   const personGeometries = useMemo<Record<string, PersonGeometry>>(() => {
@@ -517,6 +515,15 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     }
   }
 
+  const handleSearchFocus = useCallback(() => {
+    setSearchFocused(true)
+    if (searchValue !== '') {
+      setSearchValue('')
+    }
+    setLastSearchResultId(null)
+    setSearchFeedback(null)
+  }, [searchValue])
+
   const openControlSheet = useCallback(() => {
     setControlSheetOpen(true)
   }, [])
@@ -682,28 +689,14 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   )
 
   const handlePersonPointerLeave = useCallback(
-    (personId: string) => {
-      if (touchExpandedRef.current === personId) return
+    (personId: string, event: ReactPointerEvent<SVGGElement>) => {
+      if (event.pointerType === 'touch') return
       collapsePerson(personId)
       setHoveredPersonId((current) => (current === personId ? null : current))
       setHoveredSelection((current) => (current?.personId === personId ? null : current))
       clearTooltip()
     },
     [collapsePerson, clearTooltip],
-  )
-
-  const handlePersonPointerDown = useCallback(
-    (personId: string, event: ReactPointerEvent<SVGGElement>) => {
-      if (event.pointerType !== 'touch') return
-
-      setExpanded(() => {
-        const next = new Set<string>()
-        next.add(personId)
-        return next
-      })
-      touchExpandedRef.current = personId
-    },
-    [],
   )
 
   const relationshipSummary = useMemo(() => {
@@ -902,15 +895,24 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       if (event.pointerType === 'touch') {
         if (selectionMode === 'selectA') {
           assignPersonToRole(personId, 'A')
+          setHoveredPersonId(personId)
+          setHoveredSelection(null)
+          setTooltip(null)
           return
         }
 
         if (selectionMode === 'selectB') {
           assignPersonToRole(personId, 'B')
+          setHoveredPersonId(personId)
+          setHoveredSelection(null)
+          setTooltip(null)
           return
         }
 
-        setSelectedPersonId((current) => (current === personId ? null : personId))
+        setHoveredPersonId(personId)
+        setHoveredSelection(null)
+        setSelectedPersonId(null)
+        setTooltip(null)
         return
       }
 
@@ -1130,16 +1132,13 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
             }
 
             const detailContent = detailLines.length > 0 ? detailLines : ['Details unavailable']
-            const showDetailLines = isTouchExpanded
+            const showDetailLines = !isMobile && isTouchExpanded
 
             return (
               <g
                 key={person.id}
                 transform={`translate(${bounds.left}, ${bounds.top})`}
                 className="pointer-events-auto cursor-pointer transition-transform"
-                onPointerDown={(event) => {
-                  handlePersonPointerDown(person.id, event)
-                }}
                 onPointerEnter={(event) => {
                   handlePersonPointerEnter(person.id, event)
                   handleTooltip(person, event)
@@ -1148,8 +1147,8 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
                   updateHoveredSelectionHalf(person.id, event)
                   updateTooltipPosition(event)
                 }}
-                onPointerLeave={() => {
-                  handlePersonPointerLeave(person.id)
+                onPointerLeave={(event) => {
+                  handlePersonPointerLeave(person.id, event)
                 }}
                 onPointerUp={(event) => handlePersonPointerUp(person.id, event)}
                 style={{ opacity: personDimmed ? 0.3 : 1 }}
@@ -1320,7 +1319,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
                     placeholder="Find a person"
                     value={searchValue}
                     onChange={handleSearchChange}
-                    onFocus={() => setSearchFocused(true)}
+                    onFocus={handleSearchFocus}
                     onBlur={(event) => {
                       const next = event.relatedTarget as Node | null
                       if (next && searchResultsRef.current?.contains(next)) {
@@ -1398,7 +1397,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       <button
         type="button"
         onClick={toggleLegend}
-        className="fixed right-4 top-4 z-50 rounded-full border border-white/20 bg-black/70 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.35em] text-white transition hover:bg-white/10 md:text-[11px]"
+        className={`fixed ${isMobile ? 'bottom-4 right-4' : 'right-4 top-4'} z-50 rounded-full border border-white/20 bg-black/70 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.35em] text-white transition hover:bg-white/10 md:text-[11px]`}
         aria-expanded={isLegendOpen}
         aria-controls="branch-legend-panel"
       >
@@ -1522,7 +1521,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
                       placeholder="Find a person"
                       value={searchValue}
                       onChange={handleSearchChange}
-                      onFocus={() => setSearchFocused(true)}
+                      onFocus={handleSearchFocus}
                       onBlur={(event) => {
                         const next = event.relatedTarget as Node | null
                         if (next && searchResultsRef.current?.contains(next)) {
