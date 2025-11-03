@@ -25,6 +25,7 @@ const SPOUSE_LINK_PADDING = 12
 const SPOUSE_COLOR_MARRIED = '#d16bf6'
 const SPOUSE_COLOR_DIVORCED = '#ff4d6d'
 const SPOUSE_DASHARRAY_DIVORCED = '10 6'
+const PARENT_CHILD_LINE_COLOR = '#ffffff33'
 const sanitizeId = (value: string) => value.replace(/[^a-zA-Z0-9_-]/g, '-')
 
 type SelectionHalf = 'left' | 'right'
@@ -193,10 +194,11 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   const [nodeBId, setNodeBId] = useState<string | null>(null)
   const [hoveredPersonId, setHoveredPersonId] = useState<string | null>(null)
   const [isControlSheetOpen, setControlSheetOpen] = useState(false)
-  const [isLegendOpen, setLegendOpen] = useState(!isMobile)
+  const [isLegendOpen, setLegendOpen] = useState(false)
   const [controlSheetDragOffset, setControlSheetDragOffset] = useState(0)
   const controlSheetDragState = useRef<{ pointerId: number | null; startY: number }>({ pointerId: null, startY: 0 })
   const controlSheetDragOffsetRef = useRef(0)
+  const overscrollRestoreRef = useRef<{ html: string; body: string } | null>(null)
   const [lastSearchResultId, setLastSearchResultId] = useState<string | null>(null)
   const searchInputRef = useRef<HTMLInputElement | null>(null)
   const searchResultsRef = useRef<HTMLDivElement | null>(null)
@@ -206,22 +208,12 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     if (isMobile) {
       setControlSheetOpen(false)
       setLegendOpen(false)
-    } else {
-      setLegendOpen(true)
     }
   }, [isMobile])
 
   useEffect(() => {
     if (!isMobile) {
       setControlSheetOpen(false)
-    }
-  }, [isMobile])
-
-  useEffect(() => {
-    if (isMobile) {
-      setLegendOpen(false)
-    } else {
-      setLegendOpen((current) => (current ? current : true))
     }
   }, [isMobile])
 
@@ -542,6 +534,37 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     controlSheetDragState.current = { pointerId: null, startY: 0 }
   }, [])
 
+  useEffect(() => {
+    if (!isMobile) return
+    if (typeof document === 'undefined') return
+
+    const htmlElement = document.documentElement
+    const bodyElement = document.body
+
+    if (isControlSheetOpen) {
+      if (!overscrollRestoreRef.current) {
+        overscrollRestoreRef.current = {
+          html: htmlElement.style.overscrollBehavior,
+          body: bodyElement.style.overscrollBehavior,
+        }
+      }
+      htmlElement.style.overscrollBehavior = 'contain'
+      bodyElement.style.overscrollBehavior = 'contain'
+    } else if (overscrollRestoreRef.current) {
+      htmlElement.style.overscrollBehavior = overscrollRestoreRef.current.html
+      bodyElement.style.overscrollBehavior = overscrollRestoreRef.current.body
+      overscrollRestoreRef.current = null
+    }
+
+    return () => {
+      if (overscrollRestoreRef.current) {
+        htmlElement.style.overscrollBehavior = overscrollRestoreRef.current.html
+        bodyElement.style.overscrollBehavior = overscrollRestoreRef.current.body
+        overscrollRestoreRef.current = null
+      }
+    }
+  }, [isControlSheetOpen, isMobile])
+
   const beginSelection = useCallback(
     (target: 'selectA' | 'selectB') => {
       setSelectionMode(target)
@@ -714,7 +737,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       if (controlSheetDragState.current.pointerId !== event.pointerId) return
       event.currentTarget.releasePointerCapture(event.pointerId)
       const offset = controlSheetDragOffsetRef.current
-      if (offset > 80) {
+      if (offset > 48) {
         closeControlSheet()
       } else {
         setControlSheetDragOffset(0)
@@ -1087,7 +1110,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
                 key={link.id}
                 d={link.d}
                 fill="none"
-                stroke="#ffffff33"
+                stroke={PARENT_CHILD_LINE_COLOR}
                 strokeOpacity={strokeOpacity}
                 strokeWidth={strokeWidth}
               />
@@ -1486,7 +1509,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
         }`}
       >
         <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.3em] text-white">
-          Branch legend
+          Branches
         </div>
         <div className="grid gap-2">
           {branchList.map((branch) => (
@@ -1498,6 +1521,34 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
               <span className="text-sm font-medium tracking-wide">{branch}</span>
             </div>
           ))}
+        </div>
+        <div className="mt-5 border-t border-white/15 pt-4">
+          <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.3em] text-white">
+            Connections
+          </div>
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <span
+                className="block h-1 w-12 rounded-full"
+                style={{ backgroundColor: SPOUSE_COLOR_MARRIED }}
+              />
+              <span className="text-sm font-medium tracking-wide">Current spouse</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span
+                className="block h-0 w-12 border-t-4 border-dashed"
+                style={{ borderColor: SPOUSE_COLOR_DIVORCED }}
+              />
+              <span className="text-sm font-medium tracking-wide">Divorced spouse</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span
+                className="block h-0 w-12 border-t-2"
+                style={{ borderColor: PARENT_CHILD_LINE_COLOR }}
+              />
+              <span className="text-sm font-medium tracking-wide">Children</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1595,6 +1646,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
                 onPointerMove={handleControlSheetDragMove}
                 onPointerUp={handleControlSheetDragEnd}
                 onPointerCancel={handleControlSheetDragCancel}
+                style={{ touchAction: 'none' }}
               />
               <div className="max-h-[65vh] space-y-4 overflow-y-auto pr-1 text-xs text-white">
                 <form className="flex w-full flex-wrap items-start gap-2" onSubmit={handleSearchSubmit}>
