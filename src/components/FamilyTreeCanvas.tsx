@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { ChangeEvent, FormEvent, PointerEvent as ReactPointerEvent } from 'react'
+import type { ChangeEvent, FormEvent, KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent } from 'react'
 import { select } from 'd3-selection'
 import { zoom, zoomIdentity, type ZoomTransform } from 'd3-zoom'
 
@@ -142,35 +142,6 @@ const getSexLabel = (sex: Person['sex']): string => {
   }
 }
 
-const tooltipLines = (person: Person, graph: FamilyGraph): string[] => {
-  const lines = [person.fullName]
-  const life = formatLifeSpan(person)
-  if (life) lines.push(life)
-  lines.push(getSexLabel(person.sex))
-
-  const parents: string[] = []
-  if (person.fatherId) {
-    const father = graph.peopleById[person.fatherId]
-    if (father) parents.push(father.fullName)
-  }
-  if (person.motherId) {
-    const mother = graph.peopleById[person.motherId]
-    if (mother) parents.push(mother.fullName)
-  }
-  if (parents.length > 0) {
-    lines.push(`Parents: ${parents.join(' & ')}`)
-  }
-
-  if (person.spouseId) {
-    const spouse = graph.peopleById[person.spouseId]
-    const spouseLabel = person.divorced ? 'Former spouse' : 'Spouse'
-    lines.push(`${spouseLabel}: ${spouse ? spouse.fullName : person.spouseId}`)
-  }
-
-  lines.push(`Branch: ${person.branch}`)
-  return lines
-}
-
 export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   const { isMobile, isTablet } = useBreakpoint()
   const layoutDensity = isMobile ? 'compact' : isTablet ? 'cozy' : 'default'
@@ -182,7 +153,6 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   const initialTransformRef = useRef<ZoomTransform>(zoomIdentity)
   const hasInitializedTransform = useRef(false)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
-  const [tooltip, setTooltip] = useState<{ person: Person; clientX: number; clientY: number } | null>(null)
   const [hoveredSelection, setHoveredSelection] = useState<{ personId: string; half: 'left' | 'right' } | null>(
     null,
   )
@@ -204,6 +174,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   const searchInputRef = useRef<HTMLInputElement | null>(null)
   const searchResultsRef = useRef<HTMLDivElement | null>(null)
   const [searchFocused, setSearchFocused] = useState(false)
+  const [searchActiveIndex, setSearchActiveIndex] = useState<number | null>(null)
 
   useEffect(() => {
     if (isMobile) {
@@ -264,6 +235,24 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       .sort((a, b) => a.fullName.localeCompare(b.fullName))
       .slice(0, 12)
   }, [graph.people, searchValue])
+
+  const trimmedSearchValue = searchValue.trim()
+  const showSearchResults = searchFocused && trimmedSearchValue.length > 0
+  const activeSearchResultId =
+    searchActiveIndex !== null ? searchMatches[searchActiveIndex]?.id ?? null : null
+
+  useEffect(() => {
+    if (!showSearchResults || searchMatches.length === 0) {
+      setSearchActiveIndex(null)
+      return
+    }
+
+    setSearchActiveIndex((current) => {
+      if (current === null) return 0
+      const maxIndex = searchMatches.length - 1
+      return current > maxIndex ? maxIndex : current
+    })
+  }, [searchMatches, showSearchResults])
 
 
   const childrenByParentId = useMemo<Record<string, string[]>>(() => {
@@ -474,6 +463,20 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
 
   const highlightActive = Boolean(hoveredPersonId)
 
+  const hoverRelationshipLabels = useMemo(() => {
+    if (!hoveredPersonId) return new Map<string, string>()
+    if (!highlightContext) return new Map<string, string>()
+
+    const labels = new Map<string, string>()
+    for (const personId of highlightContext.highlightPeople) {
+      if (personId === hoveredPersonId) continue
+      if (!graph.peopleById[personId]) continue
+      labels.set(personId, describeRelationship(graph, personId, hoveredPersonId))
+    }
+
+    return labels
+  }, [graph, highlightContext, hoveredPersonId])
+
   const centerOnPerson = useCallback(
     (personId: string) => {
       const svgElement = svgRef.current
@@ -509,6 +512,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     if (searchFeedback) {
       setSearchFeedback(null)
     }
+    setSearchActiveIndex(null)
   }
 
   const handleSearchFocus = useCallback(() => {
@@ -518,6 +522,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     }
     setLastSearchResultId(null)
     setSearchFeedback(null)
+    setSearchActiveIndex(null)
   }, [searchValue])
 
   const openControlSheet = useCallback(() => {
@@ -633,23 +638,6 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     [],
   )
 
-  const handleTooltip = useCallback((person: Person, event: ReactPointerEvent<SVGGElement>) => {
-    if (event.pointerType === 'touch') return
-    setTooltip({ person, clientX: event.clientX, clientY: event.clientY })
-  }, [])
-
-  const updateTooltipPosition = useCallback((event: ReactPointerEvent<SVGGElement>) => {
-    if (event.pointerType === 'touch') return
-    setTooltip((current) => {
-      if (!current) return current
-      return { ...current, clientX: event.clientX, clientY: event.clientY }
-    })
-  }, [])
-
-  const clearTooltip = useCallback(() => {
-    setTooltip(null)
-  }, [])
-
   const focusSearchInput = useCallback(() => {
     if (typeof window === 'undefined') return
     window.requestAnimationFrame(() => {
@@ -682,6 +670,71 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     [assignPersonToRole, focusSearchInput, graph.peopleById, lastSearchResultId],
   )
 
+  useEffect(() => {
+    if (isMobile) return
+    if (typeof window === 'undefined' || typeof document === 'undefined') return
+
+    const handleGlobalShortcut = (event: KeyboardEvent) => {
+      if (event.defaultPrevented) return
+      if (event.metaKey || event.ctrlKey || event.altKey) return
+
+      const activeElement = document.activeElement as HTMLElement | null
+      if (activeElement === searchInputRef.current) return
+      if (activeElement?.isContentEditable) return
+      if (activeElement && ['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(activeElement.tagName)) return
+
+      const key = event.key
+
+      if (key === ' ' || key === 'Spacebar') {
+        event.preventDefault()
+        setSearchValue('')
+        setSearchFeedback(null)
+        setLastSearchResultId(null)
+        setSearchFocused(true)
+        setSearchActiveIndex(null)
+        focusSearchInput()
+        return
+      }
+
+      if (key === 'a' || key === 'A') {
+        if (!lastSearchResultId) return
+        event.preventDefault()
+        assignLastSearchResultToRole('A')
+        return
+      }
+
+      if (key === 'b' || key === 'B') {
+        if (!lastSearchResultId) return
+        event.preventDefault()
+        assignLastSearchResultToRole('B')
+        return
+      }
+
+      if (key === 'c' || key === 'C') {
+        event.preventDefault()
+        clearSelections()
+        return
+      }
+    }
+
+    window.addEventListener('keydown', handleGlobalShortcut)
+
+    return () => {
+      window.removeEventListener('keydown', handleGlobalShortcut)
+    }
+  }, [
+    assignLastSearchResultToRole,
+    clearSelections,
+    focusSearchInput,
+    isMobile,
+    lastSearchResultId,
+    setLastSearchResultId,
+    setSearchActiveIndex,
+    setSearchFeedback,
+    setSearchFocused,
+    setSearchValue,
+  ])
+
   const handleSearchResultSelect = useCallback(
     (person: Person) => {
       setSearchValue(person.fullName)
@@ -689,11 +742,53 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       setSearchFeedback(null)
       centerOnPerson(person.id)
       setSearchFocused(false)
+      setSearchActiveIndex(null)
       searchInputRef.current?.blur()
 
       setSelectedPersonId(person.id)
     },
     [centerOnPerson],
+  )
+
+  const handleSearchInputKeyDown = useCallback(
+    (event: ReactKeyboardEvent<HTMLInputElement>) => {
+      if (event.defaultPrevented) return
+
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        setSearchFocused(false)
+        setSearchActiveIndex(null)
+        searchInputRef.current?.blur()
+        return
+      }
+
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        if (!showSearchResults || searchMatches.length === 0) return
+        event.preventDefault()
+        setSearchActiveIndex((current) => {
+          const count = searchMatches.length
+          if (count === 0) return null
+          if (current === null) {
+            return event.key === 'ArrowDown' ? 0 : count - 1
+          }
+          if (event.key === 'ArrowDown') {
+            return (current + 1) % count
+          }
+          return (current - 1 + count) % count
+        })
+        return
+      }
+
+      if (event.key === 'Enter') {
+        if (!showSearchResults || searchMatches.length === 0) return
+        const index = searchActiveIndex ?? 0
+        const match = searchMatches[index]
+        if (!match) return
+        event.preventDefault()
+        handleSearchResultSelect(match)
+      }
+    },
+    [handleSearchResultSelect, searchActiveIndex, searchMatches, showSearchResults],
   )
 
   const handleSearchSubmit = useCallback(
@@ -705,7 +800,10 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
         return
       }
 
-      const match = searchMatches[0]
+      const match =
+        searchActiveIndex !== null && searchMatches[searchActiveIndex]
+          ? searchMatches[searchActiveIndex]
+          : searchMatches[0]
       if (!match) {
         setSearchFeedback(`No match for "${searchValue}".`)
         return
@@ -716,10 +814,11 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       setSearchFeedback(null)
       centerOnPerson(match.id)
       setSearchFocused(false)
+      setSearchActiveIndex(null)
       searchInputRef.current?.blur()
       setSelectedPersonId(match.id)
     },
-    [centerOnPerson, searchMatches, searchValue],
+    [centerOnPerson, searchActiveIndex, searchMatches, searchValue],
   )
 
   const handleCanvasBackgroundClick = useCallback(() => {
@@ -728,7 +827,6 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     collapseAllDetails()
     setHoveredPersonId(null)
     setHoveredSelection(null)
-    setTooltip(null)
   }, [collapseAllDetails])
 
   const handleControlSheetDragStart = useCallback(
@@ -796,9 +894,8 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       collapsePerson(personId)
       setHoveredPersonId((current) => (current === personId ? null : current))
       setHoveredSelection((current) => (current?.personId === personId ? null : current))
-      clearTooltip()
     },
-    [collapsePerson, clearTooltip],
+    [collapsePerson],
   )
 
   const relationshipSummary = useMemo(() => {
@@ -999,7 +1096,6 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
           assignPersonToRole(personId, 'A')
           setHoveredPersonId(personId)
           setHoveredSelection(null)
-          setTooltip(null)
           return
         }
 
@@ -1007,14 +1103,12 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
           assignPersonToRole(personId, 'B')
           setHoveredPersonId(personId)
           setHoveredSelection(null)
-          setTooltip(null)
           return
         }
 
         setHoveredPersonId(personId)
         setHoveredSelection(null)
         setSelectedPersonId(null)
-        setTooltip(null)
         return
       }
 
@@ -1048,10 +1142,6 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       initialTransformRef.current,
     )
   }
-
-  const trimmedSearchValue = searchValue.trim()
-  const showSearchResults = searchFocused && trimmedSearchValue.length > 0
-
   if (!layout) {
     return (
       <div className="flex h-full items-center justify-center text-sm text-white">
@@ -1213,6 +1303,8 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
             if (person.dob) detailLines.push(`DOB: ${person.dob}`)
             if (person.dod) detailLines.push(`DOD: ${person.dod}`)
 
+            const relationshipLabel = hoverRelationshipLabels.get(person.id) ?? null
+
             const parents: string[] = []
             if (person.fatherId) {
               const father = graph.peopleById[person.fatherId]
@@ -1243,11 +1335,9 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
                 className="pointer-events-auto cursor-pointer transition-transform"
                 onPointerEnter={(event) => {
                   handlePersonPointerEnter(person.id, event)
-                  handleTooltip(person, event)
                 }}
                 onPointerMove={(event) => {
                   updateHoveredSelectionHalf(person.id, event)
-                  updateTooltipPosition(event)
                 }}
                 onPointerLeave={(event) => {
                   handlePersonPointerLeave(person.id, event)
@@ -1307,33 +1397,47 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
                 >
                   {getSexLabel(person.sex)}
                 </text>
-                <text
-                  x={width / 2}
-                  y={72}
-                  textAnchor="middle"
-                  className="fill-white text-[11px] uppercase tracking-[0.3em]"
-                  opacity={textOpacity}
-                >
-                  {person.branch}
-                </text>
-                <text
-                  x={width / 2}
-                  y={86}
-                  textAnchor="middle"
-                  className="fill-white text-[11px] uppercase"
-                  opacity={textOpacity}
-                >
-                  ·
-                </text>
-                <text
-                  x={width / 2}
-                  y={100}
-                  textAnchor="middle"
-                  className="fill-white text-[11px] uppercase tracking-[0.3em]"
-                  opacity={textOpacity}
-                >
-                  Gen {person.generation}
-                </text>
+                {relationshipLabel ? (
+                  <text
+                    x={width / 2}
+                    y={86}
+                    textAnchor="middle"
+                    className="fill-white text-[11px] uppercase tracking-[0.3em]"
+                    opacity={textOpacity}
+                  >
+                    {relationshipLabel}
+                  </text>
+                ) : (
+                  <>
+                    <text
+                      x={width / 2}
+                      y={72}
+                      textAnchor="middle"
+                      className="fill-white text-[11px] uppercase tracking-[0.3em]"
+                      opacity={textOpacity}
+                    >
+                      {person.branch}
+                    </text>
+                    <text
+                      x={width / 2}
+                      y={86}
+                      textAnchor="middle"
+                      className="fill-white text-[11px] uppercase"
+                      opacity={textOpacity}
+                    >
+                      ·
+                    </text>
+                    <text
+                      x={width / 2}
+                      y={100}
+                      textAnchor="middle"
+                      className="fill-white text-[11px] uppercase tracking-[0.3em]"
+                      opacity={textOpacity}
+                    >
+                      Gen {person.generation}
+                    </text>
+                  </>
+                )}
                 {(personIsA || personIsB) && (
                   <g transform={`translate(${width - 42}, 12)`}>
                     <rect width={30} height={20} rx={6} fill={withAlpha(branchColor, 0.45)} />
@@ -1367,23 +1471,6 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
           })}
         </g>
       </svg>
-
-      {tooltip && (
-        <div
-          className="pointer-events-none absolute z-50 rounded-lg border border-white/20 bg-black px-3 py-2 text-xs text-white shadow-[0_12px_32px_rgba(0,0,0,0.65)]"
-          style={{ left: tooltip.clientX + 16, top: tooltip.clientY + 16 }}
-        >
-          <div className="font-semibold">{tooltip.person.fullName}</div>
-          <div className="mt-1 space-y-1">
-            {tooltipLines(tooltip.person, graph)
-              .slice(1)
-              .map((line) => (
-                <div key={line}>{line}</div>
-              ))}
-          </div>
-        </div>
-      )}
-
       <div
         className={`pointer-events-none absolute z-30 ${
           isMobile ? 'left-3 right-3 top-3' : 'left-6 top-6 w-[360px]'
@@ -1446,6 +1533,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
                       }
                       setSearchFocused(false)
                     }}
+                    onKeyDown={handleSearchInputKeyDown}
                     className="w-full rounded-full border border-white/20 bg-black px-3 py-2 text-xs text-white placeholder-white/50 outline-none transition focus:border-white focus:ring-2 focus:ring-white/40"
                   />
                   {showSearchResults && (
@@ -1455,15 +1543,19 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
                     >
                       {searchMatches.length > 0 ? (
                         <ul className="divide-y divide-white/5">
-                          {searchMatches.map((person) => {
+                          {searchMatches.map((person, index) => {
+                            const isActive = searchActiveIndex === index
                             const life = formatLifeSpan(person)
                             return (
                               <li key={person.id}>
                                 <button
                                   type="button"
-                                  className="flex w-full flex-col gap-1 px-3 py-2 text-left text-xs text-white transition hover:bg-white/10 focus:bg-white/10 focus:outline-none"
+                                  className={`flex w-full flex-col gap-1 px-3 py-2 text-left text-xs text-white transition hover:bg-white/10 focus:bg-white/10 focus:outline-none ${
+                                    isActive ? 'bg-white/10' : ''
+                                  }`}
                                   onMouseDown={(event) => event.preventDefault()}
                                   onClick={() => handleSearchResultSelect(person)}
+                                  onMouseEnter={() => setSearchActiveIndex(index)}
                                   onFocus={() => setSearchFocused(true)}
                                   onBlur={(event) => {
                                     const next = event.relatedTarget as Node | null
@@ -1692,6 +1784,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
                         }
                         setSearchFocused(false)
                       }}
+                      onKeyDown={handleSearchInputKeyDown}
                       className="w-full rounded-full border border-white/20 bg-black px-3 py-2 text-xs text-white placeholder-white/50 outline-none transition focus:border-white focus:ring-2 focus:ring-white/40"
                     />
                     {showSearchResults && (
@@ -1701,15 +1794,19 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
                       >
                         {searchMatches.length > 0 ? (
                           <ul className="divide-y divide-white/5">
-                            {searchMatches.map((person) => {
+                            {searchMatches.map((person, index) => {
+                              const isActive = searchActiveIndex === index
                               const life = formatLifeSpan(person)
                               return (
                                 <li key={person.id}>
                                   <button
                                     type="button"
-                                    className="flex w-full flex-col gap-1 px-3 py-2 text-left text-xs text-white transition hover:bg-white/10 focus:bg-white/10 focus:outline-none"
+                                    className={`flex w-full flex-col gap-1 px-3 py-2 text-left text-xs text-white transition hover:bg-white/10 focus:bg-white/10 focus:outline-none ${
+                                      isActive ? 'bg-white/10' : ''
+                                    }`}
                                     onMouseDown={(event) => event.preventDefault()}
                                     onClick={() => handleSearchResultSelect(person)}
+                                    onMouseEnter={() => setSearchActiveIndex(index)}
                                     onFocus={() => setSearchFocused(true)}
                                     onBlur={(event) => {
                                       const next = event.relatedTarget as Node | null
@@ -1864,7 +1961,6 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
               setSelectionMode('none')
               setHoveredSelection(null)
               setHoveredPersonId(null)
-              setTooltip(null)
               openControlSheet()
             }}
             className="fixed bottom-4 right-4 z-50 grid h-14 w-14 place-items-center rounded-full border border-white/20 bg-black/80 text-3xl text-white shadow-[0_20px_40px_rgba(0,0,0,0.6)] transition hover:bg-white/15"

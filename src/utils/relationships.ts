@@ -68,6 +68,28 @@ const collectParents = (graph: FamilyGraph, personId: string): string[] => {
   return parents
 }
 
+type SiblingType = 'full' | 'half'
+
+const determineSiblingType = (graph: FamilyGraph, aId: string, bId: string): SiblingType | null => {
+  const parentsA = collectParents(graph, aId)
+  if (parentsA.length === 0) return null
+
+  const parentsB = collectParents(graph, bId)
+  if (parentsB.length === 0) return null
+
+  const parentsBSet = new Set(parentsB)
+  let sharedCount = 0
+  for (const parentId of parentsA) {
+    if (parentsBSet.has(parentId)) {
+      sharedCount += 1
+    }
+  }
+
+  if (sharedCount === 0) return null
+
+  return sharedCount >= 2 ? 'full' : 'half'
+}
+
 const isParentOf = (graph: FamilyGraph, parentId: string, childId: string): boolean => {
   const child = graph.peopleById[childId]
   if (!child) return false
@@ -97,14 +119,7 @@ const getAncestors = (graph: FamilyGraph, personId: string): Map<string, number>
   return map
 }
 
-const shareParent = (graph: FamilyGraph, aId: string, bId: string): boolean => {
-  const parentsA = new Set(collectParents(graph, aId))
-  if (parentsA.size === 0) return false
-  for (const parentId of collectParents(graph, bId)) {
-    if (parentsA.has(parentId)) return true
-  }
-  return false
-}
+const shareParent = (graph: FamilyGraph, aId: string, bId: string): boolean => determineSiblingType(graph, aId, bId) !== null
 
 const getSiblingsOf = (
   graph: FamilyGraph,
@@ -180,7 +195,13 @@ const formatNieceNephewTitle = (person: Person, depth: number): string => {
 
 const formatSpouseTitle = (person: Person): string => sexWord(person.sex, 'husband', 'wife', 'spouse')
 
-const formatSiblingTitle = (person: Person): string => sexWord(person.sex, 'brother', 'sister', 'sibling')
+const formatSiblingTitle = (person: Person, siblingType: SiblingType = 'full'): string => {
+  const baseTitle = sexWord(person.sex, 'brother', 'sister', 'sibling')
+  if (siblingType === 'half') {
+    return `half-${baseTitle}`
+  }
+  return baseTitle
+}
 
 const formatParentInLawTitle = (person: Person): string =>
   sexWord(person.sex, 'father-in-law', 'mother-in-law', 'parent-in-law')
@@ -220,8 +241,9 @@ export const describeRelationship = (
     return formatDescendantTitle(fromPerson, depth)
   }
 
-  if (shareParent(graph, fromId, toId)) {
-    return formatSiblingTitle(fromPerson)
+  const siblingType = determineSiblingType(graph, fromId, toId)
+  if (siblingType) {
+    return formatSiblingTitle(fromPerson, siblingType)
   }
 
   const auntUncleDepth = findCollateralDepth(graph, childrenByParentId, fromId, ancestorsOfTo)
