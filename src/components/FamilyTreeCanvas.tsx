@@ -194,6 +194,9 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   const [hoveredPersonId, setHoveredPersonId] = useState<string | null>(null)
   const [isControlSheetOpen, setControlSheetOpen] = useState(false)
   const [isLegendOpen, setLegendOpen] = useState(!isMobile)
+  const [controlSheetDragOffset, setControlSheetDragOffset] = useState(0)
+  const controlSheetDragState = useRef<{ pointerId: number | null; startY: number }>({ pointerId: null, startY: 0 })
+  const controlSheetDragOffsetRef = useRef(0)
   const [lastSearchResultId, setLastSearchResultId] = useState<string | null>(null)
   const searchInputRef = useRef<HTMLInputElement | null>(null)
   const searchResultsRef = useRef<HTMLDivElement | null>(null)
@@ -525,12 +528,18 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   }, [searchValue])
 
   const openControlSheet = useCallback(() => {
+    setControlSheetDragOffset(0)
+    controlSheetDragOffsetRef.current = 0
+    controlSheetDragState.current = { pointerId: null, startY: 0 }
     setControlSheetOpen(true)
   }, [])
 
   const closeControlSheet = useCallback(() => {
     setControlSheetOpen(false)
     setSearchFocused(false)
+    setControlSheetDragOffset(0)
+    controlSheetDragOffsetRef.current = 0
+    controlSheetDragState.current = { pointerId: null, startY: 0 }
   }, [])
 
   const beginSelection = useCallback(
@@ -678,6 +687,51 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     setHoveredSelection(null)
     setTooltip(null)
   }, [collapseAllDetails])
+
+  const handleControlSheetDragStart = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      if (!isControlSheetOpen) return
+      if (event.pointerType !== 'touch') return
+      event.preventDefault()
+      controlSheetDragState.current = { pointerId: event.pointerId, startY: event.clientY }
+      controlSheetDragOffsetRef.current = 0
+      setControlSheetDragOffset(0)
+      event.currentTarget.setPointerCapture(event.pointerId)
+    },
+    [isControlSheetOpen],
+  )
+
+  const handleControlSheetDragMove = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    if (controlSheetDragState.current.pointerId !== event.pointerId) return
+    event.preventDefault()
+    const offset = Math.max(0, event.clientY - controlSheetDragState.current.startY)
+    controlSheetDragOffsetRef.current = offset
+    setControlSheetDragOffset(offset)
+  }, [])
+
+  const handleControlSheetDragEnd = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      if (controlSheetDragState.current.pointerId !== event.pointerId) return
+      event.currentTarget.releasePointerCapture(event.pointerId)
+      const offset = controlSheetDragOffsetRef.current
+      if (offset > 80) {
+        closeControlSheet()
+      } else {
+        setControlSheetDragOffset(0)
+      }
+      controlSheetDragOffsetRef.current = 0
+      controlSheetDragState.current = { pointerId: null, startY: 0 }
+    },
+    [closeControlSheet],
+  )
+
+  const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    if (controlSheetDragState.current.pointerId !== event.pointerId) return
+    event.currentTarget.releasePointerCapture(event.pointerId)
+    controlSheetDragOffsetRef.current = 0
+    controlSheetDragState.current = { pointerId: null, startY: 0 }
+    setControlSheetDragOffset(0)
+  }, [])
 
   const handlePersonPointerEnter = useCallback(
     (personId: string, event: ReactPointerEvent<SVGGElement>) => {
@@ -1212,7 +1266,15 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
                   className="fill-white text-[11px] uppercase tracking-[0.3em]"
                   opacity={textOpacity}
                 >
-                  {person.branch} · Gen {person.generation}
+                  <tspan x={width / 2} y={72}>
+                    {person.branch}
+                  </tspan>
+                  <tspan x={width / 2} dy={14}>
+                    ·
+                  </tspan>
+                  <tspan x={width / 2} dy={14}>
+                    Gen {person.generation}
+                  </tspan>
                 </text>
                 {(personIsA || personIsB) && (
                   <g transform={`translate(${width - 42}, 12)`}>
@@ -1299,13 +1361,15 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
           </div>
 
           {isMobile ? (
-            <button
-              type="button"
-              onClick={toggleLegend}
-              className="mt-3 w-full rounded-full border border-white/20 bg-white/10 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-white transition hover:bg-white/20"
-            >
-              {isLegendOpen ? 'Hide Legend' : 'Show Legend'}
-            </button>
+            !isControlSheetOpen && (
+              <button
+                type="button"
+                onClick={toggleLegend}
+                className="mt-3 w-full rounded-full border border-white/20 bg-white/10 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-white transition hover:bg-white/20"
+              >
+                {isLegendOpen ? 'Hide Legend' : 'Show Legend'}
+              </button>
+            )
           ) : (
             <>
               <form className="mt-3 flex w-full flex-wrap items-start gap-2" onSubmit={handleSearchSubmit}>
@@ -1355,8 +1419,10 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
                                   }}
                                 >
                                   <span className="text-sm font-semibold text-white">{person.fullName}</span>
-                                  <span className="text-[11px] uppercase tracking-[0.25em] text-white/60">
-                                    {person.branch} · Gen {person.generation}
+                                  <span className="flex flex-col items-start text-[11px] uppercase tracking-[0.25em] text-white/60">
+                                    <span>{person.branch}</span>
+                                    <span>·</span>
+                                    <span>Gen {person.generation}</span>
                                   </span>
                                   {life && <span className="text-[11px] text-white/40">{life}</span>}
                                 </button>
@@ -1506,11 +1572,20 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
             className={`fixed inset-x-0 bottom-0 z-50 transform transition-transform duration-300 ease-out ${
               isControlSheetOpen ? 'translate-y-0' : 'translate-y-full'
             }`}
+            style={{ transform: isControlSheetOpen ? `translateY(${controlSheetDragOffset}px)` : undefined }}
             role="dialog"
             aria-label="Family tree controls"
           >
             <div className="rounded-t-3xl border border-white/20 bg-black/90 px-5 pb-6 pt-4 shadow-[0_-12px_40px_rgba(0,0,0,0.7)] backdrop-blur">
-              <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-white/20" />
+              <div
+                className="mx-auto mb-4 h-1.5 w-12 cursor-grab rounded-full bg-white/20 active:cursor-grabbing"
+                role="button"
+                aria-label="Drag to close"
+                onPointerDown={handleControlSheetDragStart}
+                onPointerMove={handleControlSheetDragMove}
+                onPointerUp={handleControlSheetDragEnd}
+                onPointerCancel={handleControlSheetDragCancel}
+              />
               <div className="max-h-[65vh] space-y-4 overflow-y-auto pr-1 text-xs text-white">
                 <form className="flex w-full flex-wrap items-start gap-2" onSubmit={handleSearchSubmit}>
                   <div className="relative w-full flex-1">
@@ -1559,8 +1634,10 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
                                     }}
                                   >
                                     <span className="text-sm font-semibold text-white">{person.fullName}</span>
-                                    <span className="text-[11px] uppercase tracking-[0.25em] text-white/60">
-                                      {person.branch} · Gen {person.generation}
+                                    <span className="flex flex-col items-start text-[11px] uppercase tracking-[0.25em] text-white/60">
+                                      <span>{person.branch}</span>
+                                      <span>·</span>
+                                      <span>Gen {person.generation}</span>
                                     </span>
                                     {life && <span className="text-[11px] text-white/40">{life}</span>}
                                   </button>
@@ -1681,18 +1758,36 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
         </>
       )}
 
-      {isMobile && (
-        <button
-          type="button"
-          onClick={() => {
-            openControlSheet()
-            focusSearchInput()
-          }}
-          className="fixed bottom-4 right-4 z-50 grid h-14 w-14 place-items-center rounded-full border border-white/20 bg-black/80 text-3xl text-white shadow-[0_20px_40px_rgba(0,0,0,0.6)] transition hover:bg-white/15"
-        >
-          <span aria-hidden="true">🔍</span>
-          <span className="sr-only">Search &amp; Select</span>
-        </button>
+      {isMobile && !isControlSheetOpen && (
+        selectionMode === 'none' ? (
+          <button
+            type="button"
+            onClick={() => {
+              openControlSheet()
+              focusSearchInput()
+            }}
+            className="fixed bottom-4 right-4 z-50 grid h-14 w-14 place-items-center rounded-full border border-white/20 bg-black/80 text-3xl text-white shadow-[0_20px_40px_rgba(0,0,0,0.6)] transition hover:bg-white/15"
+          >
+            <span aria-hidden="true">🔍</span>
+            <span className="sr-only">Search &amp; Select</span>
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              setSelectionMode('none')
+              setHoveredSelection(null)
+              setHoveredPersonId(null)
+              setTooltip(null)
+              openControlSheet()
+              focusSearchInput()
+            }}
+            className="fixed bottom-4 right-4 z-50 grid h-14 w-14 place-items-center rounded-full border border-white/20 bg-black/80 text-3xl text-white shadow-[0_20px_40px_rgba(0,0,0,0.6)] transition hover:bg-white/15"
+          >
+            <span aria-hidden="true">×</span>
+            <span className="sr-only">Cancel selection</span>
+          </button>
+        )
       )}
 
     </div>
