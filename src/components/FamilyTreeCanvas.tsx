@@ -1301,13 +1301,10 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
           {isMobile ? (
             <button
               type="button"
-              onClick={() => {
-                openControlSheet()
-                focusSearchInput()
-              }}
+              onClick={toggleLegend}
               className="mt-3 w-full rounded-full border border-white/20 bg-white/10 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-white transition hover:bg-white/20"
             >
-              Search &amp; Select
+              {isLegendOpen ? 'Hide Legend' : 'Show Legend'}
             </button>
           ) : (
             <>
@@ -1394,15 +1391,17 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
         <div className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm" onClick={toggleLegend} />
       )}
 
-      <button
-        type="button"
-        onClick={toggleLegend}
-        className={`fixed ${isMobile ? 'bottom-4 right-4' : 'right-4 top-4'} z-50 rounded-full border border-white/20 bg-black/70 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.35em] text-white transition hover:bg-white/10 md:text-[11px]`}
-        aria-expanded={isLegendOpen}
-        aria-controls="branch-legend-panel"
-      >
-        {isLegendOpen ? 'Hide Legend' : 'Show Legend'}
-      </button>
+      {!isMobile && (
+        <button
+          type="button"
+          onClick={toggleLegend}
+          className="fixed right-4 top-4 z-50 rounded-full border border-white/20 bg-black/70 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.35em] text-white transition hover:bg-white/10 md:text-[11px]"
+          aria-expanded={isLegendOpen}
+          aria-controls="branch-legend-panel"
+        >
+          {isLegendOpen ? 'Hide Legend' : 'Show Legend'}
+        </button>
+      )}
 
       <div
         id="branch-legend-panel"
@@ -1680,6 +1679,20 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
             </div>
           </div>
         </>
+      )}
+
+      {isMobile && (
+        <button
+          type="button"
+          onClick={() => {
+            openControlSheet()
+            focusSearchInput()
+          }}
+          className="fixed bottom-4 right-4 z-50 grid h-14 w-14 place-items-center rounded-full border border-white/20 bg-black/80 text-3xl text-white shadow-[0_20px_40px_rgba(0,0,0,0.6)] transition hover:bg-white/15"
+        >
+          <span aria-hidden="true">🔍</span>
+          <span className="sr-only">Search &amp; Select</span>
+        </button>
       )}
 
     </div>
