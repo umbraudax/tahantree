@@ -1266,15 +1266,25 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
                   className="fill-white text-[11px] uppercase tracking-[0.3em]"
                   opacity={textOpacity}
                 >
-                  <tspan x={width / 2} y={72}>
-                    {person.branch}
-                  </tspan>
-                  <tspan x={width / 2} dy={14}>
-                    ·
-                  </tspan>
-                  <tspan x={width / 2} dy={14}>
-                    Gen {person.generation}
-                  </tspan>
+                  {person.branch}
+                </text>
+                <text
+                  x={width / 2}
+                  y={86}
+                  textAnchor="middle"
+                  className="fill-white text-[11px] uppercase"
+                  opacity={textOpacity}
+                >
+                  ·
+                </text>
+                <text
+                  x={width / 2}
+                  y={100}
+                  textAnchor="middle"
+                  className="fill-white text-[11px] uppercase tracking-[0.3em]"
+                  opacity={textOpacity}
+                >
+                  Gen {person.generation}
                 </text>
                 {(personIsA || personIsB) && (
                   <g transform={`translate(${width - 42}, 12)`}>
@@ -1419,7 +1429,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
                                   }}
                                 >
                                   <span className="text-sm font-semibold text-white">{person.fullName}</span>
-                                  <span className="flex flex-col items-start text-[11px] uppercase tracking-[0.25em] text-white/60">
+                                  <span className="flex flex-col items-center text-center text-[11px] uppercase tracking-[0.25em] text-white/60">
                                     <span>{person.branch}</span>
                                     <span>·</span>
                                     <span>Gen {person.generation}</span>
@@ -1634,7 +1644,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
                                     }}
                                   >
                                     <span className="text-sm font-semibold text-white">{person.fullName}</span>
-                                    <span className="flex flex-col items-start text-[11px] uppercase tracking-[0.25em] text-white/60">
+                                    <span className="flex flex-col items-center text-center text-[11px] uppercase tracking-[0.25em] text-white/60">
                                       <span>{person.branch}</span>
                                       <span>·</span>
                                       <span>Gen {person.generation}</span>
