@@ -7,13 +7,59 @@ import type { FamilyGraph, FamilyUnit } from '../types/family'
 const BASE_UNIT_DIMENSIONS = computeUnitDimensions(1)
 const BASE_UNIT_WIDTH = BASE_UNIT_DIMENSIONS.width
 const BASE_UNIT_HEIGHT = BASE_UNIT_DIMENSIONS.height
-const HORIZONTAL_SPACING = BASE_UNIT_WIDTH + MIN_UNIT_GAP
-const VERTICAL_SPACING = 440
-const PADDING_X = 140
-const PADDING_Y = 260
-const SIBLING_BASE_STAGGER = 70
-const SIBLING_HEIGHT_FACTOR = 55
-const SIBLING_DESCENDANT_FACTOR = 30
+export type LayoutDensity = 'default' | 'cozy' | 'compact'
+
+interface DensityPreset {
+  horizontalSpacing: number
+  verticalSpacing: number
+  paddingX: number
+  paddingY: number
+  siblingBaseStagger: number
+  siblingHeightFactor: number
+  siblingDescendantFactor: number
+  branchGapScale: number
+  parentChildGapScale: number
+}
+
+const DENSITY_PRESETS: Record<LayoutDensity, DensityPreset> = {
+  default: {
+    horizontalSpacing: BASE_UNIT_WIDTH + MIN_UNIT_GAP,
+    verticalSpacing: 440,
+    paddingX: 140,
+    paddingY: 260,
+    siblingBaseStagger: 70,
+    siblingHeightFactor: 55,
+    siblingDescendantFactor: 30,
+    branchGapScale: 1,
+    parentChildGapScale: 1,
+  },
+  cozy: {
+    horizontalSpacing: (BASE_UNIT_WIDTH + MIN_UNIT_GAP) * 0.9,
+    verticalSpacing: 380,
+    paddingX: 120,
+    paddingY: 220,
+    siblingBaseStagger: 60,
+    siblingHeightFactor: 48,
+    siblingDescendantFactor: 26,
+    branchGapScale: 0.82,
+    parentChildGapScale: 0.9,
+  },
+  compact: {
+    horizontalSpacing: (BASE_UNIT_WIDTH + MIN_UNIT_GAP) * 0.78,
+    verticalSpacing: 320,
+    paddingX: 96,
+    paddingY: 180,
+    siblingBaseStagger: 48,
+    siblingHeightFactor: 38,
+    siblingDescendantFactor: 22,
+    branchGapScale: 0.7,
+    parentChildGapScale: 0.82,
+  },
+}
+
+export interface LayoutOptions {
+  density?: LayoutDensity
+}
 
 export interface LayoutPosition {
   x: number
@@ -81,13 +127,19 @@ const computeBranchGap = (left?: FamilyUnit | null, right?: FamilyUnit | null) =
   return gap
 }
 
-export const useFamilyLayout = (graph: FamilyGraph | null): LayoutResult | null =>
-  useMemo(() => {
+export const useFamilyLayout = (
+  graph: FamilyGraph | null,
+  options: LayoutOptions = {},
+): LayoutResult | null => {
+  const density = options.density ?? 'default'
+
+  return useMemo(() => {
     if (!graph || graph.roots.length === 0) return null
 
+    const preset = DENSITY_PRESETS[density]
     const virtualRoot = makeVirtualRoot(graph.roots)
     const layoutTree = tree<FamilyUnit | VirtualRoot>()
-      .nodeSize([HORIZONTAL_SPACING, VERTICAL_SPACING])
+      .nodeSize([preset.horizontalSpacing, preset.verticalSpacing])
       .separation((first: LayoutHierarchyNode, second: LayoutHierarchyNode) => {
         const firstData = first.data as FamilyUnit | VirtualRoot
         const secondData = second.data as FamilyUnit | VirtualRoot
@@ -100,10 +152,10 @@ export const useFamilyLayout = (graph: FamilyGraph | null): LayoutResult | null 
         const secondUnit = secondData as FamilyUnit
         const firstWidth = computeUnitDimensions(firstUnit.members.length, Boolean(firstUnit.spouseBond)).width
         const secondWidth = computeUnitDimensions(secondUnit.members.length, Boolean(secondUnit.spouseBond)).width
-        const branchGap = computeBranchGap(firstUnit, secondUnit)
+        const branchGap = computeBranchGap(firstUnit, secondUnit) * preset.branchGapScale
         const requiredSpacing = (firstWidth + secondWidth) / 2 + branchGap
 
-        return Math.max(requiredSpacing / HORIZONTAL_SPACING, 1)
+        return Math.max(requiredSpacing / preset.horizontalSpacing, 1)
       })
 
     const hierarchyRoot = hierarchy<FamilyUnit | VirtualRoot>(virtualRoot, (unit: FamilyUnit | VirtualRoot) =>
@@ -154,7 +206,7 @@ export const useFamilyLayout = (graph: FamilyGraph | null): LayoutResult | null 
 
         const previousRight = previous.x + previousWidth / 2
         const currentLeft = current.x - currentWidth / 2
-        const requiredGap = computeBranchGap(previousUnit, currentUnit)
+        const requiredGap = computeBranchGap(previousUnit, currentUnit) * preset.branchGapScale
         const overlap = previousRight + requiredGap - currentLeft
 
         if (overlap > 0) {
@@ -202,9 +254,9 @@ export const useFamilyLayout = (graph: FamilyGraph | null): LayoutResult | null 
         const height = child.height ?? 0
         const descendantCount = child.descendants().length - 1
         return (
-          SIBLING_BASE_STAGGER +
-          height * SIBLING_HEIGHT_FACTOR +
-          Math.sqrt(Math.max(descendantCount, 0)) * SIBLING_DESCENDANT_FACTOR
+          preset.siblingBaseStagger +
+          height * preset.siblingHeightFactor +
+          Math.sqrt(Math.max(descendantCount, 0)) * preset.siblingDescendantFactor
         )
       })
 
@@ -253,7 +305,7 @@ export const useFamilyLayout = (graph: FamilyGraph | null): LayoutResult | null 
       const data = node.data as FamilyUnit
       const level = levelMap.get(node) ?? node.depth - 1
       const parentNode = (node.parent as HierNode | null) ?? null
-      const baseY = level * VERTICAL_SPACING + getSiblingStagger(node)
+      const baseY = level * preset.verticalSpacing + getSiblingStagger(node)
       let adjustedY = baseY
 
       if (parentNode && parentNode.data.id !== virtualRoot.id) {
@@ -262,7 +314,8 @@ export const useFamilyLayout = (graph: FamilyGraph | null): LayoutResult | null 
         if (parentPosition) {
           const parentHeight = getNodeHeight(parentNode)
           const childHeight = getNodeHeight(node)
-          const minCenterDistance = parentHeight / 2 + childHeight / 2 + MIN_PARENT_CHILD_GAP
+          const minCenterDistance =
+            parentHeight / 2 + childHeight / 2 + MIN_PARENT_CHILD_GAP * preset.parentChildGapScale
           const minAllowedY = parentPosition.y + minCenterDistance
           if (adjustedY < minAllowedY) {
             adjustedY = minAllowedY
@@ -295,8 +348,8 @@ export const useFamilyLayout = (graph: FamilyGraph | null): LayoutResult | null 
     const minY = Math.min(...rawY)
     const maxY = Math.max(...rawY)
 
-    const offsetX = -minX + PADDING_X
-    const offsetY = -minY + PADDING_Y
+    const offsetX = -minX + preset.paddingX
+    const offsetY = -minY + preset.paddingY
 
     const resultNodes = nodes.map(({ unit, position }) => {
       const adjusted: LayoutPosition = {
@@ -313,8 +366,8 @@ export const useFamilyLayout = (graph: FamilyGraph | null): LayoutResult | null 
       positionsRecord[key] = value
     }
 
-    const width = maxX - minX + PADDING_X * 2
-    const height = maxY - minY + PADDING_Y * 2
+    const width = maxX - minX + preset.paddingX * 2
+    const height = maxY - minY + preset.paddingY * 2
 
     return {
       nodes: resultNodes,
@@ -322,5 +375,5 @@ export const useFamilyLayout = (graph: FamilyGraph | null): LayoutResult | null 
       positions: positionsRecord,
       size: { width, height },
     }
-  }, [graph])
-
+  }, [graph, density])
+}

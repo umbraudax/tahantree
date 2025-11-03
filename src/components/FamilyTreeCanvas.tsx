@@ -12,6 +12,7 @@ import {
   PERSON_WIDTH,
   SPOUSE_GAP_EXTRA,
 } from '../constants/layout'
+import { useBreakpoint } from '../hooks/useBreakpoint'
 import { useFamilyLayout } from '../hooks/useFamilyLayout'
 import type { FamilyGraph, FamilyUnit, Person } from '../types/family'
 import { getBranchColor, withAlpha } from '../utils/colors'
@@ -133,9 +134,23 @@ const tooltipLines = (person: Person, graph: FamilyGraph): string[] => {
   if (life) lines.push(life)
   lines.push(getSexLabel(person.sex))
 
+  const parents: string[] = []
+  if (person.fatherId) {
+    const father = graph.peopleById[person.fatherId]
+    if (father) parents.push(father.fullName)
+  }
+  if (person.motherId) {
+    const mother = graph.peopleById[person.motherId]
+    if (mother) parents.push(mother.fullName)
+  }
+  if (parents.length > 0) {
+    lines.push(`Parents: ${parents.join(' & ')}`)
+  }
+
   if (person.spouseId) {
     const spouse = graph.peopleById[person.spouseId]
-    lines.push(`Spouse: ${spouse ? spouse.fullName : person.spouseId}`)
+    const spouseLabel = person.divorced ? 'Former spouse' : 'Spouse'
+    lines.push(`${spouseLabel}: ${spouse ? spouse.fullName : person.spouseId}`)
   }
 
   lines.push(`Branch: ${person.branch}`)
@@ -143,7 +158,9 @@ const tooltipLines = (person: Person, graph: FamilyGraph): string[] => {
 }
 
 export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
-  const layout = useFamilyLayout(graph)
+  const { isMobile, isTablet } = useBreakpoint()
+  const layoutDensity = isMobile ? 'compact' : isTablet ? 'cozy' : 'default'
+  const layout = useFamilyLayout(graph, { density: layoutDensity })
   const svgRef = useRef<SVGSVGElement | null>(null)
   const innerRef = useRef<SVGGElement | null>(null)
   const transformRef = useRef<ZoomTransform>(zoomIdentity)
@@ -160,6 +177,34 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   const [nodeAId, setNodeAId] = useState<string | null>(null)
   const [nodeBId, setNodeBId] = useState<string | null>(null)
   const [hoveredPersonId, setHoveredPersonId] = useState<string | null>(null)
+  const [isControlSheetOpen, setControlSheetOpen] = useState(false)
+  const [isLegendOpen, setLegendOpen] = useState(!isMobile)
+  const searchInputRef = useRef<HTMLInputElement | null>(null)
+  const searchResultsRef = useRef<HTMLDivElement | null>(null)
+  const [searchFocused, setSearchFocused] = useState(false)
+
+  useEffect(() => {
+    if (!isMobile) {
+      setControlSheetOpen(false)
+    }
+  }, [isMobile])
+
+  useEffect(() => {
+    if (isMobile) {
+      setLegendOpen(false)
+    } else {
+      setLegendOpen((current) => (current ? current : true))
+    }
+  }, [isMobile])
+
+  const searchMatches = useMemo(() => {
+    const query = searchValue.trim().toLowerCase()
+    if (!query) return []
+    return graph.people
+      .filter((person) => person.fullName.toLowerCase().includes(query))
+      .sort((a, b) => a.fullName.localeCompare(b.fullName))
+      .slice(0, 12)
+  }, [graph.people, searchValue])
 
 
   const childrenByParentId = useMemo<Record<string, string[]>>(() => {
@@ -182,16 +227,6 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
 
     return map
   }, [graph.people])
-
-
-  const expandPerson = useCallback((personId: string) => {
-    setExpanded((previous) => {
-      if (previous.has(personId)) return previous
-      const next = new Set(previous)
-      next.add(personId)
-      return next
-    })
-  }, [])
 
   const collapsePerson = useCallback((personId: string) => {
     setExpanded((previous) => {
@@ -409,6 +444,18 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     }
   }
 
+  const handleSearchResultSelect = useCallback(
+    (person: Person) => {
+      setSearchValue(person.fullName)
+      setSearchFeedback(null)
+      setSelectedPersonId(person.id)
+      centerOnPerson(person.id)
+      setSearchFocused(false)
+      searchInputRef.current?.blur()
+    },
+    [centerOnPerson],
+  )
+
   const handleSearchSubmit = useCallback(
     (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault()
@@ -418,7 +465,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
         return
       }
 
-      const match = graph.people.find((person) => person.fullName.toLowerCase().includes(query))
+      const match = searchMatches[0]
       if (!match) {
         setSearchFeedback(`No match for "${searchValue}".`)
         return
@@ -427,8 +474,10 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       setSearchFeedback(null)
       setSelectedPersonId(match.id)
       centerOnPerson(match.id)
+      setSearchFocused(false)
+      searchInputRef.current?.blur()
     },
-    [centerOnPerson, graph.people, searchValue],
+    [centerOnPerson, searchMatches, searchValue],
   )
 
   const beginSelection = useCallback((target: 'selectA' | 'selectB') => {
@@ -442,6 +491,19 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     setSelectedPersonId(null)
     collapseAllDetails()
   }, [collapseAllDetails])
+
+  const openControlSheet = () => {
+    setControlSheetOpen(true)
+  }
+
+  const closeControlSheet = () => {
+    setControlSheetOpen(false)
+    setSearchFocused(false)
+  }
+
+  const toggleLegend = () => {
+    setLegendOpen((current) => !current)
+  }
 
   const handleCanvasBackgroundClick = useCallback(() => {
     setSelectionMode('none')
@@ -463,10 +525,9 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   const handlePersonPointerEnter = useCallback(
     (personId: string, event: React.PointerEvent<SVGGElement>) => {
       if (event.pointerType === 'touch') return
-      expandPerson(personId)
       setHoveredPersonId(personId)
     },
-    [expandPerson],
+    [setHoveredPersonId],
   )
 
   const handlePersonPointerLeave = useCallback(
@@ -722,6 +783,9 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     )
   }
 
+  const trimmedSearchValue = searchValue.trim()
+  const showSearchResults = searchFocused && trimmedSearchValue.length > 0
+
   if (!layout) {
     return (
       <div className="flex h-full items-center justify-center text-sm text-white">
@@ -817,34 +881,38 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
           {Object.values(personGeometries).map((geometry) => {
             const { person, bounds, width, height, unit } = geometry
             const branchColor = getBranchColor(person.branch)
+            const isTouchExpanded = expanded.has(person.id)
+            const isHovered = hoveredPersonId === person.id
+            const isSelected = selectedPersonId === person.id
             const personHighlighted = highlightContext?.highlightPeople.has(person.id) ?? false
             const personDimmed = highlightActive && !personHighlighted
             const personIsA = nodeAId === person.id
             const personIsB = nodeBId === person.id
-            const expandedState = expanded.has(person.id)
 
-            const baseFillAlpha = expandedState ? 0.38 : 0.24
-            const highlightFillAlpha = expandedState ? 0.52 : 0.36
+            const emphasisState = isTouchExpanded || isSelected
+            const hoverEmphasis = isHovered && !emphasisState
+
+            const baseFillAlpha = emphasisState ? 0.38 : hoverEmphasis ? 0.32 : 0.24
+            const highlightFillAlpha = emphasisState ? 0.52 : hoverEmphasis ? 0.42 : 0.36
             const fillAlpha = highlightActive
               ? personHighlighted
                 ? highlightFillAlpha
                 : 0.1
               : baseFillAlpha
 
-            const baseStrokeAlpha = expandedState ? 0.95 : 0.7
-            const highlightStrokeAlpha = expandedState ? 1 : 0.85
+            const baseStrokeAlpha = emphasisState ? 0.95 : hoverEmphasis ? 0.82 : 0.7
+            const highlightStrokeAlpha = emphasisState ? 1 : hoverEmphasis ? 0.9 : 0.85
             const strokeAlpha = highlightActive
               ? personHighlighted
                 ? highlightStrokeAlpha
                 : 0.28
               : baseStrokeAlpha
 
-            const baseStrokeWidth = expandedState ? 2.6 : 1.9
+            const baseStrokeWidth = emphasisState ? 2.6 : hoverEmphasis ? 2.2 : 1.9
             const strokeWidth = highlightActive && personHighlighted ? baseStrokeWidth + 0.6 : baseStrokeWidth
             const textOpacity = personDimmed ? 0.35 : 1
 
             const detailLines: string[] = []
-            detailLines.push(`Sex: ${getSexLabel(person.sex)}`)
             if (person.dob) detailLines.push(`DOB: ${person.dob}`)
             if (person.dod) detailLines.push(`DOD: ${person.dod}`)
 
@@ -868,9 +936,9 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
               }
             }
 
-            if (detailLines.length === 0) {
-              detailLines.push('Details unavailable')
-            }
+            const detailContent = detailLines.length > 0 ? detailLines : ['Details unavailable']
+            const showDetailLines = isTouchExpanded || isSelected
+            const showActionButtons = isTouchExpanded || isHovered || isSelected
 
             return (
               <g
@@ -917,7 +985,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
                   className="fill-white text-[12px] tracking-wide"
                   opacity={textOpacity}
                 >
-                  Sex: {getSexLabel(person.sex)}
+                  {getSexLabel(person.sex)}
                 </text>
                 <text
                   x={width / 2}
@@ -941,56 +1009,56 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
                     </text>
                   </g>
                 )}
-                {expandedState && (
-                  <>
-                    <text
-                      x={width / 2}
-                      y={height - 60}
-                      textAnchor="middle"
-                      className="fill-white text-[11px] leading-[14px]"
-                      opacity={textOpacity}
-                    >
-                      {detailLines.map((line, index) => (
-                        <tspan key={line} x={width / 2} dy={index === 0 ? 0 : 14}>
-                          {line}
-                        </tspan>
-                      ))}
-                    </text>
-                    <g transform={`translate(${width / 2 - 60}, ${height - 32})`}>
-                      {(['A', 'B'] as const).map((role, index) => {
-                        const isActive = role === 'A' ? personIsA : personIsB
-                        const translateX = index * 70
-                        return (
-                          <g
-                            key={role}
-                            transform={`translate(${translateX}, 0)`}
-                            onClick={(event) => {
-                              event.stopPropagation()
-                              handleSelectPersonRole(person.id, role)
-                            }}
-                            className="cursor-pointer"
+                {showDetailLines && (
+                  <text
+                    x={width / 2}
+                    y={height - 60}
+                    textAnchor="middle"
+                    className="fill-white text-[11px] leading-[14px]"
+                    opacity={textOpacity}
+                  >
+                    {detailContent.map((line, index) => (
+                      <tspan key={`${line}-${index}`} x={width / 2} dy={index === 0 ? 0 : 14}>
+                        {line}
+                      </tspan>
+                    ))}
+                  </text>
+                )}
+                {showActionButtons && (
+                  <g transform={`translate(${width / 2 - 60}, ${height - 32})`}>
+                    {(['A', 'B'] as const).map((role, index) => {
+                      const isActive = role === 'A' ? personIsA : personIsB
+                      const translateX = index * 70
+                      return (
+                        <g
+                          key={role}
+                          transform={`translate(${translateX}, 0)`}
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            handleSelectPersonRole(person.id, role)
+                          }}
+                          className="cursor-pointer"
+                        >
+                          <rect
+                            width={58}
+                            height={24}
+                            rx={12}
+                            fill={withAlpha(branchColor, isActive ? 0.55 : 0.25)}
+                            stroke={withAlpha(branchColor, isActive ? 0.85 : 0.4)}
+                            strokeWidth={isActive ? 2 : 1.4}
+                          />
+                          <text
+                            x={29}
+                            y={16}
+                            textAnchor="middle"
+                            className="fill-white text-[11px] font-semibold tracking-wide"
                           >
-                            <rect
-                              width={58}
-                              height={24}
-                              rx={12}
-                              fill={withAlpha(branchColor, isActive ? 0.55 : 0.25)}
-                              stroke={withAlpha(branchColor, isActive ? 0.85 : 0.4)}
-                              strokeWidth={isActive ? 2 : 1.4}
-                            />
-                            <text
-                              x={29}
-                              y={16}
-                              textAnchor="middle"
-                              className="fill-white text-[11px] font-semibold tracking-wide"
-                            >
-                              {role === 'A' ? 'Set A' : 'Set B'}
-                            </text>
-                          </g>
-                        )
-                      })}
-                    </g>
-                  </>
+                            {role === 'A' ? 'Set A' : 'Set B'}
+                          </text>
+                        </g>
+                      )
+                    })}
+                  </g>
                 )}
               </g>
             )
@@ -1014,136 +1082,409 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
         </div>
       )}
 
-      <div className="pointer-events-none absolute left-4 top-4 flex w-full max-w-xs flex-col gap-2 text-xs text-white">
-        <div className="pointer-events-auto rounded-2xl border border-white/20 bg-black px-4 py-3 shadow-[0_20px_40px_rgba(0,0,0,0.7)]">
-          <div className="flex flex-wrap items-center gap-2">
+      <div
+        className={`pointer-events-none absolute z-30 ${
+          isMobile ? 'left-3 right-3 top-3' : 'left-6 top-6 w-[360px]'
+        } flex flex-col gap-3 text-xs text-white`}
+      >
+        <div className="pointer-events-auto rounded-2xl border border-white/20 bg-black/80 px-4 py-3 shadow-[0_20px_40px_rgba(0,0,0,0.7)] backdrop-blur">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                className="grid h-9 w-9 place-items-center rounded-full border border-white/20 bg-black text-lg text-white transition hover:bg-white/10"
+                onClick={() => zoomByFactor(0.8)}
+                aria-label="Zoom out"
+              >
+                −
+              </button>
+              <button
+                type="button"
+                className="grid h-9 w-9 place-items-center rounded-full border border-white/20 bg-black text-lg text-white transition hover:bg-white/10"
+                onClick={() => zoomByFactor(1.2)}
+                aria-label="Zoom in"
+              >
+                +
+              </button>
+            </div>
             <button
               type="button"
-              className="grid h-8 w-8 place-items-center rounded-full border border-white/20 bg-black text-lg text-white transition hover:bg-white/10"
-              onClick={() => zoomByFactor(0.8)}
-            >
-              −
-            </button>
-            <button
-              type="button"
-              className="grid h-8 w-8 place-items-center rounded-full border border-white/20 bg-black text-lg text-white transition hover:bg-white/10"
-              onClick={() => zoomByFactor(1.2)}
-            >
-              +
-            </button>
-            <button
-              type="button"
-              className="rounded-full border border-white/20 bg-black px-3 py-2 text-xs font-semibold uppercase tracking-wide text-white transition hover:bg-white/10"
+              className="rounded-full border border-white/20 bg-black px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-white transition hover:bg-white/10"
               onClick={resetView}
             >
               Reset
             </button>
           </div>
-          <form className="mt-3 flex w-full flex-wrap items-center gap-2" onSubmit={handleSearchSubmit}>
-            <input
-              type="search"
-              placeholder="Find a person"
-              value={searchValue}
-              onChange={handleSearchChange}
-              className="w-full flex-1 rounded-full border border-white/20 bg-black px-3 py-1.5 text-xs text-white placeholder-white/50 outline-none transition focus:border-white focus:ring-2 focus:ring-white/40"
-            />
-            <button
-              type="submit"
-              className="rounded-full border border-white/20 bg-black px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-white/10"
-            >
-              Search
-            </button>
-          </form>
-          {searchFeedback && (
-            <div className="mt-2 rounded-full border border-white/20 bg-black px-3 py-1 text-[11px] text-white">
-              {searchFeedback}
-            </div>
-          )}
-        </div>
-      </div>
 
-      <div className="pointer-events-none fixed inset-x-0 bottom-6 flex w-full justify-center px-4 text-xs text-white">
-        <div className="pointer-events-auto w-full max-w-2xl rounded-3xl border border-white/20 bg-black px-4 py-4 text-white shadow-[0_24px_60px_rgba(0,0,0,0.75)]">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => beginSelection('selectA')}
-                className={`rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] transition ${
-                  isSelectingA
-                    ? 'border border-white bg-white/10 text-white'
-                    : 'border border-white/20 bg-black text-white hover:bg-white/10'
-                }`}
-              >
-                Select A
-              </button>
-              <span className="text-white">A:</span>
-              <span className="font-semibold text-white">{personALabel}</span>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => beginSelection('selectB')}
-                className={`rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] transition ${
-                  isSelectingB
-                    ? 'border border-white bg-white/10 text-white'
-                    : 'border border-white/20 bg-black text-white hover:bg-white/10'
-                }`}
-              >
-                Select B
-              </button>
-              <span className="text-white">B:</span>
-              <span className="font-semibold text-white">{personBLabel}</span>
-            </div>
+          {isMobile ? (
             <button
               type="button"
-              onClick={clearSelections}
-              className="rounded-full border border-white/20 bg-black px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-white/10"
+              onClick={openControlSheet}
+              className="mt-3 w-full rounded-full border border-white/20 bg-white/10 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-white transition hover:bg-white/20"
             >
-              Clear A & B
+              Search &amp; Select
             </button>
-          </div>
-          {selectionMode !== 'none' && (
-            <div className="mt-3 rounded-full border border-white/20 bg-black px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-white text-center">
-              {isSelectingA ? 'Tap a person to set A' : 'Tap a person to set B'}
-            </div>
-          )}
-          {relationshipSummary && personA && personB && (
-            <div className="mt-3 space-y-1 text-center">
-              <div>
-                {personA.fullName} is {relationshipSummary.fromAToB} of {personB.fullName}
-              </div>
-              <div>
-                {personB.fullName} is {relationshipSummary.fromBToA} of {personA.fullName}
-              </div>
-            </div>
-          )}
-          {!relationshipSummary && (
-            <div className="mt-3 text-center text-white">Choose two people to see their relationship.</div>
+          ) : (
+            <>
+              <form className="mt-3 flex w-full flex-wrap items-start gap-2" onSubmit={handleSearchSubmit}>
+                <div className="relative w-full flex-1">
+                  <input
+                    ref={searchInputRef}
+                    type="search"
+                    placeholder="Find a person"
+                    value={searchValue}
+                    onChange={handleSearchChange}
+                    onFocus={() => setSearchFocused(true)}
+                    onBlur={(event) => {
+                      const next = event.relatedTarget as Node | null
+                      if (next && searchResultsRef.current?.contains(next)) {
+                        return
+                      }
+                      setSearchFocused(false)
+                    }}
+                    className="w-full rounded-full border border-white/20 bg-black px-3 py-2 text-xs text-white placeholder-white/50 outline-none transition focus:border-white focus:ring-2 focus:ring-white/40"
+                  />
+                  {showSearchResults && (
+                    <div
+                      ref={searchResultsRef}
+                      className="pointer-events-auto absolute left-0 top-full z-10 mt-2 w-full overflow-hidden rounded-2xl border border-white/20 bg-black/95 shadow-[0_16px_40px_rgba(0,0,0,0.65)] backdrop-blur-sm"
+                    >
+                      {searchMatches.length > 0 ? (
+                        <ul className="divide-y divide-white/5">
+                          {searchMatches.map((person) => {
+                            const life = formatLifeSpan(person)
+                            return (
+                              <li key={person.id}>
+                                <button
+                                  type="button"
+                                  className="flex w-full flex-col gap-1 px-3 py-2 text-left text-xs text-white transition hover:bg-white/10 focus:bg-white/10 focus:outline-none"
+                                  onMouseDown={(event) => event.preventDefault()}
+                                  onClick={() => handleSearchResultSelect(person)}
+                                  onFocus={() => setSearchFocused(true)}
+                                  onBlur={(event) => {
+                                    const next = event.relatedTarget as Node | null
+                                    if (
+                                      next &&
+                                      (next === searchInputRef.current || searchResultsRef.current?.contains(next))
+                                    ) {
+                                      return
+                                    }
+                                    setSearchFocused(false)
+                                  }}
+                                >
+                                  <span className="text-sm font-semibold text-white">{person.fullName}</span>
+                                  <span className="text-[11px] uppercase tracking-[0.25em] text-white/60">
+                                    {person.branch} · Gen {person.generation}
+                                  </span>
+                                  {life && <span className="text-[11px] text-white/40">{life}</span>}
+                                </button>
+                              </li>
+                            )
+                          })}
+                        </ul>
+                      ) : (
+                        <div className="px-3 py-2 text-xs text-white/60">No matching people.</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <button
+                  type="submit"
+                  className="rounded-full border border-white/20 bg-black px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-white/10"
+                >
+                  Search
+                </button>
+              </form>
+              {searchFeedback && (
+                <div className="mt-2 rounded-full border border-white/20 bg-black px-3 py-1 text-[11px] text-white">
+                  {searchFeedback}
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
 
-    
+      {isLegendOpen && isMobile && (
+        <div className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm" onClick={toggleLegend} />
+      )}
 
-      <div className="pointer-events-none absolute right-4 top-4 flex flex-col gap-3 text-xs text-white">
-        <div className="pointer-events-auto rounded-2xl border border-white/20 bg-black p-4 shadow-[0_24px_60px_rgba(0,0,0,0.75)]">
-          <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-white">
-            Branch legend
-          </div>
-          <div className="grid gap-2">
-            {branchList.map((branch) => (
-              <div key={branch} className="flex items-center gap-3 text-white">
-                <span
-                  className="h-3 w-3 rounded-full shadow-[0_0_8px_2px_rgba(244,178,143,0.25)]"
-                  style={{ background: getBranchColor(branch) }}
-                />
-                <span className="text-sm font-medium tracking-wide">{branch}</span>
-              </div>
-            ))}
-          </div>
+      <button
+        type="button"
+        onClick={toggleLegend}
+        className="fixed right-4 top-4 z-50 rounded-full border border-white/20 bg-black/70 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.35em] text-white transition hover:bg-white/10 md:text-[11px]"
+        aria-expanded={isLegendOpen}
+        aria-controls="branch-legend-panel"
+      >
+        {isLegendOpen ? 'Hide Legend' : 'Show Legend'}
+      </button>
+
+      <div
+        id="branch-legend-panel"
+        className={`fixed right-4 top-20 z-40 w-[min(260px,80vw)] max-h-[70vh] overflow-y-auto rounded-3xl border border-white/15 bg-black/85 p-4 text-xs text-white shadow-[0_24px_60px_rgba(0,0,0,0.75)] backdrop-blur transition-all duration-300 ${
+          isLegendOpen ? 'pointer-events-auto translate-x-0 opacity-100' : 'pointer-events-none translate-x-[120%] opacity-0'
+        }`}
+      >
+        <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.3em] text-white">
+          Branch legend
+        </div>
+        <div className="grid gap-2">
+          {branchList.map((branch) => (
+            <div key={branch} className="flex items-center gap-3 text-white">
+              <span
+                className="h-3 w-3 rounded-full shadow-[0_0_8px_2px_rgba(244,178,143,0.25)]"
+                style={{ background: getBranchColor(branch) }}
+              />
+              <span className="text-sm font-medium tracking-wide">{branch}</span>
+            </div>
+          ))}
         </div>
       </div>
+
+      {!isMobile && (
+        <div className="pointer-events-none fixed inset-x-0 bottom-6 flex w-full justify-center px-4 text-xs text-white">
+          <div className="pointer-events-auto flex w-full max-w-3xl flex-col gap-3 rounded-3xl border border-white/15 bg-black/75 px-6 py-5 shadow-[0_24px_60px_rgba(0,0,0,0.75)] backdrop-blur">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => beginSelection('selectA')}
+                  className={`rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] transition ${
+                    isSelectingA
+                      ? 'border border-white bg-white/10 text-white'
+                      : 'border border-white/20 bg-black text-white hover:bg-white/10'
+                  }`}
+                >
+                  Select A
+                </button>
+                <div className="flex flex-col">
+                  <span className="text-[10px] uppercase tracking-[0.3em] text-white/60">Person A</span>
+                  <span className="text-sm font-semibold text-white">{personALabel}</span>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => beginSelection('selectB')}
+                  className={`rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] transition ${
+                    isSelectingB
+                      ? 'border border-white bg-white/10 text-white'
+                      : 'border border-white/20 bg-black text-white hover:bg-white/10'
+                  }`}
+                >
+                  Select B
+                </button>
+                <div className="flex flex-col">
+                  <span className="text-[10px] uppercase tracking-[0.3em] text-white/60">Person B</span>
+                  <span className="text-sm font-semibold text-white">{personBLabel}</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={clearSelections}
+                className="rounded-full border border-white/20 bg-black px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-white/10"
+              >
+                Clear A &amp; B
+              </button>
+            </div>
+            {selectionMode !== 'none' && (
+              <div className="rounded-2xl border border-white/20 bg-black/70 px-3 py-2 text-center text-[10px] uppercase tracking-[0.3em] text-white">
+                {isSelectingA ? 'Click a person to set A' : 'Click a person to set B'}
+              </div>
+            )}
+            {relationshipSummary && personA && personB ? (
+              <div className="space-y-1 text-center text-sm">
+                <div>
+                  {personA.fullName} is {relationshipSummary.fromAToB} of {personB.fullName}
+                </div>
+                <div>
+                  {personB.fullName} is {relationshipSummary.fromBToA} of {personA.fullName}
+                </div>
+              </div>
+            ) : (
+              <div className="text-center text-sm text-white/70">Choose two people to see their relationship.</div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {isMobile && (
+        <>
+          <button
+            type="button"
+            onClick={() => (isControlSheetOpen ? closeControlSheet() : openControlSheet())}
+            className="fixed bottom-6 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full border border-white/25 bg-white/15 text-[10px] font-semibold uppercase tracking-[0.3em] text-white shadow-[0_16px_32px_rgba(0,0,0,0.65)] backdrop-blur transition hover:bg-white/25"
+            aria-expanded={isControlSheetOpen}
+            aria-controls="mobile-control-sheet"
+          >
+            {isControlSheetOpen ? 'Close' : 'Tools'}
+          </button>
+
+          <div
+            className={`fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity duration-200 ${
+              isControlSheetOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
+            }`}
+            onClick={closeControlSheet}
+          />
+
+          <div
+            id="mobile-control-sheet"
+            className={`fixed inset-x-0 bottom-0 z-50 transform transition-transform duration-300 ease-out ${
+              isControlSheetOpen ? 'translate-y-0' : 'translate-y-full'
+            }`}
+            role="dialog"
+            aria-label="Family tree tools"
+          >
+            <div className="rounded-t-3xl border border-white/20 bg-black/90 px-5 pb-6 pt-4 shadow-[0_-12px_40px_rgba(0,0,0,0.7)] backdrop-blur">
+              <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-white/20" />
+              <div className="space-y-4 text-xs text-white">
+                <form className="flex w-full flex-wrap items-start gap-2" onSubmit={handleSearchSubmit}>
+                  <div className="relative w-full flex-1">
+                    <input
+                      ref={searchInputRef}
+                      type="search"
+                      placeholder="Find a person"
+                      value={searchValue}
+                      onChange={handleSearchChange}
+                      onFocus={() => setSearchFocused(true)}
+                      onBlur={(event) => {
+                        const next = event.relatedTarget as Node | null
+                        if (next && searchResultsRef.current?.contains(next)) {
+                          return
+                        }
+                        setSearchFocused(false)
+                      }}
+                      className="w-full rounded-full border border-white/20 bg-black px-3 py-2 text-xs text-white placeholder-white/50 outline-none transition focus:border-white focus:ring-2 focus:ring-white/40"
+                    />
+                    {showSearchResults && (
+                      <div
+                        ref={searchResultsRef}
+                        className="pointer-events-auto absolute left-0 top-full z-10 mt-2 w-full overflow-hidden rounded-2xl border border-white/20 bg-black/95 shadow-[0_16px_40px_rgba(0,0,0,0.65)] backdrop-blur-sm"
+                      >
+                        {searchMatches.length > 0 ? (
+                          <ul className="divide-y divide-white/5">
+                            {searchMatches.map((person) => {
+                              const life = formatLifeSpan(person)
+                              return (
+                                <li key={person.id}>
+                                  <button
+                                    type="button"
+                                    className="flex w-full flex-col gap-1 px-3 py-2 text-left text-xs text-white transition hover:bg-white/10 focus:bg-white/10 focus:outline-none"
+                                    onMouseDown={(event) => event.preventDefault()}
+                                    onClick={() => handleSearchResultSelect(person)}
+                                    onFocus={() => setSearchFocused(true)}
+                                    onBlur={(event) => {
+                                      const next = event.relatedTarget as Node | null
+                                      if (
+                                        next &&
+                                        (next === searchInputRef.current || searchResultsRef.current?.contains(next))
+                                      ) {
+                                        return
+                                      }
+                                      setSearchFocused(false)
+                                    }}
+                                  >
+                                    <span className="text-sm font-semibold text-white">{person.fullName}</span>
+                                    <span className="text-[11px] uppercase tracking-[0.25em] text-white/60">
+                                      {person.branch} · Gen {person.generation}
+                                    </span>
+                                    {life && <span className="text-[11px] text-white/40">{life}</span>}
+                                  </button>
+                                </li>
+                              )
+                            })}
+                          </ul>
+                        ) : (
+                          <div className="px-3 py-2 text-xs text-white/60">No matching people.</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    type="submit"
+                    className="rounded-full border border-white/20 bg-black px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-white/10"
+                  >
+                    Search
+                  </button>
+                </form>
+                {searchFeedback && (
+                  <div className="rounded-full border border-white/20 bg-black px-3 py-1 text-[11px] text-white">
+                    {searchFeedback}
+                  </div>
+                )}
+
+                <div className="space-y-3">
+                  <div
+                    className={`flex items-center justify-between rounded-2xl border px-3 py-3 ${
+                      isSelectingA ? 'border-white/50 bg-white/10' : 'border-white/20 bg-black/60'
+                    }`}
+                  >
+                    <div>
+                      <div className="text-[10px] uppercase tracking-[0.3em] text-white/60">Person A</div>
+                      <div className="mt-1 text-sm font-semibold text-white">{personALabel}</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => beginSelection('selectA')}
+                      className="rounded-full border border-white/25 bg-white/10 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.3em] text-white transition hover:bg-white/20"
+                    >
+                      {isSelectingA ? 'Selecting…' : 'Select'}
+                    </button>
+                  </div>
+
+                  <div
+                    className={`flex items-center justify-between rounded-2xl border px-3 py-3 ${
+                      isSelectingB ? 'border-white/50 bg-white/10' : 'border-white/20 bg-black/60'
+                    }`}
+                  >
+                    <div>
+                      <div className="text-[10px] uppercase tracking-[0.3em] text-white/60">Person B</div>
+                      <div className="mt-1 text-sm font-semibold text-white">{personBLabel}</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => beginSelection('selectB')}
+                      className="rounded-full border border-white/25 bg-white/10 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.3em] text-white transition hover:bg-white/20"
+                    >
+                      {isSelectingB ? 'Selecting…' : 'Select'}
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={clearSelections}
+                  className="w-full rounded-full border border-white/25 bg-transparent px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.35em] text-white transition hover:bg-white/10"
+                >
+                  Clear A &amp; B
+                </button>
+
+                {selectionMode !== 'none' && (
+                  <div className="rounded-2xl border border-white/20 bg-black/70 px-3 py-2 text-center text-[10px] uppercase tracking-[0.3em] text-white">
+                    {isSelectingA ? 'Tap a person to set A' : 'Tap a person to set B'}
+                  </div>
+                )}
+
+                {relationshipSummary && personA && personB ? (
+                  <div className="space-y-1 text-center text-sm">
+                    <div>
+                      {personA.fullName} is {relationshipSummary.fromAToB} of {personB.fullName}
+                    </div>
+                    <div>
+                      {personB.fullName} is {relationshipSummary.fromBToA} of {personA.fullName}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center text-sm text-white/70">
+                    Choose two people to see their relationship.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
     </div>
   )
 }

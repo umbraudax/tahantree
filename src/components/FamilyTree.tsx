@@ -36,37 +36,48 @@ const FamilyTree = () => {
   const branchCount = new Set(data.units.map((unit) => unit.branch)).size
   const generationCount = data.people.reduce((max, person) => Math.max(max, person.generation), 0)
 
+  const stats = [
+    { key: 'people', label: 'People', value: data.people.length },
+    { key: 'units', label: 'Family Units', value: data.units.length },
+    { key: 'branches', label: 'Branches', value: branchCount },
+    { key: 'generations', label: 'Generations', value: generationCount },
+  ]
+
   return (
     <div className="flex h-full w-full flex-col text-white">
-      <div className="border-b border-white/10 bg-black px-6 py-2">
-        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-4 text-xs text-white">
-          <div className="w-full flex justify-center">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <span className="rounded-full border border-white/20 bg-black px-2 py-1 text-[10px] uppercase tracking-[0.3em] text-white">
-                  People
-                </span>
-                <span className="text-base font-semibold text-white">{data.people.length}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="rounded-full border border-white/20 bg-black px-2 py-1 text-[10px] uppercase tracking-[0.3em] text-white">
-                  Family Units
-                </span>
-                <span className="text-base font-semibold text-white">{data.units.length}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="rounded-full border border-white/20 bg-black px-2 py-1 text-[10px] uppercase tracking-[0.3em] text-white">
-                  Branches
-                </span>
-                <span className="text-base font-semibold text-white">{branchCount}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="rounded-full border border-white/20 bg-black px-2 py-1 text-[10px] uppercase tracking-[0.3em] text-white">
-                  Generations
-                </span>
-                <span className="text-base font-semibold text-white">{generationCount}</span>
-              </div>
+      <div className="border-b border-white/10 bg-black px-4 py-3 xs:px-5 sm:px-6 md:px-8 md:py-4">
+        <div className="mx-auto w-full max-w-6xl text-xs text-white">
+          <details className="group rounded-2xl border border-white/10 bg-black/60 px-4 py-3 backdrop-blur-sm transition-colors md:hidden">
+            <summary className="flex cursor-pointer items-center justify-between gap-3 text-white/80">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.35em]">Family Overview</span>
+              <span className="inline-flex min-w-[3.5rem] justify-end text-sm font-semibold text-white">
+                {data.people.length}
+              </span>
+            </summary>
+            <div className="mt-3 grid grid-cols-2 gap-3 text-white">
+              {stats.map((stat) => (
+                <div
+                  key={stat.key}
+                  className="flex flex-col gap-1 rounded-xl border border-white/10 bg-black/70 px-3 py-2"
+                >
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.3em] text-white/60">
+                    {stat.label}
+                  </span>
+                  <span className="text-base font-semibold text-white">{stat.value}</span>
+                </div>
+              ))}
             </div>
+          </details>
+
+          <div className="hidden items-center justify-center gap-5 text-white md:flex">
+            {stats.map((stat) => (
+              <div key={stat.key} className="flex items-center gap-3">
+                <span className="rounded-full border border-white/20 bg-black px-3 py-1.5 text-[11px] uppercase tracking-[0.35em] text-white/70">
+                  {stat.label}
+                </span>
+                <span className="text-lg font-semibold text-white md:text-xl">{stat.value}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
