@@ -227,6 +227,88 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     }
   }, [isMobile])
 
+  useEffect(() => {
+    if (!isMobile) return
+    if (typeof document === 'undefined' || typeof window === 'undefined') return
+
+    const svgElement = svgRef.current
+    if (!svgElement) return
+
+    const activePointers = new Set<number>()
+    let restore: {
+      htmlTouchAction: string
+      bodyTouchAction: string
+      htmlOverscrollBehavior: string
+      bodyOverscrollBehavior: string
+    } | null = null
+
+    const preventTouchMove = (event: TouchEvent) => {
+      if (activePointers.size === 0) return
+      event.preventDefault()
+    }
+
+    const lockInteractions = () => {
+      if (restore) return
+      const htmlElement = document.documentElement
+      const bodyElement = document.body
+      restore = {
+        htmlTouchAction: htmlElement.style.touchAction,
+        bodyTouchAction: bodyElement.style.touchAction,
+        htmlOverscrollBehavior: htmlElement.style.overscrollBehavior,
+        bodyOverscrollBehavior: bodyElement.style.overscrollBehavior,
+      }
+      htmlElement.style.touchAction = 'none'
+      bodyElement.style.touchAction = 'none'
+      htmlElement.style.overscrollBehavior = 'contain'
+      bodyElement.style.overscrollBehavior = 'contain'
+      document.addEventListener('touchmove', preventTouchMove, { passive: false })
+    }
+
+    const releaseInteractions = () => {
+      if (!restore) return
+      const htmlElement = document.documentElement
+      const bodyElement = document.body
+      htmlElement.style.touchAction = restore.htmlTouchAction
+      bodyElement.style.touchAction = restore.bodyTouchAction
+      htmlElement.style.overscrollBehavior = restore.htmlOverscrollBehavior
+      bodyElement.style.overscrollBehavior = restore.bodyOverscrollBehavior
+      restore = null
+      document.removeEventListener('touchmove', preventTouchMove)
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (event.pointerType !== 'touch') return
+      activePointers.add(event.pointerId)
+      lockInteractions()
+    }
+
+    const handlePointerRelease = (event: PointerEvent) => {
+      if (event.pointerType !== 'touch') return
+      activePointers.delete(event.pointerId)
+      if (activePointers.size === 0) {
+        releaseInteractions()
+      }
+    }
+
+    svgElement.addEventListener('pointerdown', handlePointerDown)
+    svgElement.addEventListener('pointerup', handlePointerRelease)
+    svgElement.addEventListener('pointercancel', handlePointerRelease)
+    svgElement.addEventListener('pointerleave', handlePointerRelease)
+    window.addEventListener('pointerup', handlePointerRelease)
+    window.addEventListener('pointercancel', handlePointerRelease)
+
+    return () => {
+      svgElement.removeEventListener('pointerdown', handlePointerDown)
+      svgElement.removeEventListener('pointerup', handlePointerRelease)
+      svgElement.removeEventListener('pointercancel', handlePointerRelease)
+      svgElement.removeEventListener('pointerleave', handlePointerRelease)
+      window.removeEventListener('pointerup', handlePointerRelease)
+      window.removeEventListener('pointercancel', handlePointerRelease)
+      activePointers.clear()
+      releaseInteractions()
+    }
+  }, [isMobile])
+
   const searchMatches = useMemo(() => {
     const query = searchValue.trim().toLowerCase()
     if (!query) return []
@@ -1170,7 +1252,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       <svg
         ref={svgRef}
         className="h-full w-full touch-none select-none"
-        style={{ overflow: 'visible' }}
+        style={{ overflow: 'visible', touchAction: 'none' }}
         role="img"
       >
         <defs>
