@@ -54,7 +54,7 @@ const FamilyTree = () => {
               <summary className="flex cursor-pointer items-center justify-between gap-3 text-white/80">
                 <span className="text-[11px] font-semibold uppercase tracking-[0.35em]">Family Overview</span>
                 <span className="inline-flex min-w-[3.5rem] justify-end text-sm font-semibold text-white">
-                  {data.people.length}
+                  {currentCount}
                 </span>
               </summary>
               <div className="mt-3 grid grid-cols-2 gap-3 text-white">

@@ -99,6 +99,7 @@ const App = () => {
       </main>
 
       <button
+        id="app-help-button"
         type="button"
         onClick={() => setTutorialOpen(true)}
         className="fixed bottom-4 left-4 z-[80] flex h-12 w-12 items-center justify-center rounded-full border border-white/30 bg-white/10 text-2xl font-semibold text-white shadow-[0_15px_30px_rgba(0,0,0,0.55)] transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-black md:bottom-6 md:left-6"

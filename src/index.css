@@ -34,3 +34,7 @@ body {
     touch-action: manipulation;
   }
 }
+
+body.mobile-control-sheet-open #app-help-button {
+  display: none;
+}

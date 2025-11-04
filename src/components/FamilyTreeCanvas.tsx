@@ -753,13 +753,12 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   }, [])
 
   useEffect(() => {
-    if (!isMobile) return
     if (typeof document === 'undefined') return
 
     const htmlElement = document.documentElement
     const bodyElement = document.body
 
-    if (isControlSheetOpen) {
+    if (isMobile && isControlSheetOpen) {
       if (!overscrollRestoreRef.current) {
         overscrollRestoreRef.current = {
           html: htmlElement.style.overscrollBehavior,
@@ -768,13 +767,18 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       }
       htmlElement.style.overscrollBehavior = 'contain'
       bodyElement.style.overscrollBehavior = 'contain'
-    } else if (overscrollRestoreRef.current) {
-      htmlElement.style.overscrollBehavior = overscrollRestoreRef.current.html
-      bodyElement.style.overscrollBehavior = overscrollRestoreRef.current.body
-      overscrollRestoreRef.current = null
+      bodyElement.classList.add('mobile-control-sheet-open')
+    } else {
+      bodyElement.classList.remove('mobile-control-sheet-open')
+      if (overscrollRestoreRef.current) {
+        htmlElement.style.overscrollBehavior = overscrollRestoreRef.current.html
+        bodyElement.style.overscrollBehavior = overscrollRestoreRef.current.body
+        overscrollRestoreRef.current = null
+      }
     }
 
     return () => {
+      bodyElement.classList.remove('mobile-control-sheet-open')
       if (overscrollRestoreRef.current) {
         htmlElement.style.overscrollBehavior = overscrollRestoreRef.current.html
         bodyElement.style.overscrollBehavior = overscrollRestoreRef.current.body
@@ -1192,7 +1196,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
 
   const mobileSearchFormClass = isMobileLandscape
     ? 'flex w-full flex-nowrap items-end gap-3'
-    : 'flex w-full flex-wrap items-start gap-2'
+    : 'flex w-full flex-nowrap items-end gap-2'
 
   const mobileSearchInputWrapperStyle: CSSProperties | undefined = isMobileLandscape
     ? { flexBasis: '50%', maxWidth: '50%', flexGrow: 0 }
@@ -1293,7 +1297,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   )
   const mobileSearchForm = (
     <form className={mobileSearchFormClass} onSubmit={handleSearchSubmit}>
-      <div className="relative w-full" style={mobileSearchInputWrapperStyle}>
+      <div className="relative w-full flex-1" style={mobileSearchInputWrapperStyle}>
         <input
           ref={searchInputRef}
           type="search"
@@ -1358,7 +1362,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       </div>
       <button
         type="submit"
-        className="rounded-full border border-white/20 bg-black px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-white/10"
+        className="flex-shrink-0 rounded-full border border-white/20 bg-black px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-white/10"
       >
         Search
       </button>
