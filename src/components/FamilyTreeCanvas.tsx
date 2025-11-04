@@ -1186,6 +1186,23 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     [collapsePerson],
   )
 
+  const mobileControlSheetContentClass = isMobileLandscape
+    ? 'grid gap-4 grid-cols-[minmax(0,0.58fr)_minmax(0,0.42fr)] items-start pr-1 text-xs text-white'
+    : 'space-y-4 overflow-y-auto pr-1 text-xs text-white'
+
+  const mobileSearchFormClass = isMobileLandscape
+    ? 'flex w-full flex-nowrap items-end gap-3'
+    : 'flex w-full flex-wrap items-start gap-2'
+
+  const mobileSearchInputWrapperStyle: CSSProperties | undefined = isMobileLandscape
+    ? { flexBasis: '50%', maxWidth: '50%', flexGrow: 0 }
+    : undefined
+
+  const personCardPaddingClass = isMobileLandscape ? 'py-2' : 'py-3'
+  const personCardControlGapClass = isMobileLandscape ? 'gap-1' : 'gap-2'
+  const personCardButtonsGapClass = isMobileLandscape ? 'gap-1.5' : 'gap-2'
+  const personCardButtonPaddingClass = isMobileLandscape ? 'px-3 py-1' : 'px-3 py-1.5'
+
   const relationshipSummary = useMemo(() => {
     if (!nodeAId || !nodeBId) return null
     return {
@@ -1201,6 +1218,152 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   const personALabel = personA?.fullName ?? '—'
   const personBLabel = personB?.fullName ?? '—'
   const isSelecting = selectionMode !== 'none'
+  const relationshipPanelContent =
+    relationshipSummary && personA && personB ? (
+      <div className="space-y-1 text-center text-sm">
+        <div>
+          {personA.fullName} is {relationshipSummary.fromAToB} of {personB.fullName}
+        </div>
+        <div>
+          {personB.fullName} is {relationshipSummary.fromBToA} of {personA.fullName}
+        </div>
+      </div>
+    ) : (
+      <div className="text-center text-sm text-white/70">Choose two people to see their relationship.</div>
+    )
+  const personACard = (
+    <div
+      className={`flex items-center justify-between rounded-2xl border px-3 ${personCardPaddingClass} ${
+        isSelectingA ? 'border-white/50 bg-white/10' : 'border-white/20 bg-black/60'
+      }`}
+    >
+      <div>
+        <div className="text-[10px] uppercase tracking-[0.3em] text-white/60">Person A</div>
+        <div className="mt-1 text-sm font-semibold text-white">{personALabel}</div>
+      </div>
+      <div className={`flex flex-col items-end ${personCardControlGapClass}`}>
+        <div className={`flex items-center ${personCardButtonsGapClass}`}>
+          <button
+            type="button"
+            onClick={() => beginSelection('selectA')}
+            className={`rounded-full border border-white/25 bg-white/10 px-3 text-[10px] font-semibold uppercase tracking-[0.3em] text-white transition hover:bg-white/20 ${personCardButtonPaddingClass}`}
+          >
+            {isSelectingA ? 'Selecting…' : 'Select'}
+          </button>
+          <button
+            type="button"
+            onClick={() => assignLastSearchResultToRole('A')}
+            className={`rounded-full border border-white/25 bg-black/40 px-3 text-[10px] font-semibold uppercase tracking-[0.3em] text-white transition hover:bg-white/10 ${personCardButtonPaddingClass}`}
+          >
+            + Search
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+  const personBCard = (
+    <div
+      className={`flex items-center justify-between rounded-2xl border px-3 ${personCardPaddingClass} ${
+        isSelectingB ? 'border-white/50 bg-white/10' : 'border-white/20 bg-black/60'
+      }`}
+    >
+      <div>
+        <div className="text-[10px] uppercase tracking-[0.3em] text-white/60">Person B</div>
+        <div className="mt-1 text-sm font-semibold text-white">{personBLabel}</div>
+      </div>
+      <div className={`flex flex-col items-end ${personCardControlGapClass}`}>
+        <div className={`flex items-center ${personCardButtonsGapClass}`}>
+          <button
+            type="button"
+            onClick={() => beginSelection('selectB')}
+            className={`rounded-full border border-white/25 bg-white/10 px-3 text-[10px] font-semibold uppercase tracking-[0.3em] text-white transition hover:bg-white/20 ${personCardButtonPaddingClass}`}
+          >
+            {isSelectingB ? 'Selecting…' : 'Select'}
+          </button>
+          <button
+            type="button"
+            onClick={() => assignLastSearchResultToRole('B')}
+            className={`rounded-full border border-white/25 bg-black/40 px-3 text-[10px] font-semibold uppercase tracking-[0.3em] text-white transition hover:bg-white/10 ${personCardButtonPaddingClass}`}
+          >
+            + Search
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+  const mobileSearchForm = (
+    <form className={mobileSearchFormClass} onSubmit={handleSearchSubmit}>
+      <div className="relative w-full" style={mobileSearchInputWrapperStyle}>
+        <input
+          ref={searchInputRef}
+          type="search"
+          placeholder="Find a person"
+          value={searchValue}
+          onChange={handleSearchChange}
+          onFocus={handleSearchFocus}
+          onBlur={(event) => {
+            const next = event.relatedTarget as Node | null
+            if (next && searchResultsRef.current?.contains(next)) {
+              return
+            }
+            setSearchFocused(false)
+          }}
+          onKeyDown={handleSearchInputKeyDown}
+          className="w-full rounded-full border border-white/20 bg-black px-3 py-2 text-xs text-white placeholder-white/50 outline-none transition focus:border-white focus:ring-2 focus:ring-white/40"
+        />
+        {showSearchResults && (
+          <div
+            ref={searchResultsRef}
+            className="pointer-events-auto absolute left-0 top-full z-10 mt-2 w-full overflow-hidden rounded-2xl border border-white/20 bg-black/95 shadow-[0_16px_40px_rgba(0,0,0,0.65)] backdrop-blur-sm"
+          >
+            {searchMatches.length > 0 ? (
+              <ul className="divide-y divide-white/5">
+                {searchMatches.map((person, index) => {
+                  const isActive = searchActiveIndex === index
+                  const life = formatLifeSpan(person)
+                  return (
+                    <li key={person.id}>
+                      <button
+                        type="button"
+                        className={`flex w-full flex-col gap-1 px-3 py-2 text-left text-xs text-white transition hover:bg-white/10 focus:bg-white/10 focus:outline-none ${
+                          isActive ? 'bg-white/10' : ''
+                        }`}
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() => handleSearchResultSelect(person)}
+                        onMouseEnter={() => setSearchActiveIndex(index)}
+                        onFocus={() => setSearchFocused(true)}
+                        onBlur={(event) => {
+                          const next = event.relatedTarget as Node | null
+                          if (next && (next === searchInputRef.current || searchResultsRef.current?.contains(next))) {
+                            return
+                          }
+                          setSearchFocused(false)
+                        }}
+                      >
+                        <span className="text-sm font-semibold text-white">{person.fullName}</span>
+                        <span className="text-[11px] uppercase tracking-[0.25em] text-white/60">
+                          {person.branch} · Gen {person.generation}
+                        </span>
+                        {life && <span className="text-[11px] text-white/40">{life}</span>}
+                      </button>
+                    </li>
+                  )
+                })}
+              </ul>
+            ) : (
+              <div className="px-3 py-2 text-xs text-white/60">No matching people.</div>
+            )}
+          </div>
+        )}
+      </div>
+      <button
+        type="submit"
+        className="rounded-full border border-white/20 bg-black px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-white/10"
+      >
+        Search
+      </button>
+    </form>
+  )
   const selectionMessage =
     selectionMode === 'selectA'
       ? 'Tap a person to set Person A'
@@ -1220,12 +1383,14 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   const mobileControlSheetStyle: CSSProperties | undefined = isMobile
     ? {
         maxHeight: '75vh',
-        transform: isControlSheetOpen ? `translateY(${controlSheetDragOffset}px)` : undefined,
+        ...(isControlSheetOpen ? { transform: `translateY(${controlSheetDragOffset}px)` } : {}),
       }
     : undefined
 
   const mobileControlSheetContentStyle: CSSProperties | undefined = isMobile
-    ? { maxHeight: 'calc(75vh - 120px)' }
+    ? isMobileLandscape
+      ? { maxHeight: 'none', overflowY: 'visible' }
+      : { maxHeight: 'calc(75vh - 120px)' }
     : undefined
 
   const parentChildLinks = useMemo(() => {
@@ -2037,18 +2202,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
                 {isSelectingA ? 'Click a person to set A' : 'Click a person to set B'}
               </div>
             )}
-            {relationshipSummary && personA && personB ? (
-              <div className="space-y-1 text-center text-sm">
-                <div>
-                  {personA.fullName} is {relationshipSummary.fromAToB} of {personB.fullName}
-                </div>
-                <div>
-                  {personB.fullName} is {relationshipSummary.fromBToA} of {personA.fullName}
-                </div>
-              </div>
-            ) : (
-              <div className="text-center text-sm text-white/70">Choose two people to see their relationship.</div>
-            )}
+            {relationshipPanelContent}
           </div>
         </div>
       )}
@@ -2087,176 +2241,65 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
                 </div>
               </div>
               <div
-                className="space-y-4 overflow-y-auto pr-1 text-xs text-white"
+                className={mobileControlSheetContentClass}
                 style={mobileControlSheetContentStyle}
               >
-                <form className="flex w-full flex-wrap items-start gap-2" onSubmit={handleSearchSubmit}>
-                  <div className="relative w-full flex-1">
-                    <input
-                      ref={searchInputRef}
-                      type="search"
-                      placeholder="Find a person"
-                      value={searchValue}
-                      onChange={handleSearchChange}
-                      onFocus={handleSearchFocus}
-                      onBlur={(event) => {
-                        const next = event.relatedTarget as Node | null
-                        if (next && searchResultsRef.current?.contains(next)) {
-                          return
-                        }
-                        setSearchFocused(false)
-                      }}
-                      onKeyDown={handleSearchInputKeyDown}
-                      className="w-full rounded-full border border-white/20 bg-black px-3 py-2 text-xs text-white placeholder-white/50 outline-none transition focus:border-white focus:ring-2 focus:ring-white/40"
-                    />
-                    {showSearchResults && (
-                      <div
-                        ref={searchResultsRef}
-                        className="pointer-events-auto absolute left-0 top-full z-10 mt-2 w-full overflow-hidden rounded-2xl border border-white/20 bg-black/95 shadow-[0_16px_40px_rgba(0,0,0,0.65)] backdrop-blur-sm"
+                {isMobileLandscape ? (
+                  <>
+                    <div className="flex flex-col gap-3">
+                      {mobileSearchForm}
+                      {searchFeedback && (
+                        <div className="rounded-full border border-white/20 bg-black px-3 py-1 text-[11px] text-white">
+                          {searchFeedback}
+                        </div>
+                      )}
+                      <div className="flex flex-col gap-3">
+                        {personACard}
+                        {personBCard}
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-3">
+                      <button
+                        type="button"
+                        onClick={clearSelections}
+                        className="w-full rounded-full border border-white/25 bg-transparent px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.35em] text-white transition hover:bg-white/10"
                       >
-                        {searchMatches.length > 0 ? (
-                          <ul className="divide-y divide-white/5">
-                            {searchMatches.map((person, index) => {
-                              const isActive = searchActiveIndex === index
-                              const life = formatLifeSpan(person)
-                              return (
-                                <li key={person.id}>
-                                  <button
-                                    type="button"
-                                    className={`flex w-full flex-col gap-1 px-3 py-2 text-left text-xs text-white transition hover:bg-white/10 focus:bg-white/10 focus:outline-none ${
-                                      isActive ? 'bg-white/10' : ''
-                                    }`}
-                                    onMouseDown={(event) => event.preventDefault()}
-                                    onClick={() => handleSearchResultSelect(person)}
-                                    onMouseEnter={() => setSearchActiveIndex(index)}
-                                    onFocus={() => setSearchFocused(true)}
-                                    onBlur={(event) => {
-                                      const next = event.relatedTarget as Node | null
-                                      if (
-                                        next &&
-                                        (next === searchInputRef.current || searchResultsRef.current?.contains(next))
-                                      ) {
-                                        return
-                                      }
-                                      setSearchFocused(false)
-                                    }}
-                                  >
-                                    <span className="text-sm font-semibold text-white">{person.fullName}</span>
-                                    <span className="text-[11px] uppercase tracking-[0.25em] text-white/60">
-                                      {person.branch} · Gen {person.generation}
-                                    </span>
-                                    {life && <span className="text-[11px] text-white/40">{life}</span>}
-                                  </button>
-                                </li>
-                              )
-                            })}
-                          </ul>
-                        ) : (
-                          <div className="px-3 py-2 text-xs text-white/60">No matching people.</div>
-                        )}
+                        Clear A &amp; B
+                      </button>
+                      {selectionMode !== 'none' && (
+                        <div className="rounded-2xl border border-white/20 bg-black/70 px-3 py-2 text-center text-[10px] uppercase tracking-[0.3em] text-white">
+                          {selectionMessage}
+                        </div>
+                      )}
+                      {relationshipPanelContent}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {mobileSearchForm}
+                    {searchFeedback && (
+                      <div className="rounded-full border border-white/20 bg-black px-3 py-1 text-[11px] text-white">
+                        {searchFeedback}
                       </div>
                     )}
-                  </div>
-                  <button
-                    type="submit"
-                    className="rounded-full border border-white/20 bg-black px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-white/10"
-                  >
-                    Search
-                  </button>
-                </form>
-                {searchFeedback && (
-                  <div className="rounded-full border border-white/20 bg-black px-3 py-1 text-[11px] text-white">
-                    {searchFeedback}
-                  </div>
-                )}
-
-                <div className="space-y-3">
-                  <div
-                    className={`flex items-center justify-between rounded-2xl border px-3 py-3 ${
-                      isSelectingA ? 'border-white/50 bg-white/10' : 'border-white/20 bg-black/60'
-                    }`}
-                  >
-                    <div>
-                      <div className="text-[10px] uppercase tracking-[0.3em] text-white/60">Person A</div>
-                      <div className="mt-1 text-sm font-semibold text-white">{personALabel}</div>
+                    <div className="space-y-3">
+                      {personACard}
+                      {personBCard}
                     </div>
-                  <div className="flex flex-col items-end gap-2">
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => beginSelection('selectA')}
-                        className="rounded-full border border-white/25 bg-white/10 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.3em] text-white transition hover:bg-white/20"
-                      >
-                        {isSelectingA ? 'Selecting…' : 'Select'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => assignLastSearchResultToRole('A')}
-                        className="rounded-full border border-white/25 bg-black/40 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.3em] text-white transition hover:bg-white/10"
-                      >
-                        + Search
-                      </button>
-                    </div>
-                  </div>
-                  </div>
-
-                  <div
-                    className={`flex items-center justify-between rounded-2xl border px-3 py-3 ${
-                      isSelectingB ? 'border-white/50 bg-white/10' : 'border-white/20 bg-black/60'
-                    }`}
-                  >
-                    <div>
-                      <div className="text-[10px] uppercase tracking-[0.3em] text-white/60">Person B</div>
-                      <div className="mt-1 text-sm font-semibold text-white">{personBLabel}</div>
-                    </div>
-                  <div className="flex flex-col items-end gap-2">
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => beginSelection('selectB')}
-                        className="rounded-full border border-white/25 bg-white/10 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.3em] text-white transition hover:bg-white/20"
-                      >
-                        {isSelectingB ? 'Selecting…' : 'Select'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => assignLastSearchResultToRole('B')}
-                        className="rounded-full border border-white/25 bg-black/40 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.3em] text-white transition hover:bg-white/10"
-                      >
-                        + Search
-                      </button>
-                    </div>
-                  </div>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={clearSelections}
-                  className="w-full rounded-full border border-white/25 bg-transparent px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.35em] text-white transition hover:bg-white/10"
-                >
-                  Clear A &amp; B
-                </button>
-
-                {selectionMode !== 'none' && (
-                  <div className="rounded-2xl border border-white/20 bg-black/70 px-3 py-2 text-center text-[10px] uppercase tracking-[0.3em] text-white">
-                    {isSelectingA ? 'Tap a person to set A' : 'Tap a person to set B'}
-                  </div>
-                )}
-
-                {relationshipSummary && personA && personB ? (
-                  <div className="space-y-1 text-center text-sm">
-                    <div>
-                      {personA.fullName} is {relationshipSummary.fromAToB} of {personB.fullName}
-                    </div>
-                    <div>
-                      {personB.fullName} is {relationshipSummary.fromBToA} of {personA.fullName}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center text-sm text-white/70">
-                    Choose two people to see their relationship.
-                  </div>
+                    <button
+                      type="button"
+                      onClick={clearSelections}
+                      className="w-full rounded-full border border-white/25 bg-transparent px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.35em] text-white transition hover:bg-white/10"
+                    >
+                      Clear A &amp; B
+                    </button>
+                    {selectionMode !== 'none' && (
+                      <div className="rounded-2xl border border-white/20 bg-black/70 px-3 py-2 text-center text-[10px] uppercase tracking-[0.3em] text-white">
+                        {selectionMessage}
+                      </div>
+                    )}
+                    {relationshipPanelContent}
+                  </>
                 )}
               </div>
             </div>
