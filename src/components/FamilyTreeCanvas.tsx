@@ -209,7 +209,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     { pointerId: null, startY: 0, initialTranslation: 0 },
   )
   const topSheetRef = useRef<HTMLDivElement | null>(null)
-  const [topSheetHeight, setTopSheetHeight] = useState(0)
+  const [topSheetHeight, setTopSheetHeight] = useState(320)
   const [lastSearchResultId, setLastSearchResultId] = useState<string | null>(null)
   const searchInputRef = useRef<HTMLInputElement | null>(null)
   const searchResultsRef = useRef<HTMLDivElement | null>(null)
@@ -230,22 +230,23 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   }, [isMobile])
 
   useEffect(() => {
-    if (!isMobile) {
+    if (!isMobileLandscape) {
       setTopSheetOpen(false)
       setTopSheetDragTranslation(null)
-      return
     }
-  }, [isMobile])
+  }, [isMobileLandscape])
 
   useEffect(() => {
-    if (!isMobile) return
+    if (!isMobileLandscape) return
     if (isControlSheetOpen) {
       setTopSheetOpen(false)
       setTopSheetDragTranslation(null)
     }
-  }, [isControlSheetOpen, isMobile])
+  }, [isControlSheetOpen, isMobileLandscape])
 
   useEffect(() => {
+    if (!isMobileLandscape) return
+
     const node = topSheetRef.current
     if (!node) return
 
@@ -265,7 +266,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     return () => {
       window.removeEventListener('resize', measure)
     }
-  }, [isMobile, isMobileLandscape])
+  }, [isMobileLandscape])
 
   useEffect(() => {
     const svgElement = svgRef.current
@@ -1238,43 +1239,43 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
   setControlSheetDragging(false)
 }, [])
 
-const landscapeContentPadding = isMobileLandscape
-  ? 'pl-[calc(env(safe-area-inset-left,0px)+12px)] pr-[calc(env(safe-area-inset-right,0px)+12px)]'
-  : ''
+  const landscapeContentPadding = isMobileLandscape
+    ? 'pl-[calc(env(safe-area-inset-left,0px)+12px)] pr-[calc(env(safe-area-inset-right,0px)+12px)]'
+    : ''
 
-const mobileControlSheetContentClass = isMobileLandscape
-  ? `grid gap-4 grid-cols-[minmax(0,0.58fr)_minmax(0,0.42fr)] items-start text-xs text-white ${landscapeContentPadding}`
-  : 'space-y-4 overflow-y-auto pr-1 text-xs text-white'
+  const mobileControlSheetContentClass = isMobileLandscape
+    ? `grid gap-4 grid-cols-[minmax(0,0.58fr)_minmax(0,0.42fr)] items-start text-xs text-white ${landscapeContentPadding}`
+    : 'space-y-4 overflow-y-auto pr-1 text-xs text-white'
 
-const mobileSearchFormClass = isMobileLandscape
-  ? 'flex w-full flex-nowrap items-end gap-3'
-  : 'flex w-full flex-nowrap items-end gap-2'
+  const mobileSearchFormClass = isMobileLandscape
+    ? 'flex w-full flex-nowrap items-end gap-3'
+    : 'flex w-full flex-nowrap items-end gap-2'
 
-const mobileSearchInputWrapperStyle: CSSProperties | undefined = isMobileLandscape
-  ? { flexBasis: '50%', maxWidth: '50%', flexGrow: 0 }
-  : undefined
+  const mobileSearchInputWrapperStyle: CSSProperties | undefined = isMobileLandscape
+    ? { flexBasis: '50%', maxWidth: '50%', flexGrow: 0 }
+    : undefined
 
-const personCardPaddingClass = isMobileLandscape ? 'py-2' : 'py-3'
-const personCardControlGapClass = isMobileLandscape ? 'gap-1' : 'gap-2'
-const personCardButtonsGapClass = isMobileLandscape ? 'gap-1.5' : 'gap-2'
-const personCardButtonPaddingClass = isMobileLandscape ? 'px-3 py-1' : 'px-3 py-1.5'
-const legendButtonStyle: CSSProperties | undefined = isMobileLandscape
-  ? {
-      top: 'calc(env(safe-area-inset-top, 0px) + 8px)',
-      right: 'calc(env(safe-area-inset-right, 0px) + 12px)',
-    }
-  : undefined
-const TOP_SHEET_HANDLE_HEIGHT = 72
-const topSheetClosedOffset = Math.max(topSheetHeight - TOP_SHEET_HANDLE_HEIGHT, 0)
-const topSheetBaseTranslation = isTopSheetOpen ? 0 : -topSheetClosedOffset
-const effectiveTopSheetTranslation =
-  isTopSheetDragging && topSheetDragTranslation !== null ? topSheetDragTranslation : topSheetBaseTranslation
-const topSheetContentStyle: CSSProperties | undefined = isMobileLandscape
-  ? {
-      paddingLeft: 'calc(env(safe-area-inset-left, 0px) + 12px)',
-      paddingRight: 'calc(env(safe-area-inset-right, 0px) + 12px)',
-    }
-  : undefined
+  const personCardPaddingClass = isMobileLandscape ? 'py-2' : 'py-3'
+  const personCardControlGapClass = isMobileLandscape ? 'gap-1' : 'gap-2'
+  const personCardButtonsGapClass = isMobileLandscape ? 'gap-1.5' : 'gap-2'
+  const personCardButtonPaddingClass = isMobileLandscape ? 'px-3 py-1' : 'px-3 py-1.5'
+  const legendButtonStyle: CSSProperties | undefined = isMobileLandscape
+    ? {
+        top: 'calc(env(safe-area-inset-top, 0px) + 8px)',
+        right: 'calc(env(safe-area-inset-right, 0px) + 12px)',
+      }
+    : undefined
+  const TOP_SHEET_HANDLE_HEIGHT = 72
+  const topSheetClosedOffset = Math.max(topSheetHeight - TOP_SHEET_HANDLE_HEIGHT, 0)
+  const topSheetBaseTranslation = isTopSheetOpen ? 0 : -topSheetClosedOffset
+  const effectiveTopSheetTranslation =
+    isTopSheetDragging && topSheetDragTranslation !== null ? topSheetDragTranslation : topSheetBaseTranslation
+  const topSheetContentStyle: CSSProperties | undefined = isMobileLandscape
+    ? {
+        paddingLeft: 'calc(env(safe-area-inset-left, 0px) + 12px)',
+        paddingRight: 'calc(env(safe-area-inset-right, 0px) + 12px)',
+      }
+    : undefined
 
 const handleTopSheetDragStart = useCallback(
     (event: ReactPointerEvent<HTMLElement>) => {
@@ -2242,14 +2243,15 @@ const handleTopSheetDragStart = useCallback(
           })}
         </g>
       </svg>
-      {isMobile ? (
+      {isMobileLandscape ? (
         <div className="pointer-events-none fixed inset-x-0 top-0 z-60">
           <div
             ref={topSheetRef}
-            className="pointer-events-auto"
+            className="pointer-events-auto mx-auto"
             style={{
               transform: `translateY(${effectiveTopSheetTranslation}px)` ,
               transition: isTopSheetDragging ? 'none' : 'transform 0.25s ease-out',
+              width: 'min(296px, calc(100vw - 112px))',
             }}
           >
             <div
@@ -2259,7 +2261,7 @@ const handleTopSheetDragStart = useCallback(
               <div className="flex justify-center pt-[calc(env(safe-area-inset-top,0px)+8px)] pb-2">
                 <button
                   type="button"
-                  className="flex h-14 w-36 cursor-grab items-center justify-center rounded-full bg-white/10 text-white outline-none transition focus:ring-2 focus:ring-white/40 focus:ring-offset-2 focus:ring-offset-black active:cursor-grabbing"
+                  className="flex h-14 w-32 cursor-grab items-center justify-center rounded-full bg-white/10 text-white outline-none transition focus:ring-2 focus:ring-white/40 focus:ring-offset-2 focus:ring-offset-black active:cursor-grabbing"
                   aria-label={isTopSheetOpen ? 'Collapse top controls' : 'Expand top controls'}
                   onPointerDown={handleTopSheetDragStart}
                   onPointerMove={handleTopSheetDragMove}
@@ -2283,7 +2285,7 @@ const handleTopSheetDragStart = useCallback(
       ) : (
         <div
           className={`pointer-events-none absolute z-30 ${
-            isMobileLandscape ? 'max-w-[360px]' : 'left-6 top-6 w-[360px]'
+            isMobile ? 'left-3 right-3 top-3' : 'left-6 top-6 w-[360px]'
           } flex flex-col gap-3 text-xs text-white`}
           style={floatingToolbarStyle}
         >
