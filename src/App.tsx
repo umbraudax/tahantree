@@ -47,6 +47,13 @@ const App = () => {
   const [isTutorialOpen, setTutorialOpen] = useState(false)
   const { isMobile, isLandscape } = useBreakpoint()
   const isMobileLandscape = isMobile && isLandscape
+  const helpButtonStyle = isMobileLandscape
+    ? {
+        top: 'calc(env(safe-area-inset-top, 0px) + 12px)',
+        left: 'calc(env(safe-area-inset-left, 0px) + 72px)',
+      }
+    : undefined
+  const helpButtonPositionClasses = isMobileLandscape ? '' : 'bottom-4 left-4 md:bottom-6 md:left-6'
 
   useEffect(() => {
     if (!isTutorialOpen) return
@@ -100,7 +107,8 @@ const App = () => {
         id="app-help-button"
         type="button"
         onClick={() => setTutorialOpen(true)}
-        className="fixed bottom-4 left-4 z-[80] flex h-12 w-12 items-center justify-center rounded-full border border-white/30 bg-white/10 text-2xl font-semibold text-white shadow-[0_15px_30px_rgba(0,0,0,0.55)] transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-black md:bottom-6 md:left-6"
+        className={`fixed z-[80] flex h-12 w-12 items-center justify-center rounded-full border border-white/30 bg-white/10 text-2xl font-semibold text-white shadow-[0_15px_30px_rgba(0,0,0,0.55)] transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-black ${helpButtonPositionClasses}`}
+        style={helpButtonStyle}
         aria-haspopup="dialog"
         aria-expanded={isTutorialOpen}
         aria-controls="app-tutorial-dialog"

@@ -1248,45 +1248,40 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
       }
     : undefined
 
-  const landscapePanelStyle: CSSProperties = {
-    transform: isLandscapeControlsOpen ? 'translateX(0)' : 'translateX(calc(-100% - 14px))',
-    opacity: isLandscapeControlsOpen ? 1 : 0,
-    pointerEvents: isLandscapeControlsOpen ? 'auto' : 'none',
-  }
-
   const cameraButtonStyle: CSSProperties = {
     top: 'calc(env(safe-area-inset-top, 0px) + 12px)',
     left: 'calc(env(safe-area-inset-left, 0px) + 12px)',
   }
 
-  const landscapeControlsButtons = (
-    <div className="flex flex-col items-center gap-3">
-      <button
-        type="button"
-        className="grid h-12 w-12 place-items-center rounded-full border border-white/30 bg-white/10 text-2xl text-white transition hover:bg-white/20"
-        onClick={() => zoomByFactor(1.2)}
-        aria-label="Zoom in"
-      >
-        +
-      </button>
-      <button
-        type="button"
-        className="grid h-12 w-12 place-items-center rounded-full border border-white/30 bg-white/10 text-2xl text-white transition hover:bg-white/20"
-        onClick={() => zoomByFactor(0.8)}
-        aria-label="Zoom out"
-      >
-        −
-      </button>
-      <button
-        type="button"
-        className="grid h-12 w-12 place-items-center rounded-full border border-white/30 bg-white/10 text-xl text-white transition hover:bg-white/20"
-        onClick={resetView}
-        aria-label="Reset view"
-      >
-        ↺
-      </button>
-    </div>
-  )
+  const radialControlButtons: Array<{
+    key: string
+    label: string
+    icon: string
+    onClick: () => void
+    offset: { x: number; y: number }
+  }> = [
+    {
+      key: 'zoom-in',
+      label: 'Zoom in',
+      icon: '+',
+      onClick: () => zoomByFactor(1.2),
+      offset: { x: 64, y: 0 },
+    },
+    {
+      key: 'zoom-out',
+      label: 'Zoom out',
+      icon: '−',
+      onClick: () => zoomByFactor(0.8),
+      offset: { x: 56, y: 56 },
+    },
+    {
+      key: 'reset',
+      label: 'Reset view',
+      icon: '↺',
+      onClick: resetView,
+      offset: { x: 0, y: 72 },
+    },
+  ]
 
 
   const handlePersonPointerEnter = useCallback(
@@ -2192,33 +2187,57 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
       )}
 
       {isMobileLandscape ? (
-        <div className="fixed z-50 flex items-start gap-3" style={cameraButtonStyle}>
-          <button
-            type="button"
-            onClick={() => setLandscapeControlsOpen((current) => !current)}
-            className="flex h-14 w-14 items-center justify-center rounded-full border border-white/25 bg-black/80 text-white shadow-[0_12px_32px_rgba(0,0,0,0.65)] transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-black"
-            aria-expanded={isLandscapeControlsOpen}
-            aria-controls="landscape-control-panel"
-          >
-            <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="3" y="7" width="18" height="12" rx="2" stroke="currentColor" strokeWidth="1.6" />
-              <path
-                d="M9 7l1.5-2h3L15 7"
-                stroke="currentColor"
-                strokeWidth="1.6"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <circle cx="12" cy="13" r="3" stroke="currentColor" strokeWidth="1.6" />
-            </svg>
-          </button>
-          <div
-            id="landscape-control-panel"
-            className="rounded-3xl border border-white/20 bg-black/85 px-3 py-4 shadow-[0_12px_32px_rgba(0,0,0,0.7)] backdrop-blur transition-all duration-200 ease-out"
-            style={landscapePanelStyle}
-            aria-hidden={!isLandscapeControlsOpen}
-          >
-            {landscapeControlsButtons}
+        <div className="fixed z-50" style={cameraButtonStyle}>
+          <div className="relative h-14 w-14">
+            {radialControlButtons.map((control, index) => {
+              const openTransform = `translate(${control.offset.x}px, ${control.offset.y}px) scale(1)`
+              const closedTransform = 'translate(0px, 0px) scale(0.2)'
+              return (
+                <button
+                  key={control.key}
+                  type="button"
+                  onClick={() => {
+                    control.onClick()
+                    setLandscapeControlsOpen(false)
+                  }}
+                  className="absolute grid h-12 w-12 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-white/30 bg-white/10 text-xl text-white shadow-[0_8px_18px_rgba(0,0,0,0.4)] transition duration-200 ease-out hover:bg-white/25 focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-black"
+                  style={{
+                    top: '50%',
+                    left: '50%',
+                    transform: isLandscapeControlsOpen ? openTransform : closedTransform,
+                    opacity: isLandscapeControlsOpen ? 1 : 0,
+                    transitionDelay: isLandscapeControlsOpen ? `${index * 40}ms` : '0ms',
+                    pointerEvents: isLandscapeControlsOpen ? 'auto' : 'none',
+                  }}
+                  aria-label={control.label}
+                >
+                  {control.icon}
+                </button>
+              )
+            })}
+
+            <button
+              type="button"
+              onClick={() => setLandscapeControlsOpen((current) => !current)}
+              className="absolute left-0 top-0 grid h-14 w-14 place-items-center rounded-full border border-white/25 bg-black/80 text-white shadow-[0_12px_32px_rgba(0,0,0,0.65)] transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-black"
+              aria-expanded={isLandscapeControlsOpen}
+              aria-controls="landscape-control-panel"
+              style={{
+                pointerEvents: 'auto',
+              }}
+            >
+              <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="3" y="7" width="18" height="12" rx="2" stroke="currentColor" strokeWidth="1.6" />
+                <path
+                  d="M9 7l1.5-2h3L15 7"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <circle cx="12" cy="13" r="3" stroke="currentColor" strokeWidth="1.6" />
+              </svg>
+            </button>
           </div>
         </div>
       ) : (
@@ -2466,7 +2485,10 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
             onClick={() => {
               openControlSheet()
             }}
-            className="fixed bottom-4 right-4 z-50 grid h-14 w-14 place-items-center rounded-full border border-white/20 bg-black/80 text-3xl text-white shadow-[0_20px_40px_rgba(0,0,0,0.6)] transition hover:bg-white/15"
+            className={`fixed z-50 grid h-14 w-14 place-items-center rounded-full border border-white/20 bg-black/80 text-3xl text-white shadow-[0_20px_40px_rgba(0,0,0,0.6)] transition hover:bg-white/15 ${
+              isMobileLandscape ? '' : 'bottom-4 right-4'
+            }`}
+            style={isMobileLandscape ? { top: 'calc(env(safe-area-inset-top, 0px) + 12px)', right: 'calc(env(safe-area-inset-right, 0px) + 12px)' } : undefined}
           >
             <span aria-hidden="true">🔍</span>
             <span className="sr-only">Search &amp; Select</span>
@@ -2480,7 +2502,10 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
               setHoveredPersonId(null)
               openControlSheet()
             }}
-            className="fixed bottom-4 right-4 z-50 grid h-14 w-14 place-items-center rounded-full border border-white/20 bg-black/80 text-3xl text-white shadow-[0_20px_40px_rgba(0,0,0,0.6)] transition hover:bg-white/15"
+            className={`fixed z-50 grid h-14 w-14 place-items-center rounded-full border border-white/20 bg-black/80 text-3xl text-white shadow-[0_20px_40px_rgba(0,0,0,0.6)] transition hover:bg-white/15 ${
+              isMobileLandscape ? '' : 'bottom-4 right-4'
+            }`}
+            style={isMobileLandscape ? { top: 'calc(env(safe-area-inset-top, 0px) + 12px)', right: 'calc(env(safe-area-inset-right, 0px) + 12px)' } : undefined}
           >
             <span aria-hidden="true">×</span>
             <span className="sr-only">Cancel selection</span>
