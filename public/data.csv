@@ -111,9 +111,9 @@ ID,First,Last,Sex,Gen,Spouse,Divorced,Mother,Father,DOB,DOD,Branch
 110,Josephine,Russo,F,5,,FALSE,54,55,,,Homsany
 111,Genevieve,Russo,F,5,,FALSE,54,55,,,Homsany
 112,Elle,Russo,F,5,,FALSE,54,55,,,Homsany
-113,Jenna,Karaty,F,5,,FALSE,58,57,,,Homsany
-114,Ethan,Karaty,M,5,,FALSE,58,57,,,Homsany
-115,Evan,Karaty,M,5,,FALSE,58,57,,,Homsany
+113,Jenna,Karaty,F,5,,FALSE,58,57,11/11/2003,,Homsany
+114,Ethan,Karaty,M,5,,FALSE,58,57,7/28/2005,,Homsany
+115,Evan,Karaty,M,5,,FALSE,58,57,7/28/2005,,Homsany
 116,Shawn,Karaty,M,5,,FALSE,59,,4/21/2006,,Homsany
 117,Kayla,Karaty,F,5,,FALSE,61,60,10/6/1999,,Homsany
 118,Ryan,Karaty,M,5,,FALSE,61,60,2/7/2001,,Homsany

@@ -202,6 +202,14 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   const controlSheetDragOffsetRef = useRef(0)
   const overscrollRestoreRef = useRef<{ html: string; body: string } | null>(null)
   const [isControlSheetDragging, setControlSheetDragging] = useState(false)
+  const [isTopSheetOpen, setTopSheetOpen] = useState(false)
+  const [isTopSheetDragging, setTopSheetDragging] = useState(false)
+  const [topSheetDragTranslation, setTopSheetDragTranslation] = useState<number | null>(null)
+  const topSheetDragState = useRef<{ pointerId: number | null; startY: number; initialTranslation: number }>(
+    { pointerId: null, startY: 0, initialTranslation: 0 },
+  )
+  const topSheetRef = useRef<HTMLDivElement | null>(null)
+  const [topSheetHeight, setTopSheetHeight] = useState(0)
   const [lastSearchResultId, setLastSearchResultId] = useState<string | null>(null)
   const searchInputRef = useRef<HTMLInputElement | null>(null)
   const searchResultsRef = useRef<HTMLDivElement | null>(null)
@@ -220,6 +228,44 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       setControlSheetOpen(false)
     }
   }, [isMobile])
+
+  useEffect(() => {
+    if (!isMobile) {
+      setTopSheetOpen(false)
+      setTopSheetDragTranslation(null)
+      return
+    }
+  }, [isMobile])
+
+  useEffect(() => {
+    if (!isMobile) return
+    if (isControlSheetOpen) {
+      setTopSheetOpen(false)
+      setTopSheetDragTranslation(null)
+    }
+  }, [isControlSheetOpen, isMobile])
+
+  useEffect(() => {
+    const node = topSheetRef.current
+    if (!node) return
+
+    const measure = () => {
+      setTopSheetHeight(node.getBoundingClientRect().height)
+    }
+
+    measure()
+
+    if (typeof ResizeObserver !== 'undefined') {
+      const observer = new ResizeObserver(measure)
+      observer.observe(node)
+      return () => observer.disconnect()
+    }
+
+    window.addEventListener('resize', measure)
+    return () => {
+      window.removeEventListener('resize', measure)
+    }
+  }, [isMobile, isMobileLandscape])
 
   useEffect(() => {
     const svgElement = svgRef.current
@@ -1183,14 +1229,120 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     [closeControlSheet],
   )
 
-  const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
-    if (controlSheetDragState.current.pointerId !== event.pointerId) return
-    event.currentTarget.releasePointerCapture(event.pointerId)
-    controlSheetDragOffsetRef.current = 0
-    controlSheetDragState.current = { pointerId: null, startY: 0 }
-    setControlSheetDragOffset(0)
-    setControlSheetDragging(false)
-  }, [])
+const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+  if (controlSheetDragState.current.pointerId !== event.pointerId) return
+  event.currentTarget.releasePointerCapture(event.pointerId)
+  controlSheetDragOffsetRef.current = 0
+  controlSheetDragState.current = { pointerId: null, startY: 0 }
+  setControlSheetDragOffset(0)
+  setControlSheetDragging(false)
+}, [])
+
+const landscapeContentPadding = isMobileLandscape
+  ? 'pl-[calc(env(safe-area-inset-left,0px)+12px)] pr-[calc(env(safe-area-inset-right,0px)+12px)]'
+  : ''
+
+const mobileControlSheetContentClass = isMobileLandscape
+  ? `grid gap-4 grid-cols-[minmax(0,0.58fr)_minmax(0,0.42fr)] items-start text-xs text-white ${landscapeContentPadding}`
+  : 'space-y-4 overflow-y-auto pr-1 text-xs text-white'
+
+const mobileSearchFormClass = isMobileLandscape
+  ? 'flex w-full flex-nowrap items-end gap-3'
+  : 'flex w-full flex-nowrap items-end gap-2'
+
+const mobileSearchInputWrapperStyle: CSSProperties | undefined = isMobileLandscape
+  ? { flexBasis: '50%', maxWidth: '50%', flexGrow: 0 }
+  : undefined
+
+const personCardPaddingClass = isMobileLandscape ? 'py-2' : 'py-3'
+const personCardControlGapClass = isMobileLandscape ? 'gap-1' : 'gap-2'
+const personCardButtonsGapClass = isMobileLandscape ? 'gap-1.5' : 'gap-2'
+const personCardButtonPaddingClass = isMobileLandscape ? 'px-3 py-1' : 'px-3 py-1.5'
+const legendButtonStyle: CSSProperties | undefined = isMobileLandscape
+  ? {
+      top: 'calc(env(safe-area-inset-top, 0px) + 8px)',
+      right: 'calc(env(safe-area-inset-right, 0px) + 12px)',
+    }
+  : undefined
+const TOP_SHEET_HANDLE_HEIGHT = 72
+const topSheetClosedOffset = Math.max(topSheetHeight - TOP_SHEET_HANDLE_HEIGHT, 0)
+const topSheetBaseTranslation = isTopSheetOpen ? 0 : -topSheetClosedOffset
+const effectiveTopSheetTranslation =
+  isTopSheetDragging && topSheetDragTranslation !== null ? topSheetDragTranslation : topSheetBaseTranslation
+const topSheetContentStyle: CSSProperties | undefined = isMobileLandscape
+  ? {
+      paddingLeft: 'calc(env(safe-area-inset-left, 0px) + 12px)',
+      paddingRight: 'calc(env(safe-area-inset-right, 0px) + 12px)',
+    }
+  : undefined
+
+const handleTopSheetDragStart = useCallback(
+    (event: ReactPointerEvent<HTMLElement>) => {
+      if (!isMobile) return
+      if (event.pointerType === 'mouse' && event.buttons !== 1) return
+      const node = event.currentTarget
+      topSheetDragState.current = {
+        pointerId: event.pointerId,
+        startY: event.clientY,
+        initialTranslation: effectiveTopSheetTranslation,
+      }
+      setTopSheetDragging(true)
+      setTopSheetDragTranslation(effectiveTopSheetTranslation)
+      node.setPointerCapture?.(event.pointerId)
+      event.preventDefault()
+    },
+    [effectiveTopSheetTranslation, isMobile],
+  )
+
+  const handleTopSheetDragMove = useCallback(
+    (event: ReactPointerEvent<HTMLElement>) => {
+      if (topSheetDragState.current.pointerId !== event.pointerId) return
+      const delta = event.clientY - topSheetDragState.current.startY
+      const next = topSheetDragState.current.initialTranslation + delta
+      const clamped = Math.min(0, Math.max(-topSheetClosedOffset, next))
+      setTopSheetDragTranslation(clamped)
+    },
+    [topSheetClosedOffset],
+  )
+
+  const finalizeTopSheetDrag = useCallback(
+    (translation: number, initialTranslation: number) => {
+      const moved = Math.abs(translation - initialTranslation)
+      const toggleThreshold = 8
+      const shouldOpen =
+        moved < toggleThreshold ? !isTopSheetOpen : translation > -topSheetClosedOffset / 2
+      setTopSheetOpen(shouldOpen)
+      setTopSheetDragging(false)
+      setTopSheetDragTranslation(null)
+      topSheetDragState.current = { pointerId: null, startY: 0, initialTranslation: 0 }
+    },
+    [isTopSheetOpen, topSheetClosedOffset],
+  )
+
+  const handleTopSheetDragEnd = useCallback(
+    (event: ReactPointerEvent<HTMLElement>) => {
+      if (topSheetDragState.current.pointerId !== event.pointerId) return
+      event.currentTarget.releasePointerCapture(event.pointerId)
+      finalizeTopSheetDrag(
+        topSheetDragTranslation ?? effectiveTopSheetTranslation,
+        topSheetDragState.current.initialTranslation,
+      )
+    },
+    [effectiveTopSheetTranslation, finalizeTopSheetDrag, topSheetDragTranslation],
+  )
+
+  const handleTopSheetDragCancel = useCallback(
+    (event: ReactPointerEvent<HTMLElement>) => {
+      if (topSheetDragState.current.pointerId !== event.pointerId) return
+      event.currentTarget.releasePointerCapture(event.pointerId)
+      finalizeTopSheetDrag(
+        topSheetDragTranslation ?? effectiveTopSheetTranslation,
+        topSheetDragState.current.initialTranslation,
+      )
+    },
+    [effectiveTopSheetTranslation, finalizeTopSheetDrag, topSheetDragTranslation],
+  )
+
 
   const handlePersonPointerEnter = useCallback(
     (personId: string, event: ReactPointerEvent<SVGGElement>) => {
@@ -1210,33 +1362,6 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     },
     [collapsePerson],
   )
-
-  const landscapeContentPadding = isMobileLandscape
-    ? 'pl-[calc(env(safe-area-inset-left,0px)+12px)] pr-[calc(env(safe-area-inset-right,0px)+12px)]'
-    : ''
-
-  const mobileControlSheetContentClass = isMobileLandscape
-    ? `grid gap-4 grid-cols-[minmax(0,0.58fr)_minmax(0,0.42fr)] items-start text-xs text-white ${landscapeContentPadding}`
-    : 'space-y-4 overflow-y-auto pr-1 text-xs text-white'
-
-  const mobileSearchFormClass = isMobileLandscape
-    ? 'flex w-full flex-nowrap items-end gap-3'
-    : 'flex w-full flex-nowrap items-end gap-2'
-
-  const mobileSearchInputWrapperStyle: CSSProperties | undefined = isMobileLandscape
-    ? { flexBasis: '50%', maxWidth: '50%', flexGrow: 0 }
-    : undefined
-
-  const personCardPaddingClass = isMobileLandscape ? 'py-2' : 'py-3'
-  const personCardControlGapClass = isMobileLandscape ? 'gap-1' : 'gap-2'
-  const personCardButtonsGapClass = isMobileLandscape ? 'gap-1.5' : 'gap-2'
-  const personCardButtonPaddingClass = isMobileLandscape ? 'px-3 py-1' : 'px-3 py-1.5'
-  const legendButtonStyle: CSSProperties | undefined = isMobileLandscape
-    ? {
-        top: 'calc(env(safe-area-inset-top, 0px) + 8px)',
-        right: 'calc(env(safe-area-inset-right, 0px) + 12px)',
-      }
-    : undefined
 
   const relationshipSummary = useMemo(() => {
     if (!nodeAId || !nodeBId) return null
@@ -1266,6 +1391,128 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     ) : (
       <div className="text-center text-sm text-white/70">Choose two people to see their relationship.</div>
     )
+  const topControlsPanel = (
+    <div className="pointer-events-auto rounded-2xl border border-white/20 bg-black/80 px-4 py-3 shadow-[0_20px_40px_rgba(0,0,0,0.7)] backdrop-blur">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            className="grid h-9 w-9 place-items-center rounded-full border border-white/20 bg-black text-lg text-white transition hover:bg-white/10"
+            onClick={() => zoomByFactor(0.8)}
+            aria-label="Zoom out"
+          >
+            −
+          </button>
+          <button
+            type="button"
+            className="grid h-9 w-9 place-items-center rounded-full border border-white/20 bg-black text-lg text-white transition hover:bg-white/10"
+            onClick={() => zoomByFactor(1.2)}
+            aria-label="Zoom in"
+          >
+            +
+          </button>
+        </div>
+        <button
+          type="button"
+          className="rounded-full border border-white/20 bg-black px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-white transition hover:bg-white/10"
+          onClick={resetView}
+        >
+          Reset
+        </button>
+      </div>
+
+      {isMobile ? (
+        !isControlSheetOpen && !isMobileLandscape && (
+          <button
+            type="button"
+            onClick={toggleLegend}
+            className="mt-3 w-full rounded-full border border-white/20 bg-white/10 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-white transition hover:bg-white/20"
+          >
+            {isLegendOpen ? 'Hide Legend' : 'Show Legend'}
+          </button>
+        )
+      ) : (
+        <>
+          <form className="mt-3 flex w-full flex-wrap items-start gap-2" onSubmit={handleSearchSubmit}>
+            <div className="relative w-full flex-1">
+              <input
+                ref={searchInputRef}
+                type="search"
+                placeholder="Find a person"
+                value={searchValue}
+                onChange={handleSearchChange}
+                onFocus={handleSearchFocus}
+                onBlur={(event) => {
+                  const next = event.relatedTarget as Node | null
+                  if (next && searchResultsRef.current?.contains(next)) {
+                    return
+                  }
+                  setSearchFocused(false)
+                }}
+                onKeyDown={handleSearchInputKeyDown}
+                className="w-full rounded-full border border-white/20 bg-black px-3 py-2 text-xs text-white placeholder-white/50 outline-none transition focus:border-white focus:ring-2 focus:ring-white/40"
+              />
+              {showSearchResults && (
+                <div
+                  ref={searchResultsRef}
+                  className="pointer-events-auto absolute left-0 top-full z-10 mt-2 w-full overflow-hidden rounded-2xl border border-white/20 bg-black/95 shadow-[0_16px_40px_rgba(0,0,0,0.65)] backdrop-blur-sm"
+                >
+                  {searchMatches.length > 0 ? (
+                    <ul className="divide-y divide-white/5">
+                      {searchMatches.map((person, index) => {
+                        const isActive = searchActiveIndex === index
+                        const life = formatLifeSpan(person)
+                        return (
+                          <li key={person.id}>
+                            <button
+                              type="button"
+                              className={`flex w-full flex-col gap-1 px-3 py-2 text-left text-xs text-white transition hover:bg-white/10 focus:bg-white/10 focus:outline-none ${
+                                isActive ? 'bg-white/10' : ''
+                              }`}
+                              onMouseDown={(event) => event.preventDefault()}
+                              onClick={() => handleSearchResultSelect(person)}
+                              onMouseEnter={() => setSearchActiveIndex(index)}
+                              onFocus={() => setSearchFocused(true)}
+                              onBlur={(event) => {
+                                const next = event.relatedTarget as Node | null
+                                if (next && (next === searchInputRef.current || searchResultsRef.current?.contains(next))) {
+                                  return
+                                }
+                                setSearchFocused(false)
+                              }}
+                            >
+                              <span className="text-sm font-semibold text-white">{person.fullName}</span>
+                              <span className="text-[11px] uppercase tracking-[0.25em] text-white/60">
+                                {person.branch} · Gen {person.generation}
+                              </span>
+                              {life && <span className="text-[11px] text-white/40">{life}</span>}
+                            </button>
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  ) : (
+                    <div className="px-3 py-2 text-xs text-white/60">No matching people.</div>
+                  )}
+                </div>
+              )}
+            </div>
+            <button
+              type="submit"
+              className="rounded-full border border-white/20 bg-black px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-white/10"
+            >
+              Search
+            </button>
+          </form>
+          {searchFeedback && (
+            <div className="mt-2 rounded-full border border-white/20 bg-black px-3 py-1 text-[11px] text-white">
+              {searchFeedback}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  )
   const personACard = (
     <div
       className={`flex items-center justify-between rounded-2xl border px-3 ${personCardPaddingClass} ${
@@ -1995,136 +2242,54 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
           })}
         </g>
       </svg>
-      <div
-        className={`pointer-events-none absolute z-30 ${
-          isMobileLandscape ? 'max-w-[360px]' : isMobile ? 'left-3 right-3 top-3' : 'left-6 top-6 w-[360px]'
-        } flex flex-col gap-3 text-xs text-white`}
-        style={floatingToolbarStyle}
-      >
-        <div className="pointer-events-auto rounded-2xl border border-white/20 bg-black/80 px-4 py-3 shadow-[0_20px_40px_rgba(0,0,0,0.7)] backdrop-blur">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                className="grid h-9 w-9 place-items-center rounded-full border border-white/20 bg-black text-lg text-white transition hover:bg-white/10"
-                onClick={() => zoomByFactor(0.8)}
-                aria-label="Zoom out"
-              >
-                −
-              </button>
-              <button
-                type="button"
-                className="grid h-9 w-9 place-items-center rounded-full border border-white/20 bg-black text-lg text-white transition hover:bg-white/10"
-                onClick={() => zoomByFactor(1.2)}
-                aria-label="Zoom in"
-              >
-                +
-              </button>
-            </div>
-            <button
-              type="button"
-              className="rounded-full border border-white/20 bg-black px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-white transition hover:bg-white/10"
-              onClick={resetView}
+      {isMobile ? (
+        <div className="pointer-events-none fixed inset-x-0 top-0 z-60">
+          <div
+            ref={topSheetRef}
+            className="pointer-events-auto"
+            style={{
+              transform: `translateY(${effectiveTopSheetTranslation}px)` ,
+              transition: isTopSheetDragging ? 'none' : 'transform 0.25s ease-out',
+            }}
+          >
+            <div
+              className="rounded-b-3xl border border-white/20 bg-black/90 shadow-[0_12px_40px_rgba(0,0,0,0.7)] backdrop-blur"
+              style={topSheetContentStyle}
             >
-              Reset
-            </button>
-          </div>
-
-          {isMobile ? (
-            !isControlSheetOpen && !isMobileLandscape && (
-              <button
-                type="button"
-                onClick={toggleLegend}
-                className="mt-3 w-full rounded-full border border-white/20 bg-white/10 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-white transition hover:bg-white/20"
-              >
-                {isLegendOpen ? 'Hide Legend' : 'Show Legend'}
-              </button>
-            )
-          ) : (
-            <>
-              <form className="mt-3 flex w-full flex-wrap items-start gap-2" onSubmit={handleSearchSubmit}>
-                <div className="relative w-full flex-1">
-                  <input
-                    ref={searchInputRef}
-                    type="search"
-                    placeholder="Find a person"
-                    value={searchValue}
-                    onChange={handleSearchChange}
-                    onFocus={handleSearchFocus}
-                    onBlur={(event) => {
-                      const next = event.relatedTarget as Node | null
-                      if (next && searchResultsRef.current?.contains(next)) {
-                        return
-                      }
-                      setSearchFocused(false)
-                    }}
-                    onKeyDown={handleSearchInputKeyDown}
-                    className="w-full rounded-full border border-white/20 bg-black px-3 py-2 text-xs text-white placeholder-white/50 outline-none transition focus:border-white focus:ring-2 focus:ring-white/40"
-                  />
-                  {showSearchResults && (
-                    <div
-                      ref={searchResultsRef}
-                      className="pointer-events-auto absolute left-0 top-full z-10 mt-2 w-full overflow-hidden rounded-2xl border border-white/20 bg-black/95 shadow-[0_16px_40px_rgba(0,0,0,0.65)] backdrop-blur-sm"
-                    >
-                      {searchMatches.length > 0 ? (
-                        <ul className="divide-y divide-white/5">
-                          {searchMatches.map((person, index) => {
-                            const isActive = searchActiveIndex === index
-                            const life = formatLifeSpan(person)
-                            return (
-                              <li key={person.id}>
-                                <button
-                                  type="button"
-                                  className={`flex w-full flex-col gap-1 px-3 py-2 text-left text-xs text-white transition hover:bg-white/10 focus:bg-white/10 focus:outline-none ${
-                                    isActive ? 'bg-white/10' : ''
-                                  }`}
-                                  onMouseDown={(event) => event.preventDefault()}
-                                  onClick={() => handleSearchResultSelect(person)}
-                                  onMouseEnter={() => setSearchActiveIndex(index)}
-                                  onFocus={() => setSearchFocused(true)}
-                                  onBlur={(event) => {
-                                    const next = event.relatedTarget as Node | null
-                                    if (
-                                      next &&
-                                      (next === searchInputRef.current || searchResultsRef.current?.contains(next))
-                                    ) {
-                                      return
-                                    }
-                                    setSearchFocused(false)
-                                  }}
-                                >
-                                  <span className="text-sm font-semibold text-white">{person.fullName}</span>
-                                  <span className="text-[11px] uppercase tracking-[0.25em] text-white/60">
-                                    {person.branch} · Gen {person.generation}
-                                  </span>
-                                  {life && <span className="text-[11px] text-white/40">{life}</span>}
-                                </button>
-                              </li>
-                            )
-                          })}
-                        </ul>
-                      ) : (
-                        <div className="px-3 py-2 text-xs text-white/60">No matching people.</div>
-                      )}
-                    </div>
-                  )}
-                </div>
+              <div className="flex justify-center pt-[calc(env(safe-area-inset-top,0px)+8px)] pb-2">
                 <button
-                  type="submit"
-                  className="rounded-full border border-white/20 bg-black px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-white/10"
+                  type="button"
+                  className="flex h-14 w-36 cursor-grab items-center justify-center rounded-full bg-white/10 text-white outline-none transition focus:ring-2 focus:ring-white/40 focus:ring-offset-2 focus:ring-offset-black active:cursor-grabbing"
+                  aria-label={isTopSheetOpen ? 'Collapse top controls' : 'Expand top controls'}
+                  onPointerDown={handleTopSheetDragStart}
+                  onPointerMove={handleTopSheetDragMove}
+                  onPointerUp={handleTopSheetDragEnd}
+                  onPointerCancel={handleTopSheetDragCancel}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault()
+                      setTopSheetOpen((current) => !current)
+                    }
+                  }}
+                  style={{ touchAction: 'none' }}
                 >
-                  Search
+                  <span className="block h-1.5 w-14 rounded-full bg-white/60" />
                 </button>
-              </form>
-              {searchFeedback && (
-                <div className="mt-2 rounded-full border border-white/20 bg-black px-3 py-1 text-[11px] text-white">
-                  {searchFeedback}
-                </div>
-              )}
-            </>
-          )}
+              </div>
+              <div className="px-4 pb-5">{topControlsPanel}</div>
+            </div>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div
+          className={`pointer-events-none absolute z-30 ${
+            isMobileLandscape ? 'max-w-[360px]' : 'left-6 top-6 w-[360px]'
+          } flex flex-col gap-3 text-xs text-white`}
+          style={floatingToolbarStyle}
+        >
+          {topControlsPanel}
+        </div>
+      )}
 
       {isLegendOpen && isMobile && !isMobileLandscape && (
         <div className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm" onClick={toggleLegend} />
