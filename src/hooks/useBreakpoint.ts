@@ -38,8 +38,12 @@ const snapshotFromDimensions = (width: number, height: number): BreakpointState 
     return cachedSnapshot
   }
 
-  const breakpoint = resolveBreakpoint(width)
   const orientation: Orientation = width >= height ? 'landscape' : 'portrait'
+  const shortestSide = Math.min(width, height)
+  const longestSide = Math.max(width, height)
+  const breakpoint = resolveBreakpoint(longestSide)
+  const isMobile = shortestSide <= HANDSET_MAX
+  const isTablet = !isMobile && shortestSide <= TABLET_MAX
 
   cachedWidth = width
   cachedHeight = height
@@ -47,11 +51,11 @@ const snapshotFromDimensions = (width: number, height: number): BreakpointState 
     width,
     height,
     breakpoint,
-    isMobile: breakpoint === 'palm' || breakpoint === 'handset',
-    isTablet: breakpoint === 'tablet',
+    isMobile,
+    isTablet,
     isDesktop: breakpoint === 'desktop',
-    isNarrowPhone: width <= PALM_MAX,
-    isLargePhone: width > PALM_MAX && width <= HANDSET_MAX,
+    isNarrowPhone: isMobile && shortestSide <= PALM_MAX,
+    isLargePhone: isMobile && shortestSide > PALM_MAX && shortestSide <= HANDSET_MAX,
     orientation,
     isLandscape: orientation === 'landscape',
     isPortrait: orientation === 'portrait',
