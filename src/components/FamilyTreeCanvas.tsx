@@ -202,14 +202,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   const controlSheetDragOffsetRef = useRef(0)
   const overscrollRestoreRef = useRef<{ html: string; body: string } | null>(null)
   const [isControlSheetDragging, setControlSheetDragging] = useState(false)
-  const [isTopSheetOpen, setTopSheetOpen] = useState(false)
-  const [isTopSheetDragging, setTopSheetDragging] = useState(false)
-  const [topSheetDragTranslation, setTopSheetDragTranslation] = useState<number | null>(null)
-  const topSheetDragState = useRef<{ pointerId: number | null; startY: number; initialTranslation: number }>(
-    { pointerId: null, startY: 0, initialTranslation: 0 },
-  )
-  const topSheetRef = useRef<HTMLDivElement | null>(null)
-  const [topSheetHeight, setTopSheetHeight] = useState(360)
+  const [isLandscapeControlsOpen, setLandscapeControlsOpen] = useState(false)
   const [lastSearchResultId, setLastSearchResultId] = useState<string | null>(null)
   const searchInputRef = useRef<HTMLInputElement | null>(null)
   const searchResultsRef = useRef<HTMLDivElement | null>(null)
@@ -231,42 +224,16 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
 
   useEffect(() => {
     if (!isMobileLandscape) {
-      setTopSheetOpen(false)
-      setTopSheetDragTranslation(null)
+      setLandscapeControlsOpen(false)
     }
   }, [isMobileLandscape])
 
   useEffect(() => {
     if (!isMobileLandscape) return
     if (isControlSheetOpen) {
-      setTopSheetOpen(false)
-      setTopSheetDragTranslation(null)
+      setLandscapeControlsOpen(false)
     }
   }, [isControlSheetOpen, isMobileLandscape])
-
-  useEffect(() => {
-    if (!isMobileLandscape) return
-
-    const node = topSheetRef.current
-    if (!node) return
-
-    const measure = () => {
-      setTopSheetHeight(node.getBoundingClientRect().height)
-    }
-
-    measure()
-
-    if (typeof ResizeObserver !== 'undefined') {
-      const observer = new ResizeObserver(measure)
-      observer.observe(node)
-      return () => observer.disconnect()
-    }
-
-    window.addEventListener('resize', measure)
-    return () => {
-      window.removeEventListener('resize', measure)
-    }
-  }, [isMobileLandscape])
 
   useEffect(() => {
     const svgElement = svgRef.current
@@ -856,6 +823,21 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   }, [isMobileLandscape])
 
   useEffect(() => {
+    if (!isMobileLandscape || !isLandscapeControlsOpen) return
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setLandscapeControlsOpen(false)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isLandscapeControlsOpen, isMobileLandscape])
+
+  useEffect(() => {
     if (!isMobile) return
     if (!isControlSheetDragging) return
     if (typeof document === 'undefined') return
@@ -1265,86 +1247,45 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
         right: 'calc(env(safe-area-inset-right, 0px) + 12px)',
       }
     : undefined
-  const TOP_SHEET_HANDLE_HEIGHT = 70
-  const TOP_SHEET_HANDLE_VISIBLE = TOP_SHEET_HANDLE_HEIGHT / 2
-  const topSheetClosedOffset = Math.max(topSheetHeight - TOP_SHEET_HANDLE_VISIBLE, 0)
-  const topSheetBaseTranslation = isTopSheetOpen ? 0 : -topSheetClosedOffset
-  const effectiveTopSheetTranslation =
-    isTopSheetDragging && topSheetDragTranslation !== null ? topSheetDragTranslation : topSheetBaseTranslation
-  const topSheetContentStyle: CSSProperties | undefined = isMobileLandscape
-    ? {
-        paddingLeft: 'calc(env(safe-area-inset-left, 0px) + 12px)',
-        paddingRight: 'calc(env(safe-area-inset-right, 0px) + 12px)',
-        paddingTop: '12px',
-        paddingBottom: `${TOP_SHEET_HANDLE_HEIGHT / 2 + 12}px`,
-      }
-    : undefined
 
-const handleTopSheetDragStart = useCallback(
-    (event: ReactPointerEvent<HTMLElement>) => {
-      if (!isMobile) return
-      if (event.pointerType === 'mouse' && event.buttons !== 1) return
-      const node = event.currentTarget
-      topSheetDragState.current = {
-        pointerId: event.pointerId,
-        startY: event.clientY,
-        initialTranslation: effectiveTopSheetTranslation,
-      }
-      setTopSheetDragging(true)
-      setTopSheetDragTranslation(effectiveTopSheetTranslation)
-      node.setPointerCapture?.(event.pointerId)
-      event.preventDefault()
-    },
-    [effectiveTopSheetTranslation, isMobile],
-  )
+  const landscapePanelStyle: CSSProperties = {
+    transform: isLandscapeControlsOpen ? 'translateX(0)' : 'translateX(calc(-100% - 14px))',
+    opacity: isLandscapeControlsOpen ? 1 : 0,
+    pointerEvents: isLandscapeControlsOpen ? 'auto' : 'none',
+  }
 
-  const handleTopSheetDragMove = useCallback(
-    (event: ReactPointerEvent<HTMLElement>) => {
-      if (topSheetDragState.current.pointerId !== event.pointerId) return
-      const delta = event.clientY - topSheetDragState.current.startY
-      const next = topSheetDragState.current.initialTranslation + delta
-      const clamped = Math.min(0, Math.max(-topSheetClosedOffset, next))
-      setTopSheetDragTranslation(clamped)
-    },
-    [topSheetClosedOffset],
-  )
+  const cameraButtonStyle: CSSProperties = {
+    top: 'calc(env(safe-area-inset-top, 0px) + 12px)',
+    left: 'calc(env(safe-area-inset-left, 0px) + 12px)',
+  }
 
-  const finalizeTopSheetDrag = useCallback(
-    (translation: number, initialTranslation: number) => {
-      const moved = Math.abs(translation - initialTranslation)
-      const toggleThreshold = 8
-      const shouldOpen =
-        moved < toggleThreshold ? !isTopSheetOpen : translation > -topSheetClosedOffset / 2
-      setTopSheetOpen(shouldOpen)
-      setTopSheetDragging(false)
-      setTopSheetDragTranslation(null)
-      topSheetDragState.current = { pointerId: null, startY: 0, initialTranslation: 0 }
-    },
-    [isTopSheetOpen, topSheetClosedOffset],
-  )
-
-  const handleTopSheetDragEnd = useCallback(
-    (event: ReactPointerEvent<HTMLElement>) => {
-      if (topSheetDragState.current.pointerId !== event.pointerId) return
-      event.currentTarget.releasePointerCapture(event.pointerId)
-      finalizeTopSheetDrag(
-        topSheetDragTranslation ?? effectiveTopSheetTranslation,
-        topSheetDragState.current.initialTranslation,
-      )
-    },
-    [effectiveTopSheetTranslation, finalizeTopSheetDrag, topSheetDragTranslation],
-  )
-
-  const handleTopSheetDragCancel = useCallback(
-    (event: ReactPointerEvent<HTMLElement>) => {
-      if (topSheetDragState.current.pointerId !== event.pointerId) return
-      event.currentTarget.releasePointerCapture(event.pointerId)
-      finalizeTopSheetDrag(
-        topSheetDragTranslation ?? effectiveTopSheetTranslation,
-        topSheetDragState.current.initialTranslation,
-      )
-    },
-    [effectiveTopSheetTranslation, finalizeTopSheetDrag, topSheetDragTranslation],
+  const landscapeControlsButtons = (
+    <div className="flex flex-col items-center gap-3">
+      <button
+        type="button"
+        className="grid h-12 w-12 place-items-center rounded-full border border-white/30 bg-white/10 text-2xl text-white transition hover:bg-white/20"
+        onClick={() => zoomByFactor(1.2)}
+        aria-label="Zoom in"
+      >
+        +
+      </button>
+      <button
+        type="button"
+        className="grid h-12 w-12 place-items-center rounded-full border border-white/30 bg-white/10 text-2xl text-white transition hover:bg-white/20"
+        onClick={() => zoomByFactor(0.8)}
+        aria-label="Zoom out"
+      >
+        −
+      </button>
+      <button
+        type="button"
+        className="grid h-12 w-12 place-items-center rounded-full border border-white/30 bg-white/10 text-xl text-white transition hover:bg-white/20"
+        onClick={resetView}
+        aria-label="Reset view"
+      >
+        ↺
+      </button>
+    </div>
   )
 
 
@@ -1395,7 +1336,7 @@ const handleTopSheetDragStart = useCallback(
     ) : (
       <div className="text-center text-sm text-white/70">Choose two people to see their relationship.</div>
     )
-  const topControlsContent = (
+  const topControlsContent = !isMobileLandscape && (
     <>
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
@@ -1425,7 +1366,7 @@ const handleTopSheetDragStart = useCallback(
         </button>
       </div>
 
-      {isMobile && !isMobileLandscape && !isControlSheetOpen && (
+      {isMobile && !isControlSheetOpen && (
         <button
           type="button"
           onClick={toggleLegend}
@@ -2246,41 +2187,38 @@ const handleTopSheetDragStart = useCallback(
           })}
         </g>
       </svg>
+      {isMobileLandscape && isLandscapeControlsOpen && (
+        <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setLandscapeControlsOpen(false)} />
+      )}
+
       {isMobileLandscape ? (
-        <div className="pointer-events-none fixed inset-x-0 top-0 z-60">
-          <div
-            ref={topSheetRef}
-            className="pointer-events-auto mx-auto"
-            style={{
-              transform: `translateY(${effectiveTopSheetTranslation}px)` ,
-              transition: isTopSheetDragging ? 'none' : 'transform 0.25s ease-out',
-              width: 'min(240px, calc(100vw - 130px))',
-            }}
+        <div className="fixed z-50 flex items-start gap-3" style={cameraButtonStyle}>
+          <button
+            type="button"
+            onClick={() => setLandscapeControlsOpen((current) => !current)}
+            className="flex h-14 w-14 items-center justify-center rounded-full border border-white/25 bg-black/80 text-white shadow-[0_12px_32px_rgba(0,0,0,0.65)] transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-black"
+            aria-expanded={isLandscapeControlsOpen}
+            aria-controls="landscape-control-panel"
           >
-            <div
-              className="relative overflow-visible rounded-b-3xl border border-white/20 bg-black/90 shadow-[0_12px_40px_rgba(0,0,0,0.7)] backdrop-blur"
-              style={topSheetContentStyle}
-            >
-              <div className="space-y-3 px-4 text-xs text-white">{topControlsContent}</div>
-              <button
-                type="button"
-                className="absolute left-1/2 bottom-0 flex h-14 w-32 -translate-x-1/2 translate-y-1/2 cursor-grab items-center justify-center rounded-full bg-white/15 text-white outline-none transition focus:ring-2 focus:ring-white/40 focus:ring-offset-2 focus:ring-offset-black active:cursor-grabbing"
-                aria-label={isTopSheetOpen ? 'Collapse top controls' : 'Expand top controls'}
-                onPointerDown={handleTopSheetDragStart}
-                onPointerMove={handleTopSheetDragMove}
-                onPointerUp={handleTopSheetDragEnd}
-                onPointerCancel={handleTopSheetDragCancel}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault()
-                    setTopSheetOpen((current) => !current)
-                  }
-                }}
-                style={{ touchAction: 'none' }}
-              >
-                <span className="block h-1.5 w-16 rounded-full bg-white/70" />
-              </button>
-            </div>
+            <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="3" y="7" width="18" height="12" rx="2" stroke="currentColor" strokeWidth="1.6" />
+              <path
+                d="M9 7l1.5-2h3L15 7"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <circle cx="12" cy="13" r="3" stroke="currentColor" strokeWidth="1.6" />
+            </svg>
+          </button>
+          <div
+            id="landscape-control-panel"
+            className="rounded-3xl border border-white/20 bg-black/85 px-3 py-4 shadow-[0_12px_32px_rgba(0,0,0,0.7)] backdrop-blur transition-all duration-200 ease-out"
+            style={landscapePanelStyle}
+            aria-hidden={!isLandscapeControlsOpen}
+          >
+            {landscapeControlsButtons}
           </div>
         </div>
       ) : (
