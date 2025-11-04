@@ -1265,8 +1265,9 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
         right: 'calc(env(safe-area-inset-right, 0px) + 12px)',
       }
     : undefined
-  const TOP_SHEET_HANDLE_HEIGHT = 90
-  const topSheetClosedOffset = Math.max(topSheetHeight - TOP_SHEET_HANDLE_HEIGHT, 0)
+  const TOP_SHEET_HANDLE_HEIGHT = 80
+  const TOP_SHEET_HANDLE_VISIBLE = TOP_SHEET_HANDLE_HEIGHT / 2
+  const topSheetClosedOffset = Math.max(topSheetHeight - TOP_SHEET_HANDLE_VISIBLE, 0)
   const topSheetBaseTranslation = isTopSheetOpen ? 0 : -topSheetClosedOffset
   const effectiveTopSheetTranslation =
     isTopSheetDragging && topSheetDragTranslation !== null ? topSheetDragTranslation : topSheetBaseTranslation
@@ -1274,6 +1275,8 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
     ? {
         paddingLeft: 'calc(env(safe-area-inset-left, 0px) + 12px)',
         paddingRight: 'calc(env(safe-area-inset-right, 0px) + 12px)',
+        paddingTop: '12px',
+        paddingBottom: `${TOP_SHEET_HANDLE_HEIGHT / 2 + 12}px`,
       }
     : undefined
 
@@ -2251,34 +2254,32 @@ const handleTopSheetDragStart = useCallback(
             style={{
               transform: `translateY(${effectiveTopSheetTranslation}px)` ,
               transition: isTopSheetDragging ? 'none' : 'transform 0.25s ease-out',
-              width: 'min(296px, calc(100vw - 112px))',
+              width: 'min(260px, calc(100vw - 112px))',
             }}
           >
             <div
-              className="rounded-b-3xl border border-white/20 bg-black/90 shadow-[0_12px_40px_rgba(0,0,0,0.7)] backdrop-blur"
+              className="relative overflow-visible rounded-b-3xl border border-white/20 bg-black/90 shadow-[0_12px_40px_rgba(0,0,0,0.7)] backdrop-blur"
               style={topSheetContentStyle}
             >
-              <div className="flex justify-center pt-[calc(env(safe-area-inset-top,0px)+8px)] pb-2">
-                <button
-                  type="button"
-                  className="flex h-14 w-32 cursor-grab items-center justify-center rounded-full bg-white/10 text-white outline-none transition focus:ring-2 focus:ring-white/40 focus:ring-offset-2 focus:ring-offset-black active:cursor-grabbing"
-                  aria-label={isTopSheetOpen ? 'Collapse top controls' : 'Expand top controls'}
-                  onPointerDown={handleTopSheetDragStart}
-                  onPointerMove={handleTopSheetDragMove}
-                  onPointerUp={handleTopSheetDragEnd}
-                  onPointerCancel={handleTopSheetDragCancel}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                      event.preventDefault()
-                      setTopSheetOpen((current) => !current)
-                    }
-                  }}
-                  style={{ touchAction: 'none' }}
-                >
-                  <span className="block h-1.5 w-14 rounded-full bg-white/60" />
-                </button>
-              </div>
-              <div className="px-4 pb-5 space-y-3">{topControlsContent}</div>
+              <div className="space-y-3 px-4 text-xs text-white">{topControlsContent}</div>
+              <button
+                type="button"
+                className="absolute left-1/2 bottom-0 flex h-14 w-32 -translate-x-1/2 translate-y-1/2 cursor-grab items-center justify-center rounded-full bg-white/15 text-white outline-none transition focus:ring-2 focus:ring-white/40 focus:ring-offset-2 focus:ring-offset-black active:cursor-grabbing"
+                aria-label={isTopSheetOpen ? 'Collapse top controls' : 'Expand top controls'}
+                onPointerDown={handleTopSheetDragStart}
+                onPointerMove={handleTopSheetDragMove}
+                onPointerUp={handleTopSheetDragEnd}
+                onPointerCancel={handleTopSheetDragCancel}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    setTopSheetOpen((current) => !current)
+                  }
+                }}
+                style={{ touchAction: 'none' }}
+              >
+                <span className="block h-1.5 w-16 rounded-full bg-white/70" />
+              </button>
             </div>
           </div>
         </div>
