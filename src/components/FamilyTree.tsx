@@ -52,7 +52,7 @@ const FamilyTree = () => {
           <div className="mx-auto w-full max-w-6xl text-xs text-white">
             <details className="group rounded-2xl border border-white/10 bg-black/60 px-4 py-3 backdrop-blur-sm transition-colors md:hidden">
               <summary className="flex cursor-pointer items-center justify-between gap-3 text-white/80">
-                <span className="text-[11px] font-semibold uppercase tracking-[0.35em]">Family Overview</span>
+                <span className="text-[11px] font-semibold uppercase tracking-[0.35em]">Current Members</span>
                 <span className="inline-flex min-w-[3.5rem] justify-end text-sm font-semibold text-white">
                   {currentCount}
                 </span>

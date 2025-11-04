@@ -1957,7 +1957,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       <div
         className={`pointer-events-none absolute z-30 ${
           isMobileLandscape
-            ? 'left-4 top-4 max-w-[360px]'
+            ? 'left-3 top-2 max-w-[360px]'
             : isMobile
             ? 'left-3 right-3 top-3'
             : 'left-6 top-6 w-[360px]'
@@ -2097,7 +2097,9 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
         <button
           type="button"
           onClick={toggleLegend}
-          className="fixed right-4 top-4 z-50 rounded-full border border-white/20 bg-black/70 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.35em] text-white transition hover:bg-white/10 md:text-[11px]"
+          className={`fixed z-50 rounded-full border border-white/20 bg-black/70 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.35em] text-white transition hover:bg-white/10 md:text-[11px] ${
+            isMobileLandscape ? 'right-3 top-2' : 'right-4 top-4'
+          }`}
           aria-expanded={isLegendOpen}
           aria-controls="branch-legend-panel"
         >
