@@ -2488,7 +2488,14 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
             className={`fixed z-50 grid h-14 w-14 place-items-center rounded-full border border-white/20 bg-black/80 text-3xl text-white shadow-[0_20px_40px_rgba(0,0,0,0.6)] transition hover:bg-white/15 ${
               isMobileLandscape ? '' : 'bottom-4 right-4'
             }`}
-            style={isMobileLandscape ? { top: 'calc(env(safe-area-inset-top, 0px) + 12px)', right: 'calc(env(safe-area-inset-right, 0px) + 12px)' } : undefined}
+            style={
+              isMobileLandscape
+                ? {
+                    bottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)',
+                    right: 'calc(env(safe-area-inset-right, 0px) + 12px)',
+                  }
+                : undefined
+            }
           >
             <span aria-hidden="true">🔍</span>
             <span className="sr-only">Search &amp; Select</span>
@@ -2505,7 +2512,14 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
             className={`fixed z-50 grid h-14 w-14 place-items-center rounded-full border border-white/20 bg-black/80 text-3xl text-white shadow-[0_20px_40px_rgba(0,0,0,0.6)] transition hover:bg-white/15 ${
               isMobileLandscape ? '' : 'bottom-4 right-4'
             }`}
-            style={isMobileLandscape ? { top: 'calc(env(safe-area-inset-top, 0px) + 12px)', right: 'calc(env(safe-area-inset-right, 0px) + 12px)' } : undefined}
+            style={
+              isMobileLandscape
+                ? {
+                    bottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)',
+                    right: 'calc(env(safe-area-inset-right, 0px) + 12px)',
+                  }
+                : undefined
+            }
           >
             <span aria-hidden="true">×</span>
             <span className="sr-only">Cancel selection</span>

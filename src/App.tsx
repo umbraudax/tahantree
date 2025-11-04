@@ -49,8 +49,8 @@ const App = () => {
   const isMobileLandscape = isMobile && isLandscape
   const helpButtonStyle = isMobileLandscape
     ? {
-        top: 'calc(env(safe-area-inset-top, 0px) + 12px)',
-        left: 'calc(env(safe-area-inset-left, 0px) + 72px)',
+        bottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)',
+        left: 'calc(env(safe-area-inset-left, 0px) + 12px)',
       }
     : undefined
   const helpButtonPositionClasses = isMobileLandscape ? '' : 'bottom-4 left-4 md:bottom-6 md:left-6'
