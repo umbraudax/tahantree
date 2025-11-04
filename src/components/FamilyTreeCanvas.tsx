@@ -748,23 +748,24 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     setSearchActiveIndex(null)
   }, [searchValue])
 
-  const openControlSheet = useCallback(() => {
-    setControlSheetDragOffset(0)
+  const resetControlSheetPosition = useCallback(() => {
     controlSheetDragOffsetRef.current = 0
     controlSheetDragState.current = { pointerId: null, startY: 0 }
+    setControlSheetDragOffset(0)
     setControlSheetDragging(false)
+  }, [])
+
+  const openControlSheet = useCallback(() => {
+    resetControlSheetPosition()
     setControlSheetOpen(true)
     searchInputRef.current?.blur()
-  }, [])
+  }, [resetControlSheetPosition])
 
   const closeControlSheet = useCallback(() => {
     setControlSheetOpen(false)
     setSearchFocused(false)
-    setControlSheetDragOffset(0)
-    controlSheetDragOffsetRef.current = 0
-    controlSheetDragState.current = { pointerId: null, startY: 0 }
-    setControlSheetDragging(false)
-  }, [])
+    resetControlSheetPosition()
+  }, [resetControlSheetPosition])
 
   useEffect(() => {
     if (typeof document === 'undefined') return
@@ -1086,10 +1087,17 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       setSearchFocused(false)
       setSearchActiveIndex(null)
       searchInputRef.current?.blur()
+      if (isMobileLandscape) {
+        if (typeof window === 'undefined') {
+          resetControlSheetPosition()
+        } else {
+          window.requestAnimationFrame(resetControlSheetPosition)
+        }
+      }
 
       setSelectedPersonId(person.id)
     },
-    [centerOnPerson],
+    [centerOnPerson, isMobileLandscape, resetControlSheetPosition],
   )
 
   const handleSearchInputKeyDown = useCallback(
@@ -1158,9 +1166,16 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       setSearchFocused(false)
       setSearchActiveIndex(null)
       searchInputRef.current?.blur()
+      if (isMobileLandscape) {
+        if (typeof window === 'undefined') {
+          resetControlSheetPosition()
+        } else {
+          window.requestAnimationFrame(resetControlSheetPosition)
+        }
+      }
       setSelectedPersonId(match.id)
     },
-    [centerOnPerson, searchActiveIndex, searchMatches, searchValue],
+    [centerOnPerson, isMobileLandscape, resetControlSheetPosition, searchActiveIndex, searchMatches, searchValue],
   )
 
   const handleCanvasBackgroundClick = useCallback(() => {
@@ -1200,26 +1215,20 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       if (controlSheetDragState.current.pointerId !== event.pointerId) return
       event.currentTarget.releasePointerCapture(event.pointerId)
       const offset = controlSheetDragOffsetRef.current
-      setControlSheetDragging(false)
       if (offset > 32) {
         closeControlSheet()
       } else {
-        setControlSheetDragOffset(0)
+        resetControlSheetPosition()
       }
-      controlSheetDragOffsetRef.current = 0
-      controlSheetDragState.current = { pointerId: null, startY: 0 }
     },
-    [closeControlSheet],
+    [closeControlSheet, resetControlSheetPosition],
   )
 
 const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
   if (controlSheetDragState.current.pointerId !== event.pointerId) return
   event.currentTarget.releasePointerCapture(event.pointerId)
-  controlSheetDragOffsetRef.current = 0
-  controlSheetDragState.current = { pointerId: null, startY: 0 }
-  setControlSheetDragOffset(0)
-  setControlSheetDragging(false)
-}, [])
+  resetControlSheetPosition()
+}, [resetControlSheetPosition])
 
   const landscapeContentPadding = isMobileLandscape
     ? 'pl-[calc(env(safe-area-inset-left,0px)+12px)] pr-[calc(env(safe-area-inset-right,0px)+12px)]'
@@ -1259,6 +1268,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
     icon: string
     onClick: () => void
     offset: { x: number; y: number }
+    autoClose: boolean
   }> = [
     {
       key: 'zoom-in',
@@ -1266,6 +1276,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
       icon: '+',
       onClick: () => zoomByFactor(1.2),
       offset: { x: 64, y: 0 },
+      autoClose: false,
     },
     {
       key: 'zoom-out',
@@ -1273,6 +1284,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
       icon: '−',
       onClick: () => zoomByFactor(0.8),
       offset: { x: 56, y: 56 },
+      autoClose: false,
     },
     {
       key: 'reset',
@@ -1280,6 +1292,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
       icon: '↺',
       onClick: resetView,
       offset: { x: 0, y: 72 },
+      autoClose: true,
     },
   ]
 
@@ -2198,7 +2211,9 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
                   type="button"
                   onClick={() => {
                     control.onClick()
-                    setLandscapeControlsOpen(false)
+                    if (control.autoClose) {
+                      setLandscapeControlsOpen(false)
+                    }
                   }}
                   className="absolute grid h-12 w-12 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-white/30 bg-white/10 text-xl text-white shadow-[0_8px_18px_rgba(0,0,0,0.4)] transition duration-200 ease-out hover:bg-white/25 focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-black"
                   style={{
