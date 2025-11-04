@@ -788,6 +788,27 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   }, [isControlSheetOpen, isMobile])
 
   useEffect(() => {
+    if (!isMobileLandscape) return
+    if (typeof window === 'undefined') return
+
+    const hideSafariChrome = () => {
+      window.scrollTo(0, 0)
+      window.scrollTo(0, 1)
+    }
+
+    const timeout = window.setTimeout(hideSafariChrome, 200)
+
+    window.addEventListener('orientationchange', hideSafariChrome)
+    window.addEventListener('resize', hideSafariChrome)
+
+    return () => {
+      window.clearTimeout(timeout)
+      window.removeEventListener('orientationchange', hideSafariChrome)
+      window.removeEventListener('resize', hideSafariChrome)
+    }
+  }, [isMobileLandscape])
+
+  useEffect(() => {
     if (!isMobile) return
     if (!isControlSheetDragging) return
     if (typeof document === 'undefined') return
@@ -1190,8 +1211,12 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     [collapsePerson],
   )
 
+  const landscapeContentPadding = isMobileLandscape
+    ? 'pl-[calc(env(safe-area-inset-left,0px)+12px)] pr-[calc(env(safe-area-inset-right,0px)+12px)]'
+    : ''
+
   const mobileControlSheetContentClass = isMobileLandscape
-    ? 'grid gap-4 grid-cols-[minmax(0,0.58fr)_minmax(0,0.42fr)] items-start pr-1 text-xs text-white'
+    ? `grid gap-4 grid-cols-[minmax(0,0.58fr)_minmax(0,0.42fr)] items-start text-xs text-white ${landscapeContentPadding}`
     : 'space-y-4 overflow-y-auto pr-1 text-xs text-white'
 
   const mobileSearchFormClass = isMobileLandscape
@@ -1207,7 +1232,10 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   const personCardButtonsGapClass = isMobileLandscape ? 'gap-1.5' : 'gap-2'
   const personCardButtonPaddingClass = isMobileLandscape ? 'px-3 py-1' : 'px-3 py-1.5'
   const legendButtonStyle: CSSProperties | undefined = isMobileLandscape
-    ? { top: 'calc(env(safe-area-inset-top) + 8px)' }
+    ? {
+        top: 'calc(env(safe-area-inset-top, 0px) + 8px)',
+        right: 'calc(env(safe-area-inset-right, 0px) + 12px)',
+      }
     : undefined
 
   const relationshipSummary = useMemo(() => {
@@ -1387,8 +1415,11 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
 
   const floatingToolbarStyle: CSSProperties | undefined = isMobileLandscape
     ? {
-        width: 'min(360px, calc(100vw - 32px))',
-        top: 'calc(env(safe-area-inset-top) + 8px)',
+        top: 'calc(env(safe-area-inset-top, 0px) + 8px)',
+        left: 'calc(env(safe-area-inset-left, 0px) + 12px)',
+        right: 'calc(env(safe-area-inset-right, 0px) + 12px)',
+        maxWidth: '360px',
+        margin: '0 auto',
       }
     : undefined
 
@@ -1966,11 +1997,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       </svg>
       <div
         className={`pointer-events-none absolute z-30 ${
-          isMobileLandscape
-            ? 'left-3 top-2 max-w-[360px]'
-            : isMobile
-            ? 'left-3 right-3 top-3'
-            : 'left-6 top-6 w-[360px]'
+          isMobileLandscape ? 'max-w-[360px]' : isMobile ? 'left-3 right-3 top-3' : 'left-6 top-6 w-[360px]'
         } flex flex-col gap-3 text-xs text-white`}
         style={floatingToolbarStyle}
       >
@@ -2108,7 +2135,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
           type="button"
           onClick={toggleLegend}
           className={`fixed z-50 rounded-full border border-white/20 bg-black/70 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.35em] text-white transition hover:bg-white/10 md:text-[11px] ${
-            isMobileLandscape ? 'right-3 top-2' : 'right-4 top-4'
+            isMobileLandscape ? '' : 'right-4 top-4'
           }`}
           style={legendButtonStyle}
           aria-expanded={isLegendOpen}
