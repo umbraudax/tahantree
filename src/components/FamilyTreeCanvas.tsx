@@ -1265,7 +1265,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
         right: 'calc(env(safe-area-inset-right, 0px) + 12px)',
       }
     : undefined
-  const TOP_SHEET_HANDLE_HEIGHT = 80
+  const TOP_SHEET_HANDLE_HEIGHT = 70
   const TOP_SHEET_HANDLE_VISIBLE = TOP_SHEET_HANDLE_HEIGHT / 2
   const topSheetClosedOffset = Math.max(topSheetHeight - TOP_SHEET_HANDLE_VISIBLE, 0)
   const topSheetBaseTranslation = isTopSheetOpen ? 0 : -topSheetClosedOffset
@@ -2254,7 +2254,7 @@ const handleTopSheetDragStart = useCallback(
             style={{
               transform: `translateY(${effectiveTopSheetTranslation}px)` ,
               transition: isTopSheetDragging ? 'none' : 'transform 0.25s ease-out',
-              width: 'min(260px, calc(100vw - 112px))',
+              width: 'min(240px, calc(100vw - 130px))',
             }}
           >
             <div
