@@ -174,7 +174,7 @@ const calculateAge = (person: Person): number | null => {
 // }
 
 export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
-  const { isMobile, isTablet, isLandscape } = useBreakpoint()
+  const { isMobile, isTablet, isLandscape, height } = useBreakpoint()
   const isMobileLandscape = isMobile && isLandscape
   const layoutDensity = isMobileLandscape ? 'cozy' : isMobile ? 'compact' : isTablet ? 'cozy' : 'default'
   const layout = useFamilyLayout(graph, { density: layoutDensity })
@@ -1206,6 +1206,9 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   const personCardControlGapClass = isMobileLandscape ? 'gap-1' : 'gap-2'
   const personCardButtonsGapClass = isMobileLandscape ? 'gap-1.5' : 'gap-2'
   const personCardButtonPaddingClass = isMobileLandscape ? 'px-3 py-1' : 'px-3 py-1.5'
+  const legendButtonStyle: CSSProperties | undefined = isMobileLandscape
+    ? { top: 'calc(env(safe-area-inset-top) + 8px)' }
+    : undefined
 
   const relationshipSummary = useMemo(() => {
     if (!nodeAId || !nodeBId) return null
@@ -1380,13 +1383,18 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     ? 'ring-2 ring-white/40 ring-offset-4 ring-offset-black'
     : ''
 
+  const mobileSheetMaxHeight = isMobile ? Math.max(320, Math.floor(height * 0.75)) : null
+
   const floatingToolbarStyle: CSSProperties | undefined = isMobileLandscape
-    ? { width: 'min(360px, calc(100vw - 32px))' }
+    ? {
+        width: 'min(360px, calc(100vw - 32px))',
+        top: 'calc(env(safe-area-inset-top) + 8px)',
+      }
     : undefined
 
   const mobileControlSheetStyle: CSSProperties | undefined = isMobile
     ? {
-        maxHeight: '75vh',
+        maxHeight: mobileSheetMaxHeight ? `${mobileSheetMaxHeight}px` : '75vh',
         ...(isControlSheetOpen ? { transform: `translateY(${controlSheetDragOffset}px)` } : {}),
       }
     : undefined
@@ -1394,7 +1402,9 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   const mobileControlSheetContentStyle: CSSProperties | undefined = isMobile
     ? isMobileLandscape
       ? { maxHeight: 'none', overflowY: 'visible' }
-      : { maxHeight: 'calc(75vh - 120px)' }
+      : {
+          maxHeight: mobileSheetMaxHeight ? `${Math.max(200, mobileSheetMaxHeight - 120)}px` : 'calc(75vh - 120px)',
+        }
     : undefined
 
   const parentChildLinks = useMemo(() => {
@@ -2100,6 +2110,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
           className={`fixed z-50 rounded-full border border-white/20 bg-black/70 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.35em] text-white transition hover:bg-white/10 md:text-[11px] ${
             isMobileLandscape ? 'right-3 top-2' : 'right-4 top-4'
           }`}
+          style={legendButtonStyle}
           aria-expanded={isLegendOpen}
           aria-controls="branch-legend-panel"
         >
