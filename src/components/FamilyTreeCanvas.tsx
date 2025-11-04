@@ -209,7 +209,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     { pointerId: null, startY: 0, initialTranslation: 0 },
   )
   const topSheetRef = useRef<HTMLDivElement | null>(null)
-  const [topSheetHeight, setTopSheetHeight] = useState(320)
+  const [topSheetHeight, setTopSheetHeight] = useState(360)
   const [lastSearchResultId, setLastSearchResultId] = useState<string | null>(null)
   const searchInputRef = useRef<HTMLInputElement | null>(null)
   const searchResultsRef = useRef<HTMLDivElement | null>(null)
@@ -1265,7 +1265,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
         right: 'calc(env(safe-area-inset-right, 0px) + 12px)',
       }
     : undefined
-  const TOP_SHEET_HANDLE_HEIGHT = 72
+  const TOP_SHEET_HANDLE_HEIGHT = 90
   const topSheetClosedOffset = Math.max(topSheetHeight - TOP_SHEET_HANDLE_HEIGHT, 0)
   const topSheetBaseTranslation = isTopSheetOpen ? 0 : -topSheetClosedOffset
   const effectiveTopSheetTranslation =
@@ -1392,8 +1392,8 @@ const handleTopSheetDragStart = useCallback(
     ) : (
       <div className="text-center text-sm text-white/70">Choose two people to see their relationship.</div>
     )
-  const topControlsPanel = (
-    <div className="pointer-events-auto rounded-2xl border border-white/20 bg-black/80 px-4 py-3 shadow-[0_20px_40px_rgba(0,0,0,0.7)] backdrop-blur">
+  const topControlsContent = (
+    <>
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <button
@@ -1422,17 +1422,17 @@ const handleTopSheetDragStart = useCallback(
         </button>
       </div>
 
-      {isMobile ? (
-        !isControlSheetOpen && !isMobileLandscape && (
-          <button
-            type="button"
-            onClick={toggleLegend}
-            className="mt-3 w-full rounded-full border border-white/20 bg-white/10 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-white transition hover:bg-white/20"
-          >
-            {isLegendOpen ? 'Hide Legend' : 'Show Legend'}
-          </button>
-        )
-      ) : (
+      {isMobile && !isMobileLandscape && !isControlSheetOpen && (
+        <button
+          type="button"
+          onClick={toggleLegend}
+          className="mt-3 w-full rounded-full border border-white/20 bg-white/10 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-white transition hover:bg-white/20"
+        >
+          {isLegendOpen ? 'Hide Legend' : 'Show Legend'}
+        </button>
+      )}
+
+      {!isMobile && (
         <>
           <form className="mt-3 flex w-full flex-wrap items-start gap-2" onSubmit={handleSearchSubmit}>
             <div className="relative w-full flex-1">
@@ -1512,7 +1512,7 @@ const handleTopSheetDragStart = useCallback(
           )}
         </>
       )}
-    </div>
+    </>
   )
   const personACard = (
     <div
@@ -2278,7 +2278,7 @@ const handleTopSheetDragStart = useCallback(
                   <span className="block h-1.5 w-14 rounded-full bg-white/60" />
                 </button>
               </div>
-              <div className="px-4 pb-5">{topControlsPanel}</div>
+              <div className="px-4 pb-5 space-y-3">{topControlsContent}</div>
             </div>
           </div>
         </div>
@@ -2289,7 +2289,9 @@ const handleTopSheetDragStart = useCallback(
           } flex flex-col gap-3 text-xs text-white`}
           style={floatingToolbarStyle}
         >
-          {topControlsPanel}
+          <div className="pointer-events-auto rounded-2xl border border-white/20 bg-black/80 px-4 py-3 shadow-[0_20px_40px_rgba(0,0,0,0.7)] backdrop-blur">
+            <div className="space-y-3">{topControlsContent}</div>
+          </div>
         </div>
       )}
 

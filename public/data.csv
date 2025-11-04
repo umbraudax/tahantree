@@ -121,7 +121,7 @@ ID,First,Last,Sex,Gen,Spouse,Divorced,Mother,Father,DOB,DOD,Branch
 120,Austin,Marmo,M,5,,FALSE,63,62,,,Homsany
 121,Adam,Marmo,M,5,,FALSE,63,62,,,Homsany
 122,Ben,Hayek,M,5,,FALSE,64,65,,,Homsany
-123,Max,Hayek,M,5,,TRUE,64,65,,,Homsany
+123,Max,Hayek,M,5,,FALSE,64,65,,,Homsany
 124,Jack,Hayek,M,5,,FALSE,64,65,,,Homsany
 125,Grant,Marmo,M,5,,FALSE,67,66,,,Homsany
 126,Logan,Marmo,M,5,,FALSE,67,66,,,Homsany
