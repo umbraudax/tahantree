@@ -824,6 +824,19 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   }, [isMobileLandscape])
 
   useEffect(() => {
+    if (!isMobile || !isControlSheetOpen) return
+    if (isControlSheetDragging) return
+    if (controlSheetDragOffset === 0) return
+    resetControlSheetPosition()
+  }, [controlSheetDragOffset, isControlSheetDragging, isControlSheetOpen, isMobile, resetControlSheetPosition])
+
+  useEffect(() => {
+    if (!isMobile || !isControlSheetOpen) return
+    if (isControlSheetDragging) return
+    resetControlSheetPosition()
+  }, [height, isControlSheetDragging, isControlSheetOpen, isMobile, resetControlSheetPosition])
+
+  useEffect(() => {
     if (!isMobileLandscape || !isLandscapeControlsOpen) return
 
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -1256,6 +1269,17 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
         right: 'calc(env(safe-area-inset-right, 0px) + 12px)',
       }
     : undefined
+
+  const legendPanelPositionClass = isMobileLandscape
+    ? 'right-[calc(env(safe-area-inset-right,0px)+12px)] top-[calc(env(safe-area-inset-top,0px)+60px)] w-[min(420px,92vw)]'
+    : 'right-4 top-20 w-[min(260px,80vw)]'
+  const legendContentWrapperClass = isMobileLandscape ? 'flex flex-row items-start gap-6' : 'flex flex-col gap-5'
+  const legendBranchSectionClass = isMobileLandscape ? 'flex-1 min-w-0 flex flex-col gap-3' : 'flex flex-col gap-3'
+  const legendBranchListClass = isMobileLandscape ? 'grid gap-2 grid-cols-2' : 'grid gap-2'
+  const legendConnectionsSectionClass = isMobileLandscape
+    ? 'flex-1 min-w-0 flex flex-col gap-3 border-l border-white/15 pl-5'
+    : 'flex flex-col gap-3 border-t border-white/15 pt-4'
+  const legendConnectionsListClass = 'space-y-3'
 
   const cameraButtonStyle: CSSProperties = {
     top: 'calc(env(safe-area-inset-top, 0px) + 12px)',
@@ -2289,49 +2313,49 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
 
       <div
         id="branch-legend-panel"
-        className={`fixed right-4 top-20 z-40 w-[min(260px,80vw)] max-h-[70vh] overflow-y-auto rounded-3xl border border-white/15 bg-black/85 p-4 text-xs text-white shadow-[0_24px_60px_rgba(0,0,0,0.75)] backdrop-blur transition-all duration-300 ${
+        className={`fixed z-40 max-h-[70vh] overflow-y-auto rounded-3xl border border-white/15 bg-black/85 p-4 text-xs text-white shadow-[0_24px_60px_rgba(0,0,0,0.75)] backdrop-blur transition-all duration-300 ${legendPanelPositionClass} ${
           isLegendOpen ? 'pointer-events-auto translate-x-0 opacity-100' : 'pointer-events-none translate-x-[120%] opacity-0'
         }`}
       >
-        <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.3em] text-white">
-          Branches
-        </div>
-        <div className="grid gap-2">
-          {branchList.map((branch) => (
-            <div key={branch} className="flex items-center gap-3 text-white">
-              <span
-                className="h-3 w-3 rounded-full shadow-[0_0_8px_2px_rgba(244,178,143,0.25)]"
-                style={{ background: getBranchColor(branch) }}
-              />
-              <span className="text-sm font-medium tracking-wide">{branch}</span>
+        <div className={legendContentWrapperClass}>
+          <div className={legendBranchSectionClass}>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.3em] text-white">Branches</div>
+            <div className={legendBranchListClass}>
+              {branchList.map((branch) => (
+                <div key={branch} className="flex items-center gap-3 text-white">
+                  <span
+                    className="h-3 w-3 rounded-full shadow-[0_0_8px_2px_rgba(244,178,143,0.25)]"
+                    style={{ background: getBranchColor(branch) }}
+                  />
+                  <span className="text-sm font-medium tracking-wide">{branch}</span>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-        <div className="mt-5 border-t border-white/15 pt-4">
-          <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.3em] text-white">
-            Connections
           </div>
-          <div className="space-y-3">
-            <div className="flex items-center gap-3">
-              <span
-                className="block h-1 w-12 rounded-full"
-                style={{ backgroundColor: SPOUSE_COLOR_MARRIED }}
-              />
-              <span className="text-sm font-medium tracking-wide">Current spouse</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <span
-                className="block h-0 w-12 border-t-4 border-dashed"
-                style={{ borderColor: SPOUSE_COLOR_DIVORCED }}
-              />
-              <span className="text-sm font-medium tracking-wide">Divorced spouse</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <span
-                className="block h-0 w-12 border-t-2"
-                style={{ borderColor: PARENT_CHILD_LINE_COLOR }}
-              />
-              <span className="text-sm font-medium tracking-wide">Children</span>
+          <div className={legendConnectionsSectionClass}>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.3em] text-white">Connections</div>
+            <div className={legendConnectionsListClass}>
+              <div className="flex items-center gap-3">
+                <span
+                  className="block h-1 w-12 rounded-full"
+                  style={{ backgroundColor: SPOUSE_COLOR_MARRIED }}
+                />
+                <span className="text-sm font-medium tracking-wide">Current spouse</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span
+                  className="block h-0 w-12 border-t-4 border-dashed"
+                  style={{ borderColor: SPOUSE_COLOR_DIVORCED }}
+                />
+                <span className="text-sm font-medium tracking-wide">Divorced spouse</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span
+                  className="block h-0 w-12 border-t-2"
+                  style={{ borderColor: PARENT_CHILD_LINE_COLOR }}
+                />
+                <span className="text-sm font-medium tracking-wide">Children</span>
+              </div>
             </div>
           </div>
         </div>
