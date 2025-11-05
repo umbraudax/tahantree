@@ -208,6 +208,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   const searchResultsRef = useRef<HTMLDivElement | null>(null)
   const [searchFocused, setSearchFocused] = useState(false)
   const [searchActiveIndex, setSearchActiveIndex] = useState<number | null>(null)
+  const controlSheetMaxHeightRef = useRef<number | null>(null)
 
   useEffect(() => {
     if (isMobile) {
@@ -221,6 +222,15 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       setControlSheetOpen(false)
     }
   }, [isMobile])
+
+  useEffect(() => {
+    if (!isMobile || !isControlSheetOpen) {
+      controlSheetMaxHeightRef.current = null
+      return
+    }
+
+    controlSheetMaxHeightRef.current = Math.max(controlSheetMaxHeightRef.current ?? 0, height)
+  }, [height, isControlSheetOpen, isMobile])
 
   useEffect(() => {
     if (!isMobileLandscape) {
@@ -1635,7 +1645,8 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
     ? 'ring-2 ring-white/40 ring-offset-4 ring-offset-black'
     : ''
 
-  const mobileSheetMaxHeight = isMobile ? Math.max(320, Math.floor(height * 0.75)) : null
+  const controlSheetHeightSource = controlSheetMaxHeightRef.current ?? height
+  const mobileSheetMaxHeight = isMobile ? Math.max(320, Math.floor(controlSheetHeightSource * 0.75)) : null
 
   const floatingToolbarStyle: CSSProperties | undefined = isMobileLandscape
     ? {
