@@ -209,6 +209,14 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   const [searchFocused, setSearchFocused] = useState(false)
   const [searchActiveIndex, setSearchActiveIndex] = useState<number | null>(null)
   const controlSheetMaxHeightRef = useRef<number | null>(null)
+  const ensureSafariFullscreen = useCallback(() => {
+    if (!isMobile) return
+    if (typeof window === 'undefined') return
+    window.requestAnimationFrame(() => {
+      window.scrollTo(0, 0)
+      window.scrollTo(0, 1)
+    })
+  }, [isMobile])
 
   useEffect(() => {
     if (isMobile) {
@@ -231,6 +239,17 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
 
     controlSheetMaxHeightRef.current = Math.max(controlSheetMaxHeightRef.current ?? 0, height)
   }, [height, isControlSheetOpen, isMobile])
+
+  useEffect(() => {
+    if (!isMobile || !isControlSheetOpen) return
+    ensureSafariFullscreen()
+  }, [ensureSafariFullscreen, isControlSheetOpen, isMobile])
+
+  useEffect(() => {
+    if (!isMobile || !isControlSheetOpen) return
+    if (searchFocused) return
+    ensureSafariFullscreen()
+  }, [ensureSafariFullscreen, isControlSheetOpen, isMobile, searchFocused])
 
   useEffect(() => {
     if (!isMobileLandscape) {
@@ -817,8 +836,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     if (typeof window === 'undefined') return
 
     const hideSafariChrome = () => {
-      window.scrollTo(0, 0)
-      window.scrollTo(0, 1)
+      ensureSafariFullscreen()
     }
 
     const timeout = window.setTimeout(hideSafariChrome, 200)
@@ -831,7 +849,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       window.removeEventListener('orientationchange', hideSafariChrome)
       window.removeEventListener('resize', hideSafariChrome)
     }
-  }, [isMobileLandscape])
+  }, [ensureSafariFullscreen, isMobileLandscape])
 
   useEffect(() => {
     if (!isMobile || !isControlSheetOpen) return
@@ -1118,9 +1136,10 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
         }
       }
 
+      ensureSafariFullscreen()
       setSelectedPersonId(person.id)
     },
-    [centerOnPerson, isMobileLandscape, resetControlSheetPosition],
+    [centerOnPerson, ensureSafariFullscreen, isMobileLandscape, resetControlSheetPosition],
   )
 
   const handleSearchInputKeyDown = useCallback(
@@ -1196,9 +1215,10 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
           window.requestAnimationFrame(resetControlSheetPosition)
         }
       }
+      ensureSafariFullscreen()
       setSelectedPersonId(match.id)
     },
-    [centerOnPerson, isMobileLandscape, resetControlSheetPosition, searchActiveIndex, searchMatches, searchValue],
+    [centerOnPerson, ensureSafariFullscreen, isMobileLandscape, resetControlSheetPosition, searchActiveIndex, searchMatches, searchValue],
   )
 
   const handleCanvasBackgroundClick = useCallback(() => {
@@ -1258,7 +1278,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
     : ''
 
   const mobileControlSheetContentClass = isMobileLandscape
-    ? `grid gap-4 grid-cols-[minmax(0,0.58fr)_minmax(0,0.42fr)] items-start overflow-y-auto text-xs text-white ${landscapeContentPadding}`
+    ? `grid gap-4 grid-cols-[minmax(0,0.58fr)_minmax(0,0.42fr)] items-start text-xs text-white ${landscapeContentPadding}`
     : 'space-y-4 overflow-y-auto pr-1 text-xs text-white'
 
   const mobileSearchFormClass = isMobileLandscape
@@ -1661,19 +1681,13 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
   const mobileControlSheetStyle: CSSProperties | undefined = isMobile
     ? {
         maxHeight: mobileSheetMaxHeight ? `${mobileSheetMaxHeight}px` : '75vh',
-        height: mobileSheetMaxHeight ? `${mobileSheetMaxHeight}px` : '75vh',
         ...(isControlSheetOpen ? { transform: `translateY(${controlSheetDragOffset}px)` } : {}),
       }
     : undefined
 
-  const landscapeSheetContentMaxHeight = mobileSheetMaxHeight ? Math.max(220, mobileSheetMaxHeight - 120) : null
-
   const mobileControlSheetContentStyle: CSSProperties | undefined = isMobile
     ? isMobileLandscape
-      ? {
-          maxHeight: landscapeSheetContentMaxHeight ? `${landscapeSheetContentMaxHeight}px` : undefined,
-          overflowY: 'auto',
-        }
+      ? { maxHeight: 'none', overflowY: 'visible' }
       : {
           maxHeight: mobileSheetMaxHeight ? `${Math.max(200, mobileSheetMaxHeight - 120)}px` : 'calc(75vh - 120px)',
         }
