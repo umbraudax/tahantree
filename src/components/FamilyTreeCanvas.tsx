@@ -1248,7 +1248,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
     : ''
 
   const mobileControlSheetContentClass = isMobileLandscape
-    ? `grid gap-4 grid-cols-[minmax(0,0.58fr)_minmax(0,0.42fr)] items-start text-xs text-white ${landscapeContentPadding}`
+    ? `grid gap-4 grid-cols-[minmax(0,0.58fr)_minmax(0,0.42fr)] items-start overflow-y-auto text-xs text-white ${landscapeContentPadding}`
     : 'space-y-4 overflow-y-auto pr-1 text-xs text-white'
 
   const mobileSearchFormClass = isMobileLandscape
@@ -1650,13 +1650,19 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
   const mobileControlSheetStyle: CSSProperties | undefined = isMobile
     ? {
         maxHeight: mobileSheetMaxHeight ? `${mobileSheetMaxHeight}px` : '75vh',
+        height: mobileSheetMaxHeight ? `${mobileSheetMaxHeight}px` : '75vh',
         ...(isControlSheetOpen ? { transform: `translateY(${controlSheetDragOffset}px)` } : {}),
       }
     : undefined
 
+  const landscapeSheetContentMaxHeight = mobileSheetMaxHeight ? Math.max(220, mobileSheetMaxHeight - 120) : null
+
   const mobileControlSheetContentStyle: CSSProperties | undefined = isMobile
     ? isMobileLandscape
-      ? { maxHeight: 'none', overflowY: 'visible' }
+      ? {
+          maxHeight: landscapeSheetContentMaxHeight ? `${landscapeSheetContentMaxHeight}px` : undefined,
+          overflowY: 'auto',
+        }
       : {
           maxHeight: mobileSheetMaxHeight ? `${Math.max(200, mobileSheetMaxHeight - 120)}px` : 'calc(75vh - 120px)',
         }
@@ -2324,7 +2330,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
               {branchList.map((branch) => (
                 <div key={branch} className="flex items-center gap-3 text-white">
                   <span
-                    className="h-3 w-3 rounded-full shadow-[0_0_8px_2px_rgba(244,178,143,0.25)]"
+                    className="h-3 w-3 flex-shrink-0 rounded-full shadow-[0_0_8px_2px_rgba(244,178,143,0.25)]"
                     style={{ background: getBranchColor(branch) }}
                   />
                   <span className="text-sm font-medium tracking-wide">{branch}</span>
@@ -2337,21 +2343,21 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
             <div className={legendConnectionsListClass}>
               <div className="flex items-center gap-3">
                 <span
-                  className="block h-1 w-12 rounded-full"
+                  className="block h-1 w-12 flex-shrink-0 rounded-full"
                   style={{ backgroundColor: SPOUSE_COLOR_MARRIED }}
                 />
                 <span className="text-sm font-medium tracking-wide">Current spouse</span>
               </div>
               <div className="flex items-center gap-3">
                 <span
-                  className="block h-0 w-12 border-t-4 border-dashed"
+                  className="block h-0 w-12 flex-shrink-0 border-t-4 border-dashed"
                   style={{ borderColor: SPOUSE_COLOR_DIVORCED }}
                 />
                 <span className="text-sm font-medium tracking-wide">Divorced spouse</span>
               </div>
               <div className="flex items-center gap-3">
                 <span
-                  className="block h-0 w-12 border-t-2"
+                  className="block h-0 w-12 flex-shrink-0 border-t-2"
                   style={{ borderColor: PARENT_CHILD_LINE_COLOR }}
                 />
                 <span className="text-sm font-medium tracking-wide">Children</span>
