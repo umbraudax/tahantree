@@ -19,11 +19,11 @@ ID,First,Last,Sex,Gen,Spouse,Divorced,Mother,Father,DOB,DOD,Branch
 18,George,Marmo,M,3,17,FALSE,,,,,Homsany
 19,Fran,Atieh,F,3,20,FALSE,5,6,,,Petriello
 20,Louis,Atieh,M,3,19,FALSE,,,,,Petriello
-21,Joseph,Petriello,M,3,22,FALSE,5,6,,,Petriello
-22,Denise,Petriello,F,3,21,FALSE,,,,,Petriello
+21,Joseph,Petriello,M,3,22,FALSE,5,6,2/5/1950,,Petriello
+22,Denise,Petriello,F,3,21,FALSE,,,2/2/1952,,Petriello
 23,Jane,Petriello,F,3,24,TRUE,5,6,,,Petriello
 24,Ken,Hawryschuck,M,3,23,TRUE,,,,,Petriello
-25,Elaine,Farraye,F,3,26,FALSE,8,7,,,B Tahan
+25,Elaine,Farraye,F,3,26,FALSE,8,7,1/2/1954,,B Tahan
 26,Tony,Farraye,M,3,25,FALSE,,,,,B Tahan
 27,Kathy,Pospiech,F,3,28,FALSE,8,7,,,B Tahan
 28,Steve,Pospiech,M,3,27,FALSE,,,,,B Tahan
@@ -33,7 +33,7 @@ ID,First,Last,Sex,Gen,Spouse,Divorced,Mother,Father,DOB,DOD,Branch
 32,Mimi,Tahan,F,3,31,FALSE,,,,,B Tahan
 33,Sharon,Olivo,F,3,34,FALSE,8,7,,,B Tahan
 34,Jimmy,Olivo,M,3,33,FALSE,,,,,B Tahan
-35,Patricia,Tahan,F,3,,FALSE,8,7,,,B Tahan
+35,Patricia,Tahan,F,3,,FALSE,8,7,1/8/1956,,B Tahan
 36,Brian,Tahan,M,3,37,FALSE,8,7,,,B Tahan
 37,Heather,Tahan,F,3,36,FALSE,,,,,B Tahan
 38,Albie,Tahan,M,3,39,FALSE,10,9,,,A Tahan
@@ -55,8 +55,8 @@ ID,First,Last,Sex,Gen,Spouse,Divorced,Mother,Father,DOB,DOD,Branch
 54,Gessica,Russo,F,4,55,FALSE,14,12,,,Homsany
 55,Vinny,Russo,M,4,54,FALSE,,,,,Homsany
 56,Garrett,Homsany,M,4,,FALSE,14,12,,,Homsany
-57,Raymond,Karaty,M,4,58,FALSE,15,16,,,Homsany
-58,Dawn,Karaty,F,4,57,FALSE,,,,,Homsany
+57,Raymond,Karaty,M,4,58,FALSE,15,16,1/8/1969,,Homsany
+58,Dawn,Karaty,F,4,57,FALSE,,,1/12/1965,,Homsany
 59,Charlene,Karaty,F,4,,FALSE,15,16,7/22/1970,,Homsany
 60,Steve,Karaty,M,4,61,FALSE,15,16,9/24/1971,,Homsany
 61,Laura,Karaty,F,4,60,FALSE,,,1/24/1972,,Homsany
@@ -77,7 +77,7 @@ ID,First,Last,Sex,Gen,Spouse,Divorced,Mother,Father,DOB,DOD,Branch
 76,Jeff,Petriello,M,4,,FALSE,22,21,,,Petriello
 77,Mary,Cornish,F,4,78,FALSE,23,24,,,Petriello
 78,Duayne,Cornish,M,4,77,FALSE,,,,,Petriello
-79,Dean,Hawryschuck,M,4,,FALSE,23,24,,,Petriello
+79,Dean,Hawryschuck,M,4,,FALSE,23,24,1/4/1993,,Petriello
 80,Matt,Farraye,M,4,81,FALSE,25,26,,,B Tahan
 81,Heather,Farraye,F,4,80,FALSE,,,,,B Tahan
 82,Nancy,Pospiech,F,4,83,TRUE,27,28,,,B Tahan
@@ -102,7 +102,7 @@ ID,First,Last,Sex,Gen,Spouse,Divorced,Mother,Father,DOB,DOD,Branch
 101,Melissa,Tahan,F,4,,FALSE,43,42,,,A Tahan
 102,Danielle,Tahan,F,4,,FALSE,43,42,,,A Tahan
 103,Brianna,Tahan,F,4,,FALSE,44,45,,,A Tahan
-104,Leigha,Fahrenfeld,F,4,,FALSE,40,41,,,A Tahan
+104,Leigha,Fahrenfeld,F,4,,FALSE,40,41,1/29/2000,,A Tahan
 105,KJ,Fahrenfeld,M,4,,FALSE,40,41,,,A Tahan
 106,Geran,Homsany,M,5,,FALSE,47,46,,,Homsany
 107,Gio,Homsany,M,5,,FALSE,50,49,,,Homsany
