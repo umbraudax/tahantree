@@ -210,6 +210,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   const [searchFocused, setSearchFocused] = useState(false)
   const [searchActiveIndex, setSearchActiveIndex] = useState<number | null>(null)
   const controlSheetMaxHeightRef = useRef<number | null>(null)
+  const lastMobileLandscapeRef = useRef(isMobileLandscape)
 
   useEffect(() => {
     if (isMobile) {
@@ -238,6 +239,54 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       setLandscapeControlsOpen(false)
     }
   }, [isMobileLandscape])
+
+  useEffect(() => {
+    if (!isMobileLandscape) return
+    setSearchFocused(false)
+    setSearchActiveIndex(null)
+    searchInputRef.current?.blur()
+  }, [isMobileLandscape])
+
+  useEffect(() => {
+    if (!isMobile) {
+      lastMobileLandscapeRef.current = isMobileLandscape
+      return
+    }
+    if (!svgRef.current || !zoomBehaviorRef.current || !transformRef.current) {
+      lastMobileLandscapeRef.current = isMobileLandscape
+      return
+    }
+    if (lastMobileLandscapeRef.current === isMobileLandscape) return
+
+    const svgElement = svgRef.current
+    const rect = svgElement.getBoundingClientRect()
+    if (rect.width === 0 || rect.height === 0) {
+      lastMobileLandscapeRef.current = isMobileLandscape
+      return
+    }
+
+    const currentTransform = transformRef.current
+    const focusPoint: [number, number] = [
+      (rect.width / 2 - currentTransform.x) / currentTransform.k,
+      (rect.height / 2 - currentTransform.y) / currentTransform.k,
+    ]
+
+    lastMobileLandscapeRef.current = isMobileLandscape
+
+    const preserveView = () => {
+      if (!svgRef.current || !zoomBehaviorRef.current) return
+      const nextRect = svgRef.current.getBoundingClientRect()
+      if (nextRect.width === 0 || nextRect.height === 0) return
+      const scale = currentTransform.k
+      const translateX = nextRect.width / 2 - focusPoint[0] * scale
+      const translateY = nextRect.height / 2 - focusPoint[1] * scale
+      const nextTransform = zoomIdentity.translate(translateX, translateY).scale(scale)
+      transformRef.current = nextTransform
+      select(svgRef.current).call(zoomBehaviorRef.current.transform as never, nextTransform)
+    }
+
+    window.requestAnimationFrame(() => window.requestAnimationFrame(preserveView))
+  }, [isMobile, isMobileLandscape])
 
   useEffect(() => {
     if (!isMobileLandscape) return
@@ -1249,6 +1298,8 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
     ? { flexBasis: '50%', maxWidth: '50%', flexGrow: 0 }
     : undefined
 
+  const showMobileSearch = isMobile && !isMobileLandscape
+
   const personCardPaddingClass = isMobileLandscape ? 'py-2' : 'py-3'
   const personCardControlGapClass = isMobileLandscape ? 'gap-1' : 'gap-2'
   const personCardButtonsGapClass = isMobileLandscape ? 'gap-1.5' : 'gap-2'
@@ -1499,13 +1550,15 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
           >
             {isSelectingA ? 'Selecting…' : 'Select'}
           </button>
-          <button
-            type="button"
-            onClick={() => assignLastSearchResultToRole('A')}
-            className={`rounded-full border border-white/25 bg-black/40 px-3 text-[10px] font-semibold uppercase tracking-[0.3em] text-white transition hover:bg-white/10 ${personCardButtonPaddingClass}`}
-          >
-            + Search
-          </button>
+          {showMobileSearch && (
+            <button
+              type="button"
+              onClick={() => assignLastSearchResultToRole('A')}
+              className={`rounded-full border border-white/25 bg-black/40 px-3 text-[10px] font-semibold uppercase tracking-[0.3em] text-white transition hover:bg-white/10 ${personCardButtonPaddingClass}`}
+            >
+              + Search
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -1529,18 +1582,20 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
           >
             {isSelectingB ? 'Selecting…' : 'Select'}
           </button>
-          <button
-            type="button"
-            onClick={() => assignLastSearchResultToRole('B')}
-            className={`rounded-full border border-white/25 bg-black/40 px-3 text-[10px] font-semibold uppercase tracking-[0.3em] text-white transition hover:bg-white/10 ${personCardButtonPaddingClass}`}
-          >
-            + Search
-          </button>
+          {showMobileSearch && (
+            <button
+              type="button"
+              onClick={() => assignLastSearchResultToRole('B')}
+              className={`rounded-full border border-white/25 bg-black/40 px-3 text-[10px] font-semibold uppercase tracking-[0.3em] text-white transition hover:bg-white/10 ${personCardButtonPaddingClass}`}
+            >
+              + Search
+            </button>
+          )}
         </div>
       </div>
     </div>
   )
-  const mobileSearchForm = (
+  const mobileSearchForm = showMobileSearch ? (
     <form className={mobileSearchFormClass} onSubmit={handleSearchSubmit}>
       <div className="relative w-full flex-1" style={mobileSearchInputWrapperStyle}>
         <input
@@ -1612,7 +1667,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
         Search
       </button>
     </form>
-  )
+  ) : null
   const selectionMessage =
     selectionMode === 'selectA'
       ? 'Tap a person to set Person A'
@@ -2448,16 +2503,8 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
                 {isMobileLandscape ? (
                   <>
                     <div className="flex flex-col gap-3">
-                      {mobileSearchForm}
-                      {searchFeedback && (
-                        <div className="rounded-full border border-white/20 bg-black px-3 py-1 text-[11px] text-white">
-                          {searchFeedback}
-                        </div>
-                      )}
-                      <div className="flex flex-col gap-3">
-                        {personACard}
-                        {personBCard}
-                      </div>
+                      {personACard}
+                      {personBCard}
                     </div>
                     <div className="flex flex-col gap-3">
                       <button
@@ -2478,7 +2525,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
                 ) : (
                   <>
                     {mobileSearchForm}
-                    {searchFeedback && (
+                    {showMobileSearch && searchFeedback && (
                       <div className="rounded-full border border-white/20 bg-black px-3 py-1 text-[11px] text-white">
                         {searchFeedback}
                       </div>
@@ -2527,8 +2574,35 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
                 : undefined
             }
           >
-            <span aria-hidden="true">🔍</span>
-            <span className="sr-only">Search &amp; Select</span>
+            {isMobileLandscape ? (
+              <svg
+                aria-hidden="true"
+                className="h-7 w-7 text-white"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <circle cx="12" cy="12" r="6.5" stroke="currentColor" strokeWidth="1.8" />
+                <line x1="12" y1="3" x2="12" y2="6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                <line x1="12" y1="18" x2="12" y2="21" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                <line x1="3" y1="12" x2="6" y2="12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                <line x1="18" y1="12" x2="21" y2="12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+              </svg>
+            ) : (
+              <svg
+                aria-hidden="true"
+                className="h-7 w-7 text-white"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <circle cx="11" cy="11" r="6" stroke="currentColor" strokeWidth="1.8" />
+                <line x1="15.5" y1="15.5" x2="20" y2="20" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+              </svg>
+            )}
+            <span className="sr-only">
+              {isMobileLandscape ? 'Open selection controls' : 'Search & Select'}
+            </span>
           </button>
         ) : (
           <button
