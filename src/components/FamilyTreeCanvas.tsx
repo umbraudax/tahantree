@@ -24,8 +24,9 @@ import type { FamilyGraph, FamilyUnit, Person } from '../types/family'
 import { getBranchColor, withAlpha } from '../utils/colors'
 import { describeRelationship } from '../utils/relationships'
 const slugifyBranch = (branch: string) => branch.toLowerCase().replace(/[^a-z0-9]+/g, '-')
-const MIN_SCALE = 0.35
-const MAX_SCALE = 2.5
+const MIN_SCALE = 0.05
+const INITIAL_MIN_SCALE = 0.35
+const MAX_SCALE = 5
 const SEARCH_FOCUS_SCALE = 1.5
 const SPOUSE_LINK_PADDING = 12
 const SPOUSE_COLOR_MARRIED = '#d16bf6'
@@ -209,14 +210,6 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   const [searchFocused, setSearchFocused] = useState(false)
   const [searchActiveIndex, setSearchActiveIndex] = useState<number | null>(null)
   const controlSheetMaxHeightRef = useRef<number | null>(null)
-  const ensureSafariFullscreen = useCallback(() => {
-    if (!isMobile) return
-    if (typeof window === 'undefined') return
-    window.requestAnimationFrame(() => {
-      window.scrollTo(0, 0)
-      window.scrollTo(0, 1)
-    })
-  }, [isMobile])
 
   useEffect(() => {
     if (isMobile) {
@@ -239,17 +232,6 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
 
     controlSheetMaxHeightRef.current = Math.max(controlSheetMaxHeightRef.current ?? 0, height)
   }, [height, isControlSheetOpen, isMobile])
-
-  useEffect(() => {
-    if (!isMobile || !isControlSheetOpen) return
-    ensureSafariFullscreen()
-  }, [ensureSafariFullscreen, isControlSheetOpen, isMobile])
-
-  useEffect(() => {
-    if (!isMobile || !isControlSheetOpen) return
-    if (searchFocused) return
-    ensureSafariFullscreen()
-  }, [ensureSafariFullscreen, isControlSheetOpen, isMobile, searchFocused])
 
   useEffect(() => {
     if (!isMobileLandscape) {
@@ -589,7 +571,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       const availableHeight = Math.max(viewHeight - topMargin - bottomMargin, 1)
       const heightScale = availableHeight / contentHeight
 
-      const clampedScale = Math.min(Math.max(heightScale, MIN_SCALE), MAX_SCALE)
+      const clampedScale = Math.min(Math.max(heightScale, INITIAL_MIN_SCALE), MAX_SCALE)
 
       const scaledWidth = contentWidth * clampedScale
       const translateX = (viewWidth - scaledWidth) / 2 - contentBounds.minLeft * clampedScale
@@ -830,26 +812,6 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       }
     }
   }, [isControlSheetOpen, isMobile])
-
-  useEffect(() => {
-    if (!isMobileLandscape) return
-    if (typeof window === 'undefined') return
-
-    const hideSafariChrome = () => {
-      ensureSafariFullscreen()
-    }
-
-    const timeout = window.setTimeout(hideSafariChrome, 200)
-
-    window.addEventListener('orientationchange', hideSafariChrome)
-    window.addEventListener('resize', hideSafariChrome)
-
-    return () => {
-      window.clearTimeout(timeout)
-      window.removeEventListener('orientationchange', hideSafariChrome)
-      window.removeEventListener('resize', hideSafariChrome)
-    }
-  }, [ensureSafariFullscreen, isMobileLandscape])
 
   useEffect(() => {
     if (!isMobile || !isControlSheetOpen) return
@@ -1136,10 +1098,9 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
         }
       }
 
-      ensureSafariFullscreen()
       setSelectedPersonId(person.id)
     },
-    [centerOnPerson, ensureSafariFullscreen, isMobileLandscape, resetControlSheetPosition],
+    [centerOnPerson, isMobileLandscape, resetControlSheetPosition],
   )
 
   const handleSearchInputKeyDown = useCallback(
@@ -1215,10 +1176,9 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
           window.requestAnimationFrame(resetControlSheetPosition)
         }
       }
-      ensureSafariFullscreen()
       setSelectedPersonId(match.id)
     },
-    [centerOnPerson, ensureSafariFullscreen, isMobileLandscape, resetControlSheetPosition, searchActiveIndex, searchMatches, searchValue],
+    [centerOnPerson, isMobileLandscape, resetControlSheetPosition, searchActiveIndex, searchMatches, searchValue],
   )
 
   const handleCanvasBackgroundClick = useCallback(() => {

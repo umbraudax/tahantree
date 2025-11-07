@@ -27,18 +27,6 @@ body {
   }
 }
 
-@media (max-width: 768px) {
-  html,
-  body {
-    overflow: hidden;
-    overscroll-behavior: contain;
-  }
-
-  body {
-    touch-action: manipulation;
-  }
-}
-
 body.mobile-control-sheet-open #app-help-button {
   display: none;
 }
