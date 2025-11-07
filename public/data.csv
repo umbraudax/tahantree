@@ -1,18 +1,18 @@
 ID,First,Last,Sex,Gen,Spouse,Divorced,Mother,Father,DOB,DOD,Branch
 1,Jamila,Hamway,F,1,2,FALSE,,,,,OG
 2,Naim,Tahan,M,1,1,FALSE,,,,,OG
-3,Josephine,Homsany,F,2,4,FALSE,1,2,,,Homsany
+3,Josephine,Homsany,F,2,4,FALSE,1,2,2/17/1919,,Homsany
 4,George,Homsany,M,2,3,FALSE,,,,,Homsany
 5,Mary,Petriello,F,2,6,FALSE,1,2,,,Petriello
-6,Frank,Petriello,M,2,5,FALSE,,,,,Petriello
+6,Frank,Petriello,M,2,5,FALSE,,,3/16/1921,,Petriello
 7,Basil,Tahan,M,2,8,FALSE,1,2,,,B Tahan
-8,Jean,Tahan,F,2,7,FALSE,,,,,B Tahan
-9,Albert,Tahan,M,2,10,FALSE,1,2,,,A Tahan
+8,Jean,Tahan,F,2,7,FALSE,,,4/19/1932,,B Tahan
+9,Albert,Tahan,M,2,10,FALSE,1,2,4/5/1931,,A Tahan
 10,Joan,Tahan,F,2,9,FALSE,,,,,A Tahan
 11,Harry,Tahan,M,2,,FALSE,1,2,,,Other
 12,George,Homsany,M,3,14,FALSE,3,4,,,Homsany
 13,Jaci,Homsany,F,3,12,TRUE,,,,,Homsany
-14,Patricia,Homsany,F,3,12,FALSE,,,,,Homsany
+14,Patricia,Homsany,F,3,12,FALSE,,,1/8/1956,,Homsany
 15,Shirley,Karaty,F,3,16,FALSE,3,4,,,Homsany
 16,Raymond,Karaty,M,3,15,FALSE,,,9/24/1936,7/14/2023,Homsany
 17,Jean,Marmo,F,3,18,FALSE,3,4,,,Homsany
@@ -25,15 +25,15 @@ ID,First,Last,Sex,Gen,Spouse,Divorced,Mother,Father,DOB,DOD,Branch
 24,Ken,Hawryschuck,M,3,23,TRUE,,,,,Petriello
 25,Elaine,Farraye,F,3,26,FALSE,8,7,1/2/1954,,B Tahan
 26,Tony,Farraye,M,3,25,FALSE,,,,,B Tahan
-27,Kathy,Pospiech,F,3,28,FALSE,8,7,,,B Tahan
+27,Kathy,Pospiech,F,3,28,FALSE,8,7,3/30/1955,,B Tahan
 28,Steve,Pospiech,M,3,27,FALSE,,,,,B Tahan
 29,Norman,Tahan,M,3,30,TRUE,8,7,,,B Tahan
 30,Kathy,Tahan,F,3,29,TRUE,,,,,B Tahan
 31,David,Tahan,M,3,32,FALSE,8,7,,,B Tahan
 32,Mimi,Tahan,F,3,31,FALSE,,,,,B Tahan
-33,Sharon,Olivo,F,3,34,FALSE,8,7,,,B Tahan
-34,Jimmy,Olivo,M,3,33,FALSE,,,,,B Tahan
-35,Patricia,Tahan,F,3,,FALSE,8,7,1/8/1956,,B Tahan
+33,Sharon,Olivo,F,3,34,FALSE,8,7,2/20/1962,,B Tahan
+34,Jimmy,Olivo,M,3,33,FALSE,,,2/10/1956,,B Tahan
+35,Patricia,Tahan,F,3,,FALSE,8,7,5/12/1964,,B Tahan
 36,Brian,Tahan,M,3,37,FALSE,8,7,,,B Tahan
 37,Heather,Tahan,F,3,36,FALSE,,,,,B Tahan
 38,Albie,Tahan,M,3,39,FALSE,10,9,,,A Tahan
@@ -42,7 +42,7 @@ ID,First,Last,Sex,Gen,Spouse,Divorced,Mother,Father,DOB,DOD,Branch
 41,Kevin,Fahrenfeld,M,3,40,TRUE,,,,,A Tahan
 42,Mark,Tahan,M,3,43,FALSE,10,9,,,A Tahan
 43,Deirdre,Tahan,F,3,42,FALSE,,,,,A Tahan
-44,Lisa,Scangarello,F,3,45,FALSE,10,9,,,A Tahan
+44,Lisa,Scangarello,F,3,45,FALSE,10,9,5/4/1963,,A Tahan
 45,Carmen,Scangarello,M,3,44,FALSE,,,,,A Tahan
 46,Gerry,Homsany,M,4,47,FALSE,13,12,,,Homsany
 47,Kalli,Homsany,F,4,46,FALSE,,,,,Homsany
@@ -67,7 +67,7 @@ ID,First,Last,Sex,Gen,Spouse,Divorced,Mother,Father,DOB,DOD,Branch
 66,Dave,Marmo,M,4,67,FALSE,17,18,,,Homsany
 67,Lexie,Marmo,F,4,66,FALSE,,,,,Homsany
 68,Deena,Graham,F,4,69,FALSE,19,20,,,Petriello
-69,Jack,Graham,M,4,68,FALSE,,,,,Petriello
+69,Jack,Graham,M,4,68,FALSE,,,3/5/1971,,Petriello
 70,LJ,Atieh,M,4,71,FALSE,19,20,,,Petriello
 71,John,Lear,M,4,70,FALSE,,,,,Petriello
 72,Lauren,Gonzales,F,4,73,FALSE,19,20,,,Petriello
@@ -92,12 +92,12 @@ ID,First,Last,Sex,Gen,Spouse,Divorced,Mother,Father,DOB,DOD,Branch
 91,Elias,Fekhoury,M,4,90,FALSE,,,,,B Tahan
 92,Joe,Tahan,M,4,93,FALSE,30,29,,,B Tahan
 93,Mary,Tahan,F,4,92,FALSE,,,,,B Tahan
-94,Kelsey,Banos,F,4,95,FALSE,32,31,,,B Tahan
+94,Kelsey,Banos,F,4,95,FALSE,32,31,2/11/1988,,B Tahan
 95,Jay,Banos,M,4,94,FALSE,,,,,B Tahan
 96,Mike,Tahan,M,4,,FALSE,32,31,,,B Tahan
-97,Julie,Murphy,F,4,98,FALSE,32,31,,,B Tahan
+97,Julie,Murphy,F,4,98,FALSE,32,31,3/12/1991,,B Tahan
 98,Steve,Murphy,M,4,97,FALSE,,,,,B Tahan
-99,Tyler,Tahan,M,4,,FALSE,37,36,,,B Tahan
+99,Tyler,Tahan,M,4,,FALSE,37,36,4/16/2006,,B Tahan
 100,Avery,Tahan,F,4,,FALSE,37,36,,,B Tahan
 101,Melissa,Tahan,F,4,,FALSE,43,42,,,A Tahan
 102,Danielle,Tahan,F,4,,FALSE,43,42,,,A Tahan
@@ -138,7 +138,7 @@ ID,First,Last,Sex,Gen,Spouse,Divorced,Mother,Father,DOB,DOD,Branch
 137,Nolyn,Fisher,M,5,,FALSE,82,83,,,B Tahan
 138,Adrian,Beins,M,5,,FALSE,84,85,,,B Tahan
 139,Gavin,Beins,M,5,,FALSE,84,85,,,B Tahan
-140,Damon,Beins,M,5,,FALSE,84,85,,,B Tahan
+140,Damon,Beins,M,5,,FALSE,84,85,3/21/2013,,B Tahan
 141,Preston,Beins,M,5,,FALSE,84,85,,,B Tahan
 142,Owen,Lauria,M,5,,FALSE,86,87,,,B Tahan
 143,Kaylee,Lauria,F,5,,FALSE,86,87,,,B Tahan
