@@ -2931,11 +2931,15 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
             role="dialog"
             aria-label="Birthdays this week"
             style={{
-              paddingBottom: 'env(safe-area-inset-bottom, 0px)',
               ...(birthdaysSheetStyle ?? {}),
             }}
           >
-            <div className="rounded-t-3xl border border-white/20 bg-black/90 px-5 pb-6 pt-4 shadow-[0_-12px_40px_rgba(0,0,0,0.7)] backdrop-blur">
+            <div
+              className="rounded-t-3xl border border-white/20 bg-black/90 px-5 pt-4 shadow-[0_-12px_40px_rgba(0,0,0,0.7)] backdrop-blur"
+              style={{
+                paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))',
+              }}
+            >
               <div className="mb-4 flex justify-center">
                 <div
                   className="flex h-14 w-32 cursor-grab items-center justify-center rounded-full bg-white/10 active:cursor-grabbing"
@@ -2954,7 +2958,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
                 week={birthdaysWeek}
                 onSelectPerson={handleBirthdayPersonSelect}
                 variant="mobile"
-                className="mx-auto mt-4 w-full max-w-[300px]"
+                className="mx-auto mt-4 w-full max-w-[360px]"
               />
             </div>
           </div>

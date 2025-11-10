@@ -163,7 +163,9 @@ const BirthdaysWeekSlice = ({
   )
 
   const dayRowClassNames = combineClassNames(
-    variant === 'desktop' ? 'flex w-full justify-center gap-3' : 'flex w-full justify-between gap-2 max-w-[360px]',
+    variant === 'desktop'
+      ? 'flex w-full justify-center gap-3'
+      : 'mx-auto flex w-full max-w-[360px] justify-center gap-1',
   )
 
   return (
@@ -189,7 +191,7 @@ const BirthdaysWeekSlice = ({
               key={day.isoDate}
               className={combineClassNames(
                 'relative',
-                variant === 'desktop' ? 'w-[54px]' : 'flex-1 min-w-[48px]',
+                variant === 'desktop' ? 'w-[54px]' : 'flex-none w-10 sm:w-11 md:w-12',
               )}
               onPointerEnter={() => handleSegmentPointerEnter(index)}
               onPointerLeave={(event) => handleSegmentPointerLeave(index, event)}
