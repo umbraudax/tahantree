@@ -223,8 +223,13 @@ export const describeRelationship = (
   const toPerson = graph.peopleById[toId]
   if (!fromPerson || !toPerson) return 'not related'
 
-  if (fromPerson.spouseId === toPerson.id || toPerson.spouseId === fromPerson.id) {
-    return formatSpouseTitle(fromPerson)
+  const areSpouses = fromPerson.spouseId === toPerson.id || toPerson.spouseId === fromPerson.id
+  if (areSpouses) {
+    const title = formatSpouseTitle(fromPerson)
+    if (fromPerson.divorced || toPerson.divorced) {
+      return `former ${title}`
+    }
+    return title
   }
 
   const childrenByParentId = buildChildrenMap(graph)

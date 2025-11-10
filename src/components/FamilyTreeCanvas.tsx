@@ -163,6 +163,100 @@ const calculateAge = (person: Person): number | null => {
   return age >= 0 ? age : null
 }
 
+type AgeDifferenceDirection = 'older' | 'younger' | 'same'
+
+interface AgeDifferenceResult {
+  years: number
+  months: number
+  direction: AgeDifferenceDirection
+}
+
+interface HoverRelationshipDetail {
+  relationship: string
+  ageDifference: AgeDifferenceResult | null
+}
+
+const calculateAgeDifferenceBetween = (person: Person, comparedTo: Person): AgeDifferenceResult | null => {
+  const personBirthDate = parseDateString(person.dob)
+  const comparedBirthDate = parseDateString(comparedTo.dob)
+  if (!personBirthDate || !comparedBirthDate) return null
+
+  const personTime = personBirthDate.getTime()
+  const comparedTime = comparedBirthDate.getTime()
+
+  if (personTime === comparedTime) {
+    return { years: 0, months: 0, direction: 'same' }
+  }
+
+  const personIsOlder = personTime < comparedTime
+  const olderDate = personIsOlder ? personBirthDate : comparedBirthDate
+  const youngerDate = personIsOlder ? comparedBirthDate : personBirthDate
+
+  let years = youngerDate.getFullYear() - olderDate.getFullYear()
+  let months = youngerDate.getMonth() - olderDate.getMonth()
+  let dayDiff = youngerDate.getDate() - olderDate.getDate()
+
+  if (dayDiff < 0) {
+    months -= 1
+    const previousMonthDate = new Date(youngerDate.getFullYear(), youngerDate.getMonth(), 0)
+    dayDiff += previousMonthDate.getDate()
+  }
+
+  if (months < 0) {
+    years -= 1
+    months += 12
+  }
+
+  const direction: AgeDifferenceDirection = personIsOlder ? 'older' : 'younger'
+
+  return {
+    years: Math.max(years, 0),
+    months: Math.max(months, 0),
+    direction,
+  }
+}
+
+const formatAgeDifferenceLines = (
+  difference: AgeDifferenceResult | null,
+): { differenceLine: string; directionLine: string } | null => {
+  if (!difference) return null
+
+  if (difference.direction === 'same') {
+    return {
+      differenceLine: '0 y 0 m',
+      directionLine: 'Same age',
+    }
+  }
+
+  const yearsPart = `${difference.years} y`
+  const monthsPart = `${difference.months} m`
+
+  const directionLine = difference.direction === 'older' ? 'Older' : 'Younger'
+
+  return {
+    differenceLine: `${yearsPart} ${monthsPart}`,
+    directionLine,
+  }
+}
+
+const formatAgeDifferenceSentence = (
+  personA: Person,
+  personB: Person,
+  difference: AgeDifferenceResult | null,
+): string | null => {
+  if (!difference) return null
+
+  if (difference.direction === 'same') {
+    return `${personA.fullName} and ${personB.fullName} are the same age`
+  }
+
+  const yearsPart = `${difference.years} ${difference.years === 1 ? 'year' : 'years'}`
+  const monthsPart = `${difference.months} ${difference.months === 1 ? 'month' : 'months'}`
+  const directionPart = difference.direction === 'older' ? 'older' : 'younger'
+
+  return `${personA.fullName} is ${yearsPart} ${monthsPart} ${directionPart} than ${personB.fullName}`
+}
+
 // const getSexLabel = (sex: Person['sex']): string => {
 //   switch (sex) {
 //     case 'male':
@@ -728,36 +822,41 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
 
   const highlightActive = Boolean(hoveredPersonId)
 
-  const hoverRelationshipLabels = useMemo(() => {
-    if (!hoveredPersonId) return new Map<string, string>()
-    if (!highlightContext) return new Map<string, string>()
+  const hoverRelationshipDetails = useMemo(() => {
+    if (!hoveredPersonId) return new Map<string, HoverRelationshipDetail>()
+    if (!highlightContext) return new Map<string, HoverRelationshipDetail>()
 
-    const labels = new Map<string, string>()
     const hoveredPerson: Person | undefined = graph.peopleById[hoveredPersonId]
+    if (!hoveredPerson) return new Map<string, HoverRelationshipDetail>()
+
+    const details = new Map<string, HoverRelationshipDetail>()
     for (const personId of highlightContext.highlightPeople) {
       if (personId === hoveredPersonId) continue
       const person: Person | undefined = graph.peopleById[personId]
       if (!person) continue
 
-      let label = describeRelationship(graph, personId, hoveredPersonId)
+      let relationship = describeRelationship(graph, personId, hoveredPersonId)
       const isSpousePair =
-        person.spouseId === hoveredPersonId || hoveredPerson?.spouseId === personId
+        person.spouseId === hoveredPersonId || hoveredPerson.spouseId === personId
 
       if (isSpousePair) {
-        const normalized = label.toLowerCase()
+        const normalized = relationship.toLowerCase()
         if (normalized === 'husband' || normalized === 'wife' || normalized === 'spouse') {
-          const divorced = person.divorced || hoveredPerson?.divorced
+          const divorced = person.divorced || hoveredPerson.divorced
           if (divorced) {
-            const capitalized = label.charAt(0).toUpperCase() + label.slice(1)
-            label = `Former ${capitalized}`
+            const capitalized = relationship.charAt(0).toUpperCase() + relationship.slice(1)
+            relationship = `Former ${capitalized}`
           }
         }
       }
 
-      labels.set(personId, label)
+      details.set(personId, {
+        relationship,
+        ageDifference: calculateAgeDifferenceBetween(person, hoveredPerson),
+      })
     }
 
-    return labels
+    return details
   }, [graph, highlightContext, hoveredPersonId])
 
   const centerOnPerson = useCallback(
@@ -1386,14 +1485,6 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
     [collapsePerson],
   )
 
-  const relationshipSummary = useMemo(() => {
-    if (!nodeAId || !nodeBId) return null
-    return {
-      fromAToB: describeRelationship(graph, nodeAId, nodeBId),
-      fromBToA: describeRelationship(graph, nodeBId, nodeAId),
-    }
-  }, [graph, nodeAId, nodeBId])
-
   const personA = nodeAId ? graph.peopleById[nodeAId] ?? null : null
   const personB = nodeBId ? graph.peopleById[nodeBId] ?? null : null
   const isSelectingA = selectionMode === 'selectA'
@@ -1401,6 +1492,20 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
   const personALabel = personA?.fullName ?? '—'
   const personBLabel = personB?.fullName ?? '—'
   const isSelecting = selectionMode !== 'none'
+  const relationshipSummary = useMemo(() => {
+    if (!personA || !personB) return null
+
+    const fromAToB = describeRelationship(graph, personA.id, personB.id)
+    const fromBToA = describeRelationship(graph, personB.id, personA.id)
+    const ageDifference = calculateAgeDifferenceBetween(personA, personB)
+    const ageDifferenceSentence = formatAgeDifferenceSentence(personA, personB, ageDifference)
+
+    return {
+      fromAToB,
+      fromBToA,
+      ageDifferenceSentence,
+    }
+  }, [graph, personA, personB])
   const relationshipPanelContent =
     relationshipSummary && personA && personB ? (
       <div className="space-y-1 text-center text-sm">
@@ -1410,6 +1515,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
         <div>
           {personB.fullName} is {relationshipSummary.fromBToA} of {personA.fullName}
         </div>
+        <div>{relationshipSummary.ageDifferenceSentence ?? 'Age difference unavailable'}</div>
       </div>
     ) : (
       <div className="text-center text-sm text-white/70">Choose two people to see their relationship.</div>
@@ -2087,7 +2193,11 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
             if (person.dob) detailLines.push(`DOB: ${person.dob}`)
             if (person.dod) detailLines.push(`DOD: ${person.dod}`)
 
-            const relationshipLabel = hoverRelationshipLabels.get(person.id) ?? null
+            const relationshipDetail = hoverRelationshipDetails.get(person.id) ?? null
+            const relationshipLabel = relationshipDetail?.relationship ?? null
+            const ageDifferenceLines = relationshipDetail
+              ? formatAgeDifferenceLines(relationshipDetail.ageDifference)
+              : null
 
             const rawDob = person.dob ?? ''
             const rawDod = person.dod ?? ''
@@ -2110,7 +2220,8 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
               infoLines.push({ key: 'dash', text: '—' })
               infoLines.push({ key: 'death', text: rawDod })
             }
-            const relationshipLabelY = Math.max(nameY + 44, height / 2 - 16)
+            const relationshipBlockStartY = infoLineStartY
+            const relationshipLineSpacing = infoLineSpacing
             const generationBadgeRadius = 20
             const generationBadgeCx = width
             const generationBadgeCy = height
@@ -2221,15 +2332,61 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
                   {person.fullName}
                 </text>
                 {relationshipLabel ? (
-                  <text
-                    x={width / 2}
-                    y={relationshipLabelY}
-                    textAnchor="middle"
-                    className="fill-white text-[11px] uppercase tracking-[0.3em]"
-                    opacity={textOpacity}
-                  >
-                    {relationshipLabel}
-                  </text>
+                  (() => {
+                    const lines: Array<{
+                      key: string
+                      text: string
+                      y: number
+                      className: string
+                    }> = []
+                    let currentY = relationshipBlockStartY
+
+                    if (ageDifferenceLines) {
+                      lines.push({
+                        key: 'difference',
+                        text: ageDifferenceLines.differenceLine,
+                        y: currentY,
+                        className: 'fill-white text-[10px] uppercase tracking-[0.28em]',
+                      })
+                      currentY += relationshipLineSpacing
+
+                      lines.push({
+                        key: 'direction',
+                        text: ageDifferenceLines.directionLine,
+                        y: currentY,
+                        className: 'fill-white text-[10px] uppercase tracking-[0.28em]',
+                      })
+                      currentY += relationshipLineSpacing
+
+                      lines.push({
+                        key: 'separator',
+                        text: '·',
+                        y: currentY,
+                        className: 'fill-white text-[11px] uppercase tracking-[0.3em]',
+                      })
+                      currentY += relationshipLineSpacing
+                    }
+
+                    lines.push({
+                      key: 'relationship',
+                      text: relationshipLabel,
+                      y: currentY,
+                      className: 'fill-white text-[11px] uppercase tracking-[0.3em]',
+                    })
+
+                    return lines.map((line) => (
+                      <text
+                        key={line.key}
+                        x={width / 2}
+                        y={line.y}
+                        textAnchor="middle"
+                        className={line.className}
+                        opacity={textOpacity}
+                      >
+                        {line.text}
+                      </text>
+                    ))
+                  })()
                 ) : (
                   infoLines.map((line, index) => (
                     <text
