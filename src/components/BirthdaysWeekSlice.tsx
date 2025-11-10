@@ -124,75 +124,101 @@ const BirthdaysWeekSlice = ({
     [onSelectPerson, variant],
   )
 
+  const renderPersonEntry = useCallback(
+    (entry: BirthdayWeekDay['entries'][number]) => {
+      const branchColor = getBranchColor(entry.person.branch)
+      const background = withAlpha(branchColor, 0.18)
+      return (
+        <button
+          key={entry.person.id}
+          type="button"
+          className="flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-2.5 text-left text-sm font-medium text-white transition hover:bg-white/15 focus:bg-white/15 focus:outline-none"
+          style={{ background }}
+          onClick={() => handlePersonClick(entry.person.id)}
+        >
+          <span className="truncate">{entry.person.fullName}</span>
+          <span className="flex flex-col items-end text-[11px] font-normal uppercase tracking-[0.28em] text-white/75">
+            {entry.formattedBirthDate}
+          </span>
+        </button>
+      )
+    },
+    [handlePersonClick],
+  )
+
   const expandedDay = expandedDayIndex !== null ? week[expandedDayIndex] : null
 
   const renderEntries = useCallback(
     (day: BirthdayWeekDay) => (
       <div className="flex w-full max-h-[320px] flex-col gap-2 overflow-y-auto px-2 pb-1">
-        {day.entries.map((entry) => {
-          const branchColor = getBranchColor(entry.person.branch)
-          const background = withAlpha(branchColor, 0.18)
-          return (
-            <button
-              key={entry.person.id}
-              type="button"
-              className="flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-2.5 text-left text-sm font-medium text-white transition hover:bg-white/15 focus:bg-white/15 focus:outline-none"
-              style={{ background }}
-              onClick={() => handlePersonClick(entry.person.id)}
-            >
-              <span className="truncate">{entry.person.fullName}</span>
-              <span className="flex flex-col items-end text-[11px] font-normal uppercase tracking-[0.28em] text-white/75">
-                {entry.formattedBirthDate}
-              </span>
-            </button>
-          )
-        })}
+        {day.entries.map((entry) => renderPersonEntry(entry))}
       </div>
     ),
-    [handlePersonClick],
+    [renderPersonEntry],
+  )
+
+  const daysWithBirthdays = useMemo(
+    () => week.filter((day) => day.entries.length > 0),
+    [week],
   )
   const expandedContent =
     expandedDay && expandedDay.entries.length > 0 ? renderEntries(expandedDay) : null
 
   const containerClasses = combineClassNames(
-    'relative text-xs text-white',
+    'relative text-white',
     variant === 'desktop'
-      ? 'flex min-w-[420px] flex-col justify-center gap-3 rounded-3xl border border-white/20 bg-white/8 px-6 py-5 shadow-[0_24px_55px_rgba(0,0,0,0.55)] backdrop-blur-sm'
-      : 'flex flex-col items-center px-2 pb-4 pt-3',
+      ? 'flex min-w-[420px] flex-col justify-center gap-3 rounded-3xl border border-white/20 bg-white/8 px-6 py-5 text-xs shadow-[0_24px_55px_rgba(0,0,0,0.55)] backdrop-blur-sm'
+      : 'flex w-full flex-col gap-6 px-2 pb-5 pt-3',
     className,
   )
 
-  const dayRowClassNames = combineClassNames(
-    variant === 'desktop'
-      ? 'flex w-full justify-center gap-3'
-      : 'mx-auto flex w-full max-w-[360px] justify-center gap-1',
-  )
+  const dayRowClassNames = 'flex w-full justify-center gap-3'
+
+  if (variant === 'mobile') {
+    return (
+      <div ref={containerRef} className={containerClasses}>
+        {daysWithBirthdays.length === 0 ? (
+          <p className="w-full text-center text-sm font-semibold uppercase tracking-[0.2em] text-white/65">
+            No birthdays this week!
+          </p>
+        ) : (
+          <div className="flex w-full flex-col gap-6">
+            {daysWithBirthdays.map((day, index) => (
+              <div key={day.isoDate} className="flex w-full flex-col">
+                <span className="text-[13px] font-semibold uppercase tracking-[0.32em] text-white/85">
+                  {day.weekdayName} - {day.dateLabel}
+                </span>
+                <div className="mt-3 flex flex-col gap-2">{day.entries.map((entry) => renderPersonEntry(entry))}</div>
+                {index < daysWithBirthdays.length - 1 && <div className="mt-5 h-px w-full bg-white/20" />}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div
       ref={containerRef}
       className={containerClasses}
       onPointerLeave={() => {
-        if (variant === 'desktop' && activeDayIndex === null) {
+        if (activeDayIndex === null) {
           setHoveredDayIndex(null)
         }
       }}
     >
-      {variant === 'desktop' && expandedContent && <div className="w-full">{expandedContent}</div>}
+      {expandedContent && <div className="w-full">{expandedContent}</div>}
       <div className={dayRowClassNames}>
         {week.map((day, index) => {
           const count = day.entries.length
           const hasBirthdays = count > 0
           const isExpanded = expandedDayIndex === index && hasBirthdays
           const isActive = activeDayIndex === index
-          const isDisabled = !hasBirthdays && variant === 'mobile'
           return (
             <div
               key={day.isoDate}
-              className={combineClassNames(
-                'relative',
-                variant === 'desktop' ? 'w-[54px]' : 'flex-none w-10 sm:w-11 md:w-12',
-              )}
+              className="relative w-[54px]"
               onPointerEnter={() => handleSegmentPointerEnter(index)}
               onPointerLeave={(event) => handleSegmentPointerLeave(index, event)}
             >
@@ -206,7 +232,6 @@ const BirthdaysWeekSlice = ({
                       : 'text-white hover:bg-white/12 cursor-pointer'
                     : 'text-white/45 cursor-default hover:bg-transparent',
                 )}
-                disabled={isDisabled}
                 aria-expanded={isExpanded}
                 aria-pressed={isActive}
                 aria-label={
@@ -238,9 +263,6 @@ const BirthdaysWeekSlice = ({
           )
         })}
       </div>
-      {variant === 'mobile' && expandedContent && (
-        <div className="mt-3 w-full transition-all duration-200 ease-out">{expandedContent}</div>
-      )}
     </div>
   )
 }
