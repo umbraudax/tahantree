@@ -1506,19 +1506,27 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
       ageDifferenceSentence,
     }
   }, [graph, personA, personB])
+  const relationshipPanelSpacingClass = isMobile ? 'space-y-1.5' : 'space-y-1'
+  const relationshipPanelTextClass = isMobile ? 'text-[11px] leading-snug' : 'text-sm leading-snug'
+  const relationshipPanelLineClass = `${relationshipPanelTextClass} text-center text-white`
+
   const relationshipPanelContent =
     relationshipSummary && personA && personB ? (
-      <div className="space-y-1 text-center text-sm">
-        <div>
+      <div className={`${relationshipPanelSpacingClass} text-center`}>
+        <div className={relationshipPanelLineClass}>
           {personA.fullName} is {relationshipSummary.fromAToB} of {personB.fullName}
         </div>
-        <div>
+        <div className={relationshipPanelLineClass}>
           {personB.fullName} is {relationshipSummary.fromBToA} of {personA.fullName}
         </div>
-        <div>{relationshipSummary.ageDifferenceSentence ?? 'Age difference unavailable'}</div>
+        <div className={relationshipPanelLineClass}>
+          {relationshipSummary.ageDifferenceSentence ?? 'Age difference unavailable'}
+        </div>
       </div>
+    ) : isMobile ? (
+      <div className="text-center text-[11px] leading-snug text-white/70">Choose two people to see their relationship.</div>
     ) : (
-      <div className="text-center text-sm text-white/70">Choose two people to see their relationship.</div>
+      <div className="text-center text-sm leading-snug text-white/70">Choose two people to see their relationship.</div>
     )
   const topControlsContent = !isMobileLandscape && (
     <>
