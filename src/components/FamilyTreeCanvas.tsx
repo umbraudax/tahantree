@@ -2763,9 +2763,9 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
 
       {!isMobile && (
         <div className="pointer-events-none fixed inset-x-0 bottom-6 flex w-full justify-center px-4 text-xs text-white">
-          <div className="flex w-full max-w-5xl flex-col items-stretch gap-6 md:flex-row md:items-end md:justify-between md:gap-12">
-            <div className="pointer-events-auto order-2 flex w-full max-w-[520px] flex-col gap-3 rounded-3xl border border-white/20 bg-black/75 px-6 py-5 shadow-[0_24px_60px_rgba(0,0,0,0.75)] backdrop-blur md:order-1 md:mr-auto">
-              <div className="flex w-full flex-wrap items-center gap-4 md:justify-between">
+          <div className="flex w/full max-w-[1200px] flex-col items-stretch gap-6 md:flex-row md:items-end md:justify-between md:gap-12">
+            <div className="pointer-events-auto order-2 flex w/full flex-col gap-3 rounded-3xl border border-white/20 bg-black/75 px-6 py-5 shadow-[0_24px_60px_rgba(0,0,0,0.75)] backdrop-blur md:order-1 md:flex-[1_1_0%]">
+               <div className="flex w/full flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex flex-wrap items-center gap-3">
                   <button
                     type="button"
@@ -2800,7 +2800,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
                     <span className="text-sm font-semibold text-white">{personBLabel}</span>
                   </div>
                 </div>
-                <div className="mt-2 flex w-full justify-center md:mt-0 md:w-auto md:justify-end">
+                <div className="flex justify-center lg:justify-end">
                   <button
                     type="button"
                     onClick={clearSelections}
@@ -2817,7 +2817,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
               )}
               {relationshipPanelContent}
             </div>
-            <div className="pointer-events-auto order-1 self-end md:order-2 md:ml-auto md:w-[220px] md:self-end">
+            <div className="pointer-events-auto order-1 md:order-2 md:ml-10 md:w-[420px]">
               <BirthdaysWeekSlice week={birthdaysWeek} onSelectPerson={handleBirthdayPersonSelect} className="w-full" />
             </div>
           </div>

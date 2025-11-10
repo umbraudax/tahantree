@@ -157,14 +157,13 @@ const BirthdaysWeekSlice = ({
   const containerClasses = combineClassNames(
     'relative text-xs text-white',
     variant === 'desktop'
-      ? 'flex flex-col gap-3 rounded-3xl border border-white/20 bg-white/8 px-4 pb-4 pt-4 shadow-[0_24px_55px_rgba(0,0,0,0.55)] backdrop-blur-sm'
+      ? 'flex min-w-[420px] flex-col justify-center gap-3 rounded-3xl border border-white/20 bg-white/8 px-6 py-5 shadow-[0_24px_55px_rgba(0,0,0,0.55)] backdrop-blur-sm'
       : 'flex flex-col items-center px-2 pb-4 pt-3',
     className,
   )
 
   const dayRowClassNames = combineClassNames(
-    'grid w-full grid-cols-7',
-    variant === 'desktop' ? 'gap-3' : 'gap-2',
+    variant === 'desktop' ? 'flex w-full justify-center gap-3' : 'flex w-full justify-between gap-2 max-w-[320px]',
   )
 
   return (
@@ -190,7 +189,7 @@ const BirthdaysWeekSlice = ({
               key={day.isoDate}
               className={combineClassNames(
                 'relative',
-                variant === 'desktop' ? 'min-w-[58px]' : 'min-w-[48px]',
+                variant === 'desktop' ? 'w-[54px]' : 'flex-1 min-w-[48px]',
               )}
               onPointerEnter={() => handleSegmentPointerEnter(index)}
               onPointerLeave={(event) => handleSegmentPointerLeave(index, event)}
@@ -198,7 +197,7 @@ const BirthdaysWeekSlice = ({
               <button
                 type="button"
                 className={combineClassNames(
-                  'group relative flex h-20 w-full flex-col justify-between rounded-2xl bg-transparent px-3 py-3 text-sm font-semibold uppercase tracking-[0.34em] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black',
+                  'group relative flex h-20 w-full flex-col items-center justify-between rounded-2xl bg-transparent px-3 py-3 text-sm font-semibold uppercase tracking-[0.34em] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black',
                   hasBirthdays
                     ? isActive
                       ? 'bg-white/18 text-white shadow-[0_18px_48px_rgba(255,255,255,0.2)] cursor-pointer'
@@ -215,29 +214,23 @@ const BirthdaysWeekSlice = ({
                 }
                 onClick={() => handleSegmentClick(index, hasBirthdays)}
               >
+                <span
+                  className={combineClassNames(
+                    'text-[11px] font-semibold tracking-[0.08em]',
+                    hasBirthdays ? 'text-white/75 group-hover:text-white' : 'text-white/35',
+                  )}
+                >
+                  {count}
+                </span>
                 <span className="text-center text-[17px] tracking-[0.38em] leading-none">{day.dayLetter}</span>
-                <div className="flex w-full items-center justify-between text-[11px] font-semibold tracking-[0.08em]">
-                  <span
-                    className={combineClassNames(
-                      'text-white/70 transition-colors',
-                      hasBirthdays ? 'group-hover:text-white' : '',
-                    )}
-                  >
-                    {day.dateLabel}
-                  </span>
-                  <span
-                    className={combineClassNames(
-                      'rounded-full px-2 py-0.5 text-[11px] font-semibold transition-colors',
-                      hasBirthdays
-                        ? isActive
-                          ? 'bg-white/25 text-black'
-                          : 'bg-white/10 text-white/70 group-hover:bg-white/18 group-hover:text-white'
-                        : 'bg-white/8 text-white/35',
-                    )}
-                  >
-                    {count}
-                  </span>
-                </div>
+                <span
+                  className={combineClassNames(
+                    'text-[11px] font-semibold tracking-[0.08em]',
+                    hasBirthdays ? 'text-white/70 group-hover:text-white' : 'text-white/35',
+                  )}
+                >
+                  {day.dateLabel}
+                </span>
               </button>
             </div>
           )
