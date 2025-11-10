@@ -119,9 +119,10 @@ const BirthdaysWeekSlice = ({
   )
 
   const expandedDay = expandedDayIndex !== null ? week[expandedDayIndex] : null
+
   const renderEntries = useCallback(
     (day: BirthdayWeekDay) => (
-      <div className="flex w-full max-h-[320px] flex-col gap-2 overflow-y-auto rounded-3xl border border-white/18 bg-black/92 p-3 shadow-[0_22px_55px_rgba(0,0,0,0.65)] backdrop-blur">
+      <div className="flex w-full max-h-[320px] flex-col gap-2 overflow-y-auto rounded-3xl bg-white/10 px-3 py-3 shadow-[0_20px_50px_rgba(0,0,0,0.55)] backdrop-blur">
         {day.entries.map((entry) => {
           const branchColor = getBranchColor(entry.person.branch)
           const background = withAlpha(branchColor, 0.22)
@@ -148,13 +149,23 @@ const BirthdaysWeekSlice = ({
   const expandedContent =
     expandedDay && expandedDay.entries.length > 0 ? renderEntries(expandedDay) : null
 
+  const containerClasses = combineClassNames(
+    'relative text-xs text-white',
+    variant === 'desktop'
+      ? 'overflow-visible rounded-3xl border border-white/18 bg-white/8 px-4 pb-4 pt-5 shadow-[0_24px_55px_rgba(0,0,0,0.55)] backdrop-blur-sm'
+      : 'px-2 pt-3',
+    className,
+  )
+
+  const dayRowClassNames = combineClassNames(
+    'flex w-full',
+    variant === 'desktop' ? 'gap-3 justify-center' : 'gap-2 justify-center',
+  )
+
   return (
     <div
       ref={containerRef}
-      className={combineClassNames(
-        'relative overflow-visible rounded-3xl border border-white/18 bg-white/8 px-4 pb-4 pt-5 text-xs text-white shadow-[0_24px_55px_rgba(0,0,0,0.55)] backdrop-blur-sm',
-        className,
-      )}
+      className={containerClasses}
       onPointerLeave={() => {
         if (variant !== 'desktop') return
         if (activeDayIndex !== null) return
@@ -162,21 +173,11 @@ const BirthdaysWeekSlice = ({
       }}
     >
       {variant === 'desktop' && expandedContent && (
-        <div
-          className={combineClassNames(
-            'pointer-events-none absolute left-0 right-0 bottom-full px-4 pb-3 transition-all duration-200 ease-out',
-            expandedDay ? 'pointer-events-auto translate-y-0 scale-100 opacity-100' : 'translate-y-2 scale-95 opacity-0',
-          )}
-        >
+        <div className="mb-3 overflow-hidden rounded-3xl bg-white/8 px-3 py-3 shadow-[0_24px_55px_rgba(0,0,0,0.55)]">
           {expandedContent}
         </div>
       )}
-      <div
-        className={combineClassNames(
-          'flex w-full gap-3',
-          variant === 'mobile' ? 'justify-between' : 'justify-center',
-        )}
-      >
+      <div className={dayRowClassNames}>
         {week.map((day, index) => {
           const count = day.entries.length
           const hasBirthdays = count > 0
@@ -186,19 +187,22 @@ const BirthdaysWeekSlice = ({
           return (
             <div
               key={day.isoDate}
-              className="relative flex-1 min-w-[72px] max-w-[96px]"
+              className={combineClassNames(
+                'relative flex-1',
+                variant === 'desktop' ? 'min-w-[60px] max-w-[76px]' : 'min-w-[52px] max-w-[64px]',
+              )}
               onPointerEnter={() => handleSegmentPointerEnter(index)}
               onPointerLeave={() => handleSegmentPointerLeave(index)}
             >
               <button
                 type="button"
                 className={combineClassNames(
-                  'group relative flex h-20 w-full flex-col items-center justify-end rounded-2xl border border-white/12 bg-transparent px-3 pb-3 pt-6 text-sm font-semibold uppercase tracking-[0.34em] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black',
+                  'group relative flex h-16 w-full flex-col items-center justify-end rounded-2xl bg-transparent px-3 pb-3 pt-5 text-sm font-semibold uppercase tracking-[0.34em] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black',
                   hasBirthdays
                     ? isActive
-                      ? 'border-white/40 bg-white/18 text-white shadow-[0_18px_48px_rgba(255,255,255,0.15)]'
-                      : 'text-white hover:border-white/32 hover:bg-white/12'
-                    : 'border-white/8 text-white/45 hover:border-white/12',
+                      ? 'bg-white/18 text-white shadow-[0_18px_48px_rgba(255,255,255,0.2)] cursor-pointer'
+                      : 'text-white hover:bg-white/12 cursor-pointer'
+                    : 'text-white/45 cursor-default hover:bg-transparent',
                 )}
                 disabled={isDisabled}
                 aria-expanded={isExpanded}
@@ -210,18 +214,18 @@ const BirthdaysWeekSlice = ({
                 }
                 onClick={() => handleSegmentClick(index, hasBirthdays)}
               >
-                <span className="text-lg tracking-[0.38em]">{day.dayLetter}</span>
+                <span className="text-[17px] tracking-[0.38em]">{day.dayLetter}</span>
                 <span className="absolute left-3 bottom-2 text-[11px] font-semibold tracking-[0.06em] text-white/70 group-hover:text-white">
                   {day.dateLabel}
                 </span>
                 <span
                   className={combineClassNames(
-                    'absolute right-3 top-2 rounded-full border px-2 py-0.5 text-[11px] font-semibold transition-colors',
+                    'absolute right-3 top-2 rounded-full px-2 py-0.5 text-[11px] font-semibold transition-colors',
                     hasBirthdays
                       ? isActive
-                        ? 'border-white/20 bg-white/25 text-black'
-                        : 'border-white/20 text-white/70 group-hover:border-white/30 group-hover:text-white'
-                      : 'border-white/12 text-white/35',
+                        ? 'bg-white/25 text-black'
+                      : 'bg-white/10 text-white/70 group-hover:bg-white/18 group-hover:text-white'
+                      : 'bg-white/8 text-white/35',
                   )}
                 >
                   {count}
@@ -232,7 +236,7 @@ const BirthdaysWeekSlice = ({
         })}
       </div>
       {variant === 'mobile' && expandedContent && (
-        <div className="mt-4 transition-all duration-200 ease-out">{expandedContent}</div>
+        <div className="mt-3 transition-all duration-200 ease-out">{expandedContent}</div>
       )}
     </div>
   )

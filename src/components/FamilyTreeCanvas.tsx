@@ -2767,7 +2767,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
 
       {!isMobile && (
         <div className="pointer-events-none fixed inset-x-0 bottom-6 flex w-full justify-center px-4 text-xs text-white">
-          <div className="flex w-full max-w-5xl flex-col items-stretch gap-6 md:flex-row md:items-start md:justify-between md:gap-12">
+          <div className="flex w-full max-w-5xl flex-col items-stretch gap-6 md:flex-row md:items-end md:justify-between md:gap-10">
             <div className="pointer-events-auto order-2 flex w-full max-w-3xl flex-col gap-3 rounded-3xl border border-white/15 bg-black/75 px-6 py-5 shadow-[0_24px_60px_rgba(0,0,0,0.75)] backdrop-blur md:order-1">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="flex flex-wrap items-center gap-3">
@@ -2819,12 +2819,8 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
               )}
               {relationshipPanelContent}
             </div>
-            <div className="pointer-events-auto order-1 self-end md:order-2 md:self-start">
-              <BirthdaysWeekSlice
-                week={birthdaysWeek}
-                onSelectPerson={handleBirthdayPersonSelect}
-                className="md:min-w-[360px]"
-              />
+            <div className="pointer-events-auto order-1 self-end md:order-2 md:ml-auto md:w-[240px] md:self-end">
+              <BirthdaysWeekSlice week={birthdaysWeek} onSelectPerson={handleBirthdayPersonSelect} className="w-full" />
             </div>
           </div>
         </div>
@@ -2972,7 +2968,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
                 week={birthdaysWeek}
                 onSelectPerson={handleBirthdayPersonSelect}
                 variant="mobile"
-                className="w-full"
+                className="mx-auto w-full max-w-[300px]"
               />
             </div>
           </div>
