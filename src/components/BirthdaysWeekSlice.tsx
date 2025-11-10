@@ -10,8 +10,6 @@ interface BirthdaysWeekSliceProps {
   variant?: 'desktop' | 'mobile'
 }
 
-const SEGMENT_BORDER_CLASS = 'border-white/12'
-
 const combineClassNames = (...values: Array<string | false | null | undefined>): string =>
   values.filter(Boolean).join(' ')
 
@@ -120,22 +118,6 @@ const BirthdaysWeekSlice = ({
     [onSelectPerson, variant],
   )
 
-  const anyBirthdays = useMemo(() => week.some((day) => day.entries.length > 0), [week])
-
-  if (!anyBirthdays && variant === 'mobile') {
-    return (
-      <div
-        ref={containerRef}
-        className={combineClassNames(
-          'rounded-3xl border border-white/10 bg-black/60 px-4 py-4 text-sm text-white/50',
-          className,
-        )}
-      >
-        No birthdays this week.
-      </div>
-    )
-  }
-
   return (
     <div
       ref={containerRef}
@@ -148,8 +130,8 @@ const BirthdaysWeekSlice = ({
     >
       <div
         className={combineClassNames(
-          'flex overflow-hidden rounded-full border border-white/20 bg-black/80 backdrop-blur-md shadow-[0_20px_45px_rgba(0,0,0,0.6)]',
-          variant === 'mobile' ? 'w-full' : 'min-w-[320px]',
+          'flex w-full gap-2',
+          variant === 'mobile' ? 'justify-between' : 'justify-center',
         )}
       >
         {week.map((day, index) => {
@@ -158,57 +140,58 @@ const BirthdaysWeekSlice = ({
           const isExpanded = expandedDayIndex === index && hasBirthdays
           const isActive = activeDayIndex === index
           const isDisabled = !hasBirthdays && variant === 'mobile'
+          const entriesContent = hasBirthdays ? (
+            <div className="flex max-h-[320px] flex-col gap-2 overflow-y-auto rounded-3xl border border-white/15 bg-black/90 p-3 shadow-[0_18px_40px_rgba(0,0,0,0.65)] backdrop-blur">
+              {day.entries.map((entry) => {
+                const branchColor = getBranchColor(entry.person.branch)
+                const background = withAlpha(branchColor, 0.22)
+                const borderColor = withAlpha(branchColor, 0.45)
+                return (
+                  <button
+                    key={entry.person.id}
+                    type="button"
+                    className="flex items-center justify-between gap-3 rounded-2xl border px-3 py-2 text-left text-sm font-medium text-white transition hover:bg-white/10 focus:bg-white/10 focus:outline-none"
+                    style={{ background, borderColor }}
+                    onClick={() => handlePersonClick(entry.person.id)}
+                  >
+                    <span className="truncate">{entry.person.fullName}</span>
+                    <span className="flex flex-col items-end text-[11px] font-normal uppercase tracking-[0.28em] text-white/70">
+                      {entry.formattedBirthDate}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          ) : null
 
           return (
             <div
               key={day.isoDate}
-              className={combineClassNames(
-                'relative flex-1 px-0.5 py-1',
-                index === 0 ? '' : `border-l ${SEGMENT_BORDER_CLASS}`,
-              )}
+              className="relative flex-1 min-w-[42px]"
               onPointerEnter={() => handleSegmentPointerEnter(index)}
               onPointerLeave={() => handleSegmentPointerLeave(index)}
             >
-              {hasBirthdays && (
+              {hasBirthdays && variant === 'desktop' && (
                 <div
                   className={combineClassNames(
-                    'absolute bottom-full left-1/2 z-10 w-[92%] -translate-x-1/2 pb-3 transition-all duration-200 ease-out',
-                    isExpanded ? 'pointer-events-auto opacity-100 translate-y-0' : 'pointer-events-none opacity-0 translate-y-2',
+                    'pointer-events-none absolute bottom-full left-1/2 z-10 w-full -translate-x-1/2 pb-3 transition-all duration-200 ease-out',
+                    isExpanded ? 'pointer-events-auto opacity-100 translate-y-0' : 'opacity-0 translate-y-2',
                   )}
+                  onPointerEnter={() => handleSegmentPointerEnter(index)}
                 >
-                  <div className="flex flex-col gap-2 rounded-3xl border border-white/15 bg-black/90 p-3 shadow-[0_18px_40px_rgba(0,0,0,0.65)] backdrop-blur">
-                    {day.entries.map((entry) => {
-                      const branchColor = getBranchColor(entry.person.branch)
-                      const background = withAlpha(branchColor, 0.22)
-                      const borderColor = withAlpha(branchColor, 0.45)
-                      return (
-                        <button
-                          key={entry.person.id}
-                          type="button"
-                          className="flex items-center justify-between gap-3 rounded-2xl border px-3 py-2 text-left text-sm font-medium text-white transition hover:bg-white/10 focus:bg-white/10 focus:outline-none"
-                          style={{ background, borderColor }}
-                          onClick={() => handlePersonClick(entry.person.id)}
-                        >
-                          <span className="truncate">{entry.person.fullName}</span>
-                          <span className="flex flex-col items-end text-[11px] font-normal uppercase tracking-[0.28em] text-white/70">
-                            {entry.formattedBirthDate}
-                          </span>
-                        </button>
-                      )
-                    })}
-                  </div>
+                  {entriesContent}
                 </div>
               )}
 
               <button
                 type="button"
                 className={combineClassNames(
-                  'relative flex h-16 w-full flex-col items-center justify-end gap-1 rounded-full px-2 py-2 text-sm font-semibold uppercase tracking-[0.3em] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black',
+                  'relative flex h-16 w-full items-end justify-center rounded-2xl border px-2 pb-2 pt-4 text-sm font-semibold uppercase tracking-[0.3em] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black',
                   hasBirthdays
                     ? isActive
-                      ? 'bg-white/25 text-white'
-                      : 'bg-white/15 text-white hover:bg-white/25'
-                    : 'bg-white/5 text-white/40',
+                      ? 'border-white/40 bg-white/15 text-white'
+                      : 'border-white/20 bg-white/10 text-white hover:bg-white/15'
+                    : 'border-white/10 bg-white/5 text-white/40',
                 )}
                 disabled={isDisabled}
                 aria-expanded={isExpanded}
@@ -220,19 +203,23 @@ const BirthdaysWeekSlice = ({
                 }
                 onClick={() => handleSegmentClick(index, hasBirthdays)}
               >
-                <span className="text-base">{day.dayLetter}</span>
-                <span className="absolute left-2 bottom-1 text-[10px] font-normal tracking-normal text-white/70">
+                <span className="text-lg tracking-[0.32em]">{day.dayLetter}</span>
+                <span className="absolute left-2 bottom-2 text-[11px] font-normal tracking-normal text-white/70">
                   {day.dateLabel}
                 </span>
                 <span
                   className={combineClassNames(
-                    'absolute right-2 top-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold',
+                    'absolute right-2 top-2 rounded-full px-1.5 py-0.5 text-[10px] font-semibold',
                     hasBirthdays ? 'bg-white/20 text-white' : 'bg-white/10 text-white/40',
                   )}
                 >
                   {count}
                 </span>
               </button>
+
+              {variant === 'mobile' && hasBirthdays && isExpanded && (
+                <div className="mt-3">{entriesContent}</div>
+              )}
             </div>
           )
         })}

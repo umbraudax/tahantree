@@ -297,10 +297,14 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   const [isLegendOpen, setLegendOpen] = useState(false)
   const [isBirthdaysSheetOpen, setBirthdaysSheetOpen] = useState(false)
   const [controlSheetDragOffset, setControlSheetDragOffset] = useState(0)
+  const [birthdaysSheetDragOffset, setBirthdaysSheetDragOffset] = useState(0)
   const controlSheetDragState = useRef<{ pointerId: number | null; startY: number }>({ pointerId: null, startY: 0 })
   const controlSheetDragOffsetRef = useRef(0)
+  const birthdaysSheetDragState = useRef<{ pointerId: number | null; startY: number }>({ pointerId: null, startY: 0 })
+  const birthdaysSheetDragOffsetRef = useRef(0)
   const overscrollRestoreRef = useRef<{ html: string; body: string } | null>(null)
   const [isControlSheetDragging, setControlSheetDragging] = useState(false)
+  const [isBirthdaysSheetDragging, setBirthdaysSheetDragging] = useState(false)
   const [isLandscapeControlsOpen, setLandscapeControlsOpen] = useState(false)
   const [lastSearchResultId, setLastSearchResultId] = useState<string | null>(null)
   const searchInputRef = useRef<HTMLInputElement | null>(null)
@@ -337,12 +341,6 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       setLandscapeControlsOpen(false)
     }
   }, [isMobileLandscape])
-
-  useEffect(() => {
-    if (!isMobilePortrait) {
-      setBirthdaysSheetOpen(false)
-    }
-  }, [isMobilePortrait])
 
   useEffect(() => {
     if (!isMobileLandscape) return
@@ -944,12 +942,20 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     setControlSheetDragging(false)
   }, [])
 
+  const resetBirthdaysSheetPosition = useCallback(() => {
+    birthdaysSheetDragOffsetRef.current = 0
+    birthdaysSheetDragState.current = { pointerId: null, startY: 0 }
+    setBirthdaysSheetDragOffset(0)
+    setBirthdaysSheetDragging(false)
+  }, [])
+
   const openControlSheet = useCallback(() => {
     resetControlSheetPosition()
     setControlSheetOpen(true)
     setBirthdaysSheetOpen(false)
+    resetBirthdaysSheetPosition()
     searchInputRef.current?.blur()
-  }, [resetControlSheetPosition])
+  }, [resetBirthdaysSheetPosition, resetControlSheetPosition])
 
   const closeControlSheet = useCallback(() => {
     setControlSheetOpen(false)
@@ -958,6 +964,8 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   }, [resetControlSheetPosition])
 
   const toggleBirthdaysSheet = useCallback(() => {
+    if (!hasAnyBirthdaysThisWeek) return
+    resetBirthdaysSheetPosition()
     setBirthdaysSheetOpen((current) => {
       const next = !current
       if (next) {
@@ -965,19 +973,135 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       }
       return next
     })
-  }, [])
+  }, [hasAnyBirthdaysThisWeek, resetBirthdaysSheetPosition])
 
   const closeBirthdaysSheet = useCallback(() => {
     setBirthdaysSheetOpen(false)
+    resetBirthdaysSheetPosition()
+  }, [resetBirthdaysSheetPosition])
+
+  const handleBirthdaysSheetDragStart = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      if (!isBirthdaysSheetOpen) return
+      if (event.pointerType !== 'touch') return
+      event.preventDefault()
+      event.stopPropagation()
+      birthdaysSheetDragState.current = { pointerId: event.pointerId, startY: event.clientY }
+      birthdaysSheetDragOffsetRef.current = 0
+      setBirthdaysSheetDragOffset(0)
+      event.currentTarget.setPointerCapture(event.pointerId)
+      setBirthdaysSheetDragging(true)
+    },
+    [isBirthdaysSheetOpen],
+  )
+
+  const handleBirthdaysSheetDragMove = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    if (birthdaysSheetDragState.current.pointerId !== event.pointerId) return
+    event.preventDefault()
+    event.stopPropagation()
+    const offset = Math.max(0, event.clientY - birthdaysSheetDragState.current.startY)
+    birthdaysSheetDragOffsetRef.current = offset
+    setBirthdaysSheetDragOffset(offset)
   }, [])
+
+  const handleBirthdaysSheetDragEnd = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      if (birthdaysSheetDragState.current.pointerId !== event.pointerId) return
+      event.currentTarget.releasePointerCapture(event.pointerId)
+      const offset = birthdaysSheetDragOffsetRef.current
+      if (offset > 32) {
+        closeBirthdaysSheet()
+      } else {
+        resetBirthdaysSheetPosition()
+      }
+    },
+    [closeBirthdaysSheet, resetBirthdaysSheetPosition],
+  )
+
+  const handleBirthdaysSheetDragCancel = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      if (birthdaysSheetDragState.current.pointerId !== event.pointerId) return
+      event.currentTarget.releasePointerCapture(event.pointerId)
+      resetBirthdaysSheetPosition()
+    },
+    [resetBirthdaysSheetPosition],
+  )
+
+  useEffect(() => {
+    if (!isMobilePortrait && isBirthdaysSheetOpen) {
+      setBirthdaysSheetOpen(false)
+      resetBirthdaysSheetPosition()
+    }
+  }, [isBirthdaysSheetOpen, isMobilePortrait, resetBirthdaysSheetPosition])
+
+  useEffect(() => {
+    if (!hasAnyBirthdaysThisWeek && isBirthdaysSheetOpen) {
+      setBirthdaysSheetOpen(false)
+      resetBirthdaysSheetPosition()
+    }
+  }, [hasAnyBirthdaysThisWeek, isBirthdaysSheetOpen, resetBirthdaysSheetPosition])
+
+  useEffect(() => {
+    if (!isMobilePortrait || !isBirthdaysSheetOpen) return
+    if (isBirthdaysSheetDragging) return
+    if (birthdaysSheetDragOffset === 0) return
+    resetBirthdaysSheetPosition()
+  }, [
+    birthdaysSheetDragOffset,
+    isBirthdaysSheetDragging,
+    isBirthdaysSheetOpen,
+    isMobilePortrait,
+    resetBirthdaysSheetPosition,
+  ])
+
+  useEffect(() => {
+    if (!isMobilePortrait || !isBirthdaysSheetOpen) return
+    if (isBirthdaysSheetDragging) return
+    resetBirthdaysSheetPosition()
+  }, [height, isBirthdaysSheetDragging, isBirthdaysSheetOpen, isMobilePortrait, resetBirthdaysSheetPosition])
+
+  useEffect(() => {
+    if (!isMobile) return
+    if (!isBirthdaysSheetDragging) return
+    if (typeof document === 'undefined') return
+
+    const preventTouchMove = (event: TouchEvent) => {
+      event.preventDefault()
+    }
+
+    document.addEventListener('touchmove', preventTouchMove, { passive: false })
+    return () => {
+      document.removeEventListener('touchmove', preventTouchMove)
+    }
+  }, [isBirthdaysSheetDragging, isMobile])
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    const helpButton = document.getElementById('app-help-button')
+    if (!helpButton) return
+
+    if (isMobilePortrait && isBirthdaysSheetOpen) {
+      helpButton.style.display = 'none'
+    } else {
+      helpButton.style.display = ''
+    }
+
+    return () => {
+      if (helpButton) {
+        helpButton.style.display = ''
+      }
+    }
+  }, [isBirthdaysSheetOpen, isMobilePortrait])
 
   useEffect(() => {
     if (typeof document === 'undefined') return
 
     const htmlElement = document.documentElement
     const bodyElement = document.body
+    const shouldLockScroll =
+      isMobile && (isControlSheetOpen || (isMobilePortrait && isBirthdaysSheetOpen))
 
-    if (isMobile && isControlSheetOpen) {
+    if (shouldLockScroll) {
       if (!overscrollRestoreRef.current) {
         overscrollRestoreRef.current = {
           html: htmlElement.style.overscrollBehavior,
@@ -1004,7 +1128,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
         overscrollRestoreRef.current = null
       }
     }
-  }, [isControlSheetOpen, isMobile])
+  }, [isBirthdaysSheetOpen, isControlSheetOpen, isMobile, isMobilePortrait])
 
   useEffect(() => {
     if (!isMobile || !isControlSheetOpen) return
@@ -1864,6 +1988,13 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
       }
     : undefined
 
+  const birthdaysSheetStyle: CSSProperties | undefined = isMobilePortrait
+    ? {
+        maxHeight: mobileSheetMaxHeight ? `${mobileSheetMaxHeight}px` : '75vh',
+        ...(isBirthdaysSheetOpen ? { transform: `translateY(${birthdaysSheetDragOffset}px)` } : {}),
+      }
+    : undefined
+
   const mobileControlSheetContentStyle: CSSProperties | undefined = isMobile
     ? isMobileLandscape
       ? { maxHeight: 'none', overflowY: 'visible' }
@@ -2632,7 +2763,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
 
       {!isMobile && (
         <div className="pointer-events-none fixed inset-x-0 bottom-6 flex w-full justify-center px-4 text-xs text-white">
-          <div className="flex w-full max-w-5xl flex-col items-stretch gap-4 md:flex-row md:items-end md:justify-between">
+          <div className="flex w-full max-w-5xl flex-col items-stretch gap-6 md:flex-row md:items-start md:justify-between md:gap-12">
             <div className="pointer-events-auto order-2 flex w-full max-w-3xl flex-col gap-3 rounded-3xl border border-white/15 bg-black/75 px-6 py-5 shadow-[0_24px_60px_rgba(0,0,0,0.75)] backdrop-blur md:order-1">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="flex flex-wrap items-center gap-3">
@@ -2684,8 +2815,12 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
               )}
               {relationshipPanelContent}
             </div>
-            <div className="pointer-events-auto order-1 self-end md:order-2">
-              <BirthdaysWeekSlice week={birthdaysWeek} onSelectPerson={handleBirthdayPersonSelect} />
+            <div className="pointer-events-auto order-1 self-end md:order-2 md:self-start">
+              <BirthdaysWeekSlice
+                week={birthdaysWeek}
+                onSelectPerson={handleBirthdayPersonSelect}
+                className="md:min-w-[360px]"
+              />
             </div>
           </div>
         </div>
@@ -2792,45 +2927,52 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
             onClick={closeBirthdaysSheet}
           />
           <div
-            className={`fixed inset-x-0 bottom-0 z-[60] transform transition-transform duration-300 ease-out ${
-              isBirthdaysSheetOpen ? 'translate-y-0' : 'translate-y-full'
-            }`}
+            className={`fixed inset-x-0 bottom-0 z-[60] transform ${
+              isBirthdaysSheetDragging ? '' : 'transition-transform duration-300 ease-out'
+            } ${isBirthdaysSheetOpen ? 'translate-y-0' : 'translate-y-full'}`}
             role="dialog"
             aria-label="Birthdays this week"
-            style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)' }}
+            style={{
+              paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)',
+              ...(birthdaysSheetStyle ?? {}),
+            }}
           >
             <div className="rounded-t-3xl border border-white/20 bg-black/90 px-5 pb-6 pt-4 shadow-[0_-12px_40px_rgba(0,0,0,0.7)] backdrop-blur">
               <div className="mb-4 flex justify-center">
-                <button
-                  type="button"
-                  onClick={closeBirthdaysSheet}
-                  className="flex h-14 w-32 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
-                  aria-label="Close birthdays panel"
+                <div
+                  className="flex h-14 w-32 cursor-grab items-center justify-center rounded-full bg-white/10 active:cursor-grabbing"
+                  role="button"
+                  aria-label="Drag to close birthdays panel"
+                  onPointerDown={handleBirthdaysSheetDragStart}
+                  onPointerMove={handleBirthdaysSheetDragMove}
+                  onPointerUp={handleBirthdaysSheetDragEnd}
+                  onPointerCancel={handleBirthdaysSheetDragCancel}
+                  style={{ touchAction: 'none' }}
                 >
                   <span className="block h-1.5 w-14 rounded-full bg-white/60" />
-                </button>
+                </div>
               </div>
               <BirthdaysWeekSlice
                 week={birthdaysWeek}
                 onSelectPerson={handleBirthdayPersonSelect}
                 variant="mobile"
+                className="w-full"
               />
             </div>
           </div>
         </>
       )}
 
-      {isMobilePortrait && !isControlSheetOpen && (
+      {isMobilePortrait && !isControlSheetOpen && !isBirthdaysSheetOpen && (
         <button
           type="button"
           onClick={toggleBirthdaysSheet}
+          disabled={!hasAnyBirthdaysThisWeek}
           className={`fixed z-[55] rounded-full border px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.35em] transition ${
-            isBirthdaysSheetOpen
-              ? 'border-white/40 bg-white/25 text-white'
-              : hasAnyBirthdaysThisWeek
+            hasAnyBirthdaysThisWeek
               ? 'border-white/25 bg-black/80 text-white hover:bg-white/15'
-              : 'border-white/15 bg-white/5 text-white/40'
-          } shadow-[0_20px_40px_rgba(0,0,0,0.6)]`}
+              : 'cursor-default border-white/15 bg-white/5 text-white/40'
+          } shadow-[0_20px_40px_rgba(0,0,0,0.6)] disabled:pointer-events-none`}
           style={{
             bottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)',
             left: '50%',
@@ -2844,7 +2986,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
         </button>
       )}
 
-      {isMobile && !isControlSheetOpen && (
+      {isMobile && !isControlSheetOpen && !isBirthdaysSheetOpen && (
         selectionMode === 'none' ? (
           <button
             type="button"
