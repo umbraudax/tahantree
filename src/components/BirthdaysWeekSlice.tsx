@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { PointerEvent as ReactPointerEvent } from 'react'
 
 import type { BirthdayWeekDay } from '../utils/birthdays'
 import { getBranchColor, withAlpha } from '../utils/colors'
@@ -71,23 +72,28 @@ const BirthdaysWeekSlice = ({
   const handleSegmentPointerEnter = useCallback(
     (index: number) => {
       if (variant !== 'desktop') return
+      const day = week[index]
+      if (!day || day.entries.length === 0) return
       setHoveredDayIndex(index)
     },
-    [variant],
+    [variant, week],
   )
 
   const handleSegmentPointerLeave = useCallback(
-    (index: number) => {
-      if (variant !== 'desktop') return
-      setHoveredDayIndex((current) => {
-        if (current !== index) {
-          return current
+    (index: number, event?: ReactPointerEvent<HTMLDivElement>) => {
+      if (variant === 'desktop') {
+        const container = containerRef.current
+        const relatedTarget = event?.relatedTarget as Node | null
+        if (relatedTarget && container?.contains(relatedTarget)) {
+          return
         }
         if (activeDayIndex !== null) {
-          return activeDayIndex
+          return
         }
-        return null
-      })
+        setHoveredDayIndex((current) => (current === index ? null : current))
+        return
+      }
+      setHoveredDayIndex((current) => (current === index ? null : current))
     },
     [activeDayIndex, variant],
   )
@@ -152,14 +158,14 @@ const BirthdaysWeekSlice = ({
   const containerClasses = combineClassNames(
     'relative text-xs text-white',
     variant === 'desktop'
-      ? 'overflow-visible rounded-3xl border border-white/18 bg-white/8 px-4 pb-4 pt-5 shadow-[0_24px_55px_rgba(0,0,0,0.55)] backdrop-blur-sm'
-      : 'px-2 pt-3',
+      ? 'flex flex-col justify-end gap-3 rounded-3xl border border-white/20 bg-white/8 px-4 pb-4 pt-5 shadow-[0_24px_55px_rgba(0,0,0,0.55)] backdrop-blur-sm'
+      : 'flex flex-col items-center px-2 pb-3 pt-3',
     className,
   )
 
   const dayRowClassNames = combineClassNames(
     'flex w-full',
-    variant === 'desktop' ? 'gap-3 justify-center' : 'gap-2 justify-center',
+    variant === 'desktop' ? 'gap-3 justify-center' : 'gap-3 justify-center',
   )
 
   return (
@@ -167,13 +173,13 @@ const BirthdaysWeekSlice = ({
       ref={containerRef}
       className={containerClasses}
       onPointerLeave={() => {
-        if (variant !== 'desktop') return
-        if (activeDayIndex !== null) return
-        setHoveredDayIndex(null)
+        if (variant === 'desktop' && activeDayIndex === null) {
+          setHoveredDayIndex(null)
+        }
       }}
     >
       {variant === 'desktop' && expandedContent && (
-        <div className="mb-3 overflow-hidden rounded-3xl bg-white/8 px-3 py-3 shadow-[0_24px_55px_rgba(0,0,0,0.55)]">
+        <div className="overflow-hidden rounded-2xl border border-white/20 bg-black/70 px-3 py-3 shadow-[0_24px_55px_rgba(0,0,0,0.55)]">
           {expandedContent}
         </div>
       )}
@@ -189,10 +195,10 @@ const BirthdaysWeekSlice = ({
               key={day.isoDate}
               className={combineClassNames(
                 'relative flex-1',
-                variant === 'desktop' ? 'min-w-[60px] max-w-[76px]' : 'min-w-[52px] max-w-[64px]',
+                variant === 'desktop' ? 'min-w-[58px] max-w-[72px]' : 'min-w-[48px] max-w-[60px]',
               )}
               onPointerEnter={() => handleSegmentPointerEnter(index)}
-              onPointerLeave={() => handleSegmentPointerLeave(index)}
+              onPointerLeave={(event) => handleSegmentPointerLeave(index, event)}
             >
               <button
                 type="button"
