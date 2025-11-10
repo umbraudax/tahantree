@@ -128,21 +128,20 @@ const BirthdaysWeekSlice = ({
 
   const renderEntries = useCallback(
     (day: BirthdayWeekDay) => (
-      <div className="flex w-full max-h-[320px] flex-col gap-2 overflow-y-auto rounded-3xl bg-white/10 px-3 py-3 shadow-[0_20px_50px_rgba(0,0,0,0.55)] backdrop-blur">
+      <div className="flex w-full max-h-[320px] flex-col gap-2 overflow-y-auto px-2 pb-1">
         {day.entries.map((entry) => {
           const branchColor = getBranchColor(entry.person.branch)
-          const background = withAlpha(branchColor, 0.22)
-          const borderColor = withAlpha(branchColor, 0.5)
+          const background = withAlpha(branchColor, 0.18)
           return (
             <button
               key={entry.person.id}
               type="button"
-              className="flex w-full items-center justify-between gap-3 rounded-2xl border px-4 py-2.5 text-left text-sm font-medium text-white transition hover:bg-white/12 focus:bg-white/12 focus:outline-none"
-              style={{ background, borderColor }}
+              className="flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-2.5 text-left text-sm font-medium text-white transition hover:bg-white/15 focus:bg-white/15 focus:outline-none"
+              style={{ background }}
               onClick={() => handlePersonClick(entry.person.id)}
             >
               <span className="truncate">{entry.person.fullName}</span>
-              <span className="flex flex-col items-end text-[11px] font-normal uppercase tracking-[0.28em] text-white/70">
+              <span className="flex flex-col items-end text-[11px] font-normal uppercase tracking-[0.28em] text-white/75">
                 {entry.formattedBirthDate}
               </span>
             </button>
@@ -158,14 +157,14 @@ const BirthdaysWeekSlice = ({
   const containerClasses = combineClassNames(
     'relative text-xs text-white',
     variant === 'desktop'
-      ? 'flex flex-col justify-end gap-3 rounded-3xl border border-white/20 bg-white/8 px-4 pb-4 pt-5 shadow-[0_24px_55px_rgba(0,0,0,0.55)] backdrop-blur-sm'
-      : 'flex flex-col items-center px-2 pb-3 pt-3',
+      ? 'flex flex-col gap-3 rounded-3xl border border-white/20 bg-white/8 px-4 pb-4 pt-4 shadow-[0_24px_55px_rgba(0,0,0,0.55)] backdrop-blur-sm'
+      : 'flex flex-col items-center px-2 pb-4 pt-3',
     className,
   )
 
   const dayRowClassNames = combineClassNames(
-    'flex w-full',
-    variant === 'desktop' ? 'gap-3 justify-center' : 'gap-3 justify-center',
+    'grid w-full grid-cols-7',
+    variant === 'desktop' ? 'gap-3' : 'gap-2',
   )
 
   return (
@@ -178,11 +177,7 @@ const BirthdaysWeekSlice = ({
         }
       }}
     >
-      {variant === 'desktop' && expandedContent && (
-        <div className="overflow-hidden rounded-2xl border border-white/20 bg-black/70 px-3 py-3 shadow-[0_24px_55px_rgba(0,0,0,0.55)]">
-          {expandedContent}
-        </div>
-      )}
+      {variant === 'desktop' && expandedContent && <div className="w-full">{expandedContent}</div>}
       <div className={dayRowClassNames}>
         {week.map((day, index) => {
           const count = day.entries.length
@@ -194,8 +189,8 @@ const BirthdaysWeekSlice = ({
             <div
               key={day.isoDate}
               className={combineClassNames(
-                'relative flex-1',
-                variant === 'desktop' ? 'min-w-[58px] max-w-[72px]' : 'min-w-[48px] max-w-[60px]',
+                'relative',
+                variant === 'desktop' ? 'min-w-[58px]' : 'min-w-[48px]',
               )}
               onPointerEnter={() => handleSegmentPointerEnter(index)}
               onPointerLeave={(event) => handleSegmentPointerLeave(index, event)}
@@ -203,7 +198,7 @@ const BirthdaysWeekSlice = ({
               <button
                 type="button"
                 className={combineClassNames(
-                  'group relative flex h-16 w-full flex-col items-center justify-end rounded-2xl bg-transparent px-3 pb-3 pt-5 text-sm font-semibold uppercase tracking-[0.34em] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black',
+                  'group relative flex h-20 w-full flex-col justify-between rounded-2xl bg-transparent px-3 py-3 text-sm font-semibold uppercase tracking-[0.34em] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black',
                   hasBirthdays
                     ? isActive
                       ? 'bg-white/18 text-white shadow-[0_18px_48px_rgba(255,255,255,0.2)] cursor-pointer'
@@ -220,29 +215,36 @@ const BirthdaysWeekSlice = ({
                 }
                 onClick={() => handleSegmentClick(index, hasBirthdays)}
               >
-                <span className="text-[17px] tracking-[0.38em]">{day.dayLetter}</span>
-                <span className="absolute left-3 bottom-2 text-[11px] font-semibold tracking-[0.06em] text-white/70 group-hover:text-white">
-                  {day.dateLabel}
-                </span>
-                <span
-                  className={combineClassNames(
-                    'absolute right-3 top-2 rounded-full px-2 py-0.5 text-[11px] font-semibold transition-colors',
-                    hasBirthdays
-                      ? isActive
-                        ? 'bg-white/25 text-black'
-                      : 'bg-white/10 text-white/70 group-hover:bg-white/18 group-hover:text-white'
-                      : 'bg-white/8 text-white/35',
-                  )}
-                >
-                  {count}
-                </span>
+                <span className="text-center text-[17px] tracking-[0.38em] leading-none">{day.dayLetter}</span>
+                <div className="flex w-full items-center justify-between text-[11px] font-semibold tracking-[0.08em]">
+                  <span
+                    className={combineClassNames(
+                      'text-white/70 transition-colors',
+                      hasBirthdays ? 'group-hover:text-white' : '',
+                    )}
+                  >
+                    {day.dateLabel}
+                  </span>
+                  <span
+                    className={combineClassNames(
+                      'rounded-full px-2 py-0.5 text-[11px] font-semibold transition-colors',
+                      hasBirthdays
+                        ? isActive
+                          ? 'bg-white/25 text-black'
+                          : 'bg-white/10 text-white/70 group-hover:bg-white/18 group-hover:text-white'
+                        : 'bg-white/8 text-white/35',
+                    )}
+                  >
+                    {count}
+                  </span>
+                </div>
               </button>
             </div>
           )
         })}
       </div>
       {variant === 'mobile' && expandedContent && (
-        <div className="mt-3 transition-all duration-200 ease-out">{expandedContent}</div>
+        <div className="mt-3 w-full transition-all duration-200 ease-out">{expandedContent}</div>
       )}
     </div>
   )

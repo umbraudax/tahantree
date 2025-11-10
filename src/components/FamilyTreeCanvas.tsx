@@ -1981,8 +1981,6 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
       }
     : undefined
 
-  const mobileSheetCornerRadius = 'calc(28px + env(safe-area-inset-bottom, 0px))'
-
   const mobileControlSheetStyle: CSSProperties | undefined = isMobile
     ? {
         maxHeight: mobileSheetMaxHeight ? `${mobileSheetMaxHeight}px` : '75vh',
@@ -1993,8 +1991,6 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
   const birthdaysSheetStyle: CSSProperties | undefined = isMobilePortrait
     ? {
         maxHeight: mobileSheetMaxHeight ? `${mobileSheetMaxHeight}px` : '75vh',
-        borderBottomLeftRadius: mobileSheetCornerRadius,
-        borderBottomRightRadius: mobileSheetCornerRadius,
         ...(isBirthdaysSheetOpen ? { transform: `translateY(${birthdaysSheetDragOffset}px)` } : {}),
       }
     : undefined
@@ -2769,7 +2765,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
         <div className="pointer-events-none fixed inset-x-0 bottom-6 flex w-full justify-center px-4 text-xs text-white">
           <div className="flex w-full max-w-5xl flex-col items-stretch gap-6 md:flex-row md:items-end md:justify-between md:gap-12">
             <div className="pointer-events-auto order-2 flex w-full max-w-[520px] flex-col gap-3 rounded-3xl border border-white/20 bg-black/75 px-6 py-5 shadow-[0_24px_60px_rgba(0,0,0,0.75)] backdrop-blur md:order-1 md:mr-auto">
-              <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex w-full flex-wrap items-center gap-4 md:justify-between">
                 <div className="flex flex-wrap items-center gap-3">
                   <button
                     type="button"
@@ -2804,13 +2800,15 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
                     <span className="text-sm font-semibold text-white">{personBLabel}</span>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={clearSelections}
-                  className="rounded-full border border-white/20 bg-black px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-white/10"
-                >
-                  Clear A &amp; B
-                </button>
+                <div className="mt-2 flex w-full justify-center md:mt-0 md:w-auto md:justify-end">
+                  <button
+                    type="button"
+                    onClick={clearSelections}
+                    className="rounded-full border border-white/20 bg-black px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-white/10"
+                  >
+                    Clear A &amp; B
+                  </button>
+                </div>
               </div>
               {selectionMode !== 'none' && (
                 <div className="rounded-2xl border border-white/20 bg-black/70 px-3 py-2 text-center text-[10px] uppercase tracking-[0.3em] text-white">
@@ -2844,13 +2842,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
             role="dialog"
             aria-label="Family tree controls"
           >
-            <div
-              className="rounded-3xl border border-white/20 bg-black/90 px-5 pb-6 pt-4 shadow-[0_-12px_40px_rgba(0,0,0,0.7)] backdrop-blur"
-              style={{
-                borderBottomLeftRadius: mobileSheetCornerRadius,
-                borderBottomRightRadius: mobileSheetCornerRadius,
-              }}
-            >
+            <div className="rounded-t-3xl border border-white/20 bg-black/90 px-5 pb-6 pt-4 shadow-[0_-12px_40px_rgba(0,0,0,0.7)] backdrop-blur">
               <div className="mb-4 flex justify-center">
                 <div
                   className="flex h-14 w-32 cursor-grab items-center justify-center rounded-full bg-white/10 active:cursor-grabbing"
@@ -2939,17 +2931,11 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
             role="dialog"
             aria-label="Birthdays this week"
             style={{
-              paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0px)',
+              paddingBottom: 'env(safe-area-inset-bottom, 0px)',
               ...(birthdaysSheetStyle ?? {}),
             }}
           >
-            <div
-              className="rounded-3xl border border-white/20 bg-black/90 px-5 pb-6 pt-4 shadow-[0_-12px_40px_rgba(0,0,0,0.7)] backdrop-blur"
-              style={{
-                borderBottomLeftRadius: mobileSheetCornerRadius,
-                borderBottomRightRadius: mobileSheetCornerRadius,
-              }}
-            >
+            <div className="rounded-t-3xl border border-white/20 bg-black/90 px-5 pb-6 pt-4 shadow-[0_-12px_40px_rgba(0,0,0,0.7)] backdrop-blur">
               <div className="mb-4 flex justify-center">
                 <div
                   className="flex h-14 w-32 cursor-grab items-center justify-center rounded-full bg-white/10 active:cursor-grabbing"
