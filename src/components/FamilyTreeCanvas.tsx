@@ -1981,6 +1981,8 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
       }
     : undefined
 
+  const mobileSheetCornerRadius = 'calc(28px + env(safe-area-inset-bottom, 0px))'
+
   const mobileControlSheetStyle: CSSProperties | undefined = isMobile
     ? {
         maxHeight: mobileSheetMaxHeight ? `${mobileSheetMaxHeight}px` : '75vh',
@@ -1991,6 +1993,8 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
   const birthdaysSheetStyle: CSSProperties | undefined = isMobilePortrait
     ? {
         maxHeight: mobileSheetMaxHeight ? `${mobileSheetMaxHeight}px` : '75vh',
+        borderBottomLeftRadius: mobileSheetCornerRadius,
+        borderBottomRightRadius: mobileSheetCornerRadius,
         ...(isBirthdaysSheetOpen ? { transform: `translateY(${birthdaysSheetDragOffset}px)` } : {}),
       }
     : undefined
@@ -2844,7 +2848,13 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
             role="dialog"
             aria-label="Family tree controls"
           >
-            <div className="rounded-t-3xl border border-white/20 bg-black/90 px-5 pb-6 pt-4 shadow-[0_-12px_40px_rgba(0,0,0,0.7)] backdrop-blur">
+            <div
+              className="rounded-3xl border border-white/20 bg-black/90 px-5 pb-6 pt-4 shadow-[0_-12px_40px_rgba(0,0,0,0.7)] backdrop-blur"
+              style={{
+                borderBottomLeftRadius: mobileSheetCornerRadius,
+                borderBottomRightRadius: mobileSheetCornerRadius,
+              }}
+            >
               <div className="mb-4 flex justify-center">
                 <div
                   className="flex h-14 w-32 cursor-grab items-center justify-center rounded-full bg-white/10 active:cursor-grabbing"
@@ -2937,7 +2947,13 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
               ...(birthdaysSheetStyle ?? {}),
             }}
           >
-            <div className="rounded-t-3xl border border-white/20 bg-black/90 px-5 pb-6 pt-4 shadow-[0_-12px_40px_rgba(0,0,0,0.7)] backdrop-blur">
+            <div
+              className="rounded-3xl border border-white/20 bg-black/90 px-5 pb-6 pt-4 shadow-[0_-12px_40px_rgba(0,0,0,0.7)] backdrop-blur"
+              style={{
+                borderBottomLeftRadius: mobileSheetCornerRadius,
+                borderBottomRightRadius: mobileSheetCornerRadius,
+              }}
+            >
               <div className="mb-4 flex justify-center">
                 <div
                   className="flex h-14 w-32 cursor-grab items-center justify-center rounded-full bg-white/10 active:cursor-grabbing"
