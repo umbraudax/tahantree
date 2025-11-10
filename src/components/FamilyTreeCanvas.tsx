@@ -21,6 +21,8 @@ import {
 import { useBreakpoint } from '../hooks/useBreakpoint'
 import { useFamilyLayout } from '../hooks/useFamilyLayout'
 import type { FamilyGraph, FamilyUnit, Person } from '../types/family'
+import BirthdaysWeekSlice from './BirthdaysWeekSlice'
+import { computeBirthdaysForCurrentWeek } from '../utils/birthdays'
 import { getBranchColor, withAlpha } from '../utils/colors'
 import { describeRelationship } from '../utils/relationships'
 const slugifyBranch = (branch: string) => branch.toLowerCase().replace(/[^a-z0-9]+/g, '-')
@@ -271,6 +273,7 @@ const formatAgeDifferenceSentence = (
 export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   const { isMobile, isTablet, isLandscape, height } = useBreakpoint()
   const isMobileLandscape = isMobile && isLandscape
+  const isMobilePortrait = isMobile && !isLandscape
   const layoutDensity = isMobileLandscape ? 'cozy' : isMobile ? 'compact' : isTablet ? 'cozy' : 'default'
   const layout = useFamilyLayout(graph, { density: layoutDensity })
   const svgRef = useRef<SVGSVGElement | null>(null)
@@ -292,6 +295,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   const [hoveredPersonId, setHoveredPersonId] = useState<string | null>(null)
   const [isControlSheetOpen, setControlSheetOpen] = useState(false)
   const [isLegendOpen, setLegendOpen] = useState(false)
+  const [isBirthdaysSheetOpen, setBirthdaysSheetOpen] = useState(false)
   const [controlSheetDragOffset, setControlSheetDragOffset] = useState(0)
   const controlSheetDragState = useRef<{ pointerId: number | null; startY: number }>({ pointerId: null, startY: 0 })
   const controlSheetDragOffsetRef = useRef(0)
@@ -333,6 +337,12 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       setLandscapeControlsOpen(false)
     }
   }, [isMobileLandscape])
+
+  useEffect(() => {
+    if (!isMobilePortrait) {
+      setBirthdaysSheetOpen(false)
+    }
+  }, [isMobilePortrait])
 
   useEffect(() => {
     if (!isMobileLandscape) return
@@ -747,6 +757,15 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     return Array.from(branches)
   }, [graph.units])
 
+  const birthdaysWeek = useMemo(
+    () => computeBirthdaysForCurrentWeek(graph.people),
+    [graph.people],
+  )
+  const hasAnyBirthdaysThisWeek = useMemo(
+    () => birthdaysWeek.some((day) => day.entries.length > 0),
+    [birthdaysWeek],
+  )
+
   const highlightSourceId = hoveredPersonId ?? selectedPersonId
 
   const highlightContext = useMemo(() => {
@@ -888,6 +907,17 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     [personGeometries],
   )
 
+  const handleBirthdayPersonSelect = useCallback(
+    (personId: string) => {
+      centerOnPerson(personId)
+      setSelectedPersonId(personId)
+      if (isMobilePortrait) {
+        setBirthdaysSheetOpen(false)
+      }
+    },
+    [centerOnPerson, isMobilePortrait],
+  )
+
   const handleSearchChange = (event: ChangeEvent<HTMLInputElement>) => {
     setSearchValue(event.target.value)
     setLastSearchResultId(null)
@@ -917,6 +947,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   const openControlSheet = useCallback(() => {
     resetControlSheetPosition()
     setControlSheetOpen(true)
+    setBirthdaysSheetOpen(false)
     searchInputRef.current?.blur()
   }, [resetControlSheetPosition])
 
@@ -925,6 +956,20 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     setSearchFocused(false)
     resetControlSheetPosition()
   }, [resetControlSheetPosition])
+
+  const toggleBirthdaysSheet = useCallback(() => {
+    setBirthdaysSheetOpen((current) => {
+      const next = !current
+      if (next) {
+        setControlSheetOpen(false)
+      }
+      return next
+    })
+  }, [])
+
+  const closeBirthdaysSheet = useCallback(() => {
+    setBirthdaysSheetOpen(false)
+  }, [])
 
   useEffect(() => {
     if (typeof document === 'undefined') return
@@ -2587,56 +2632,61 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
 
       {!isMobile && (
         <div className="pointer-events-none fixed inset-x-0 bottom-6 flex w-full justify-center px-4 text-xs text-white">
-          <div className="pointer-events-auto flex w-full max-w-3xl flex-col gap-3 rounded-3xl border border-white/15 bg-black/75 px-6 py-5 shadow-[0_24px_60px_rgba(0,0,0,0.75)] backdrop-blur">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div className="flex flex-wrap items-center gap-3">
+          <div className="flex w-full max-w-5xl flex-col items-stretch gap-4 md:flex-row md:items-end md:justify-between">
+            <div className="pointer-events-auto order-2 flex w-full max-w-3xl flex-col gap-3 rounded-3xl border border-white/15 bg-black/75 px-6 py-5 shadow-[0_24px_60px_rgba(0,0,0,0.75)] backdrop-blur md:order-1">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => beginSelection('selectA')}
+                    className={`rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] transition ${
+                      isSelectingA
+                        ? 'border border-white bg-white/10 text-white'
+                        : 'border border-white/20 bg-black text-white hover:bg-white/10'
+                    }`}
+                  >
+                    Select A
+                  </button>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] uppercase tracking-[0.3em] text-white/60">Person A</span>
+                    <span className="text-sm font-semibold text-white">{personALabel}</span>
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => beginSelection('selectB')}
+                    className={`rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] transition ${
+                      isSelectingB
+                        ? 'border border-white bg-white/10 text-white'
+                        : 'border border-white/20 bg-black text-white hover:bg-white/10'
+                    }`}
+                  >
+                    Select B
+                  </button>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] uppercase tracking-[0.3em] text-white/60">Person B</span>
+                    <span className="text-sm font-semibold text-white">{personBLabel}</span>
+                  </div>
+                </div>
                 <button
                   type="button"
-                  onClick={() => beginSelection('selectA')}
-                  className={`rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] transition ${
-                    isSelectingA
-                      ? 'border border-white bg-white/10 text-white'
-                      : 'border border-white/20 bg-black text-white hover:bg-white/10'
-                  }`}
+                  onClick={clearSelections}
+                  className="rounded-full border border-white/20 bg-black px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-white/10"
                 >
-                  Select A
+                  Clear A &amp; B
                 </button>
-                <div className="flex flex-col">
-                  <span className="text-[10px] uppercase tracking-[0.3em] text-white/60">Person A</span>
-                  <span className="text-sm font-semibold text-white">{personALabel}</span>
-                </div>
               </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => beginSelection('selectB')}
-                  className={`rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] transition ${
-                    isSelectingB
-                      ? 'border border-white bg-white/10 text-white'
-                      : 'border border-white/20 bg-black text-white hover:bg-white/10'
-                  }`}
-                >
-                  Select B
-                </button>
-                <div className="flex flex-col">
-                  <span className="text-[10px] uppercase tracking-[0.3em] text-white/60">Person B</span>
-                  <span className="text-sm font-semibold text-white">{personBLabel}</span>
+              {selectionMode !== 'none' && (
+                <div className="rounded-2xl border border-white/20 bg-black/70 px-3 py-2 text-center text-[10px] uppercase tracking-[0.3em] text-white">
+                  {isSelectingA ? 'Click a person to set A' : 'Click a person to set B'}
                 </div>
-              </div>
-              <button
-                type="button"
-                onClick={clearSelections}
-                className="rounded-full border border-white/20 bg-black px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-white/10"
-              >
-                Clear A &amp; B
-              </button>
+              )}
+              {relationshipPanelContent}
             </div>
-            {selectionMode !== 'none' && (
-              <div className="rounded-2xl border border-white/20 bg-black/70 px-3 py-2 text-center text-[10px] uppercase tracking-[0.3em] text-white">
-                {isSelectingA ? 'Click a person to set A' : 'Click a person to set B'}
-              </div>
-            )}
-            {relationshipPanelContent}
+            <div className="pointer-events-auto order-1 self-end md:order-2">
+              <BirthdaysWeekSlice week={birthdaysWeek} onSelectPerson={handleBirthdayPersonSelect} />
+            </div>
           </div>
         </div>
       )}
@@ -2731,6 +2781,67 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
             </div>
           </div>
         </>
+      )}
+
+      {isMobilePortrait && (
+        <>
+          <div
+            className={`fixed inset-0 z-[48] bg-black/60 backdrop-blur-sm transition-opacity duration-200 ${
+              isBirthdaysSheetOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
+            }`}
+            onClick={closeBirthdaysSheet}
+          />
+          <div
+            className={`fixed inset-x-0 bottom-0 z-[60] transform transition-transform duration-300 ease-out ${
+              isBirthdaysSheetOpen ? 'translate-y-0' : 'translate-y-full'
+            }`}
+            role="dialog"
+            aria-label="Birthdays this week"
+            style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)' }}
+          >
+            <div className="rounded-t-3xl border border-white/20 bg-black/90 px-5 pb-6 pt-4 shadow-[0_-12px_40px_rgba(0,0,0,0.7)] backdrop-blur">
+              <div className="mb-4 flex justify-center">
+                <button
+                  type="button"
+                  onClick={closeBirthdaysSheet}
+                  className="flex h-14 w-32 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+                  aria-label="Close birthdays panel"
+                >
+                  <span className="block h-1.5 w-14 rounded-full bg-white/60" />
+                </button>
+              </div>
+              <BirthdaysWeekSlice
+                week={birthdaysWeek}
+                onSelectPerson={handleBirthdayPersonSelect}
+                variant="mobile"
+              />
+            </div>
+          </div>
+        </>
+      )}
+
+      {isMobilePortrait && !isControlSheetOpen && (
+        <button
+          type="button"
+          onClick={toggleBirthdaysSheet}
+          className={`fixed z-[55] rounded-full border px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.35em] transition ${
+            isBirthdaysSheetOpen
+              ? 'border-white/40 bg-white/25 text-white'
+              : hasAnyBirthdaysThisWeek
+              ? 'border-white/25 bg-black/80 text-white hover:bg-white/15'
+              : 'border-white/15 bg-white/5 text-white/40'
+          } shadow-[0_20px_40px_rgba(0,0,0,0.6)]`}
+          style={{
+            bottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)',
+            left: '50%',
+            transform: 'translateX(-50%)',
+          }}
+          aria-pressed={isBirthdaysSheetOpen}
+          aria-expanded={isBirthdaysSheetOpen}
+          aria-label="Toggle birthdays for this week"
+        >
+          Birthdays
+        </button>
       )}
 
       {isMobile && !isControlSheetOpen && (
