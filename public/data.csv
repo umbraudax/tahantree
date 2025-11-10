@@ -10,13 +10,13 @@ ID,First,Last,Sex,Gen,Spouse,Divorced,Mother,Father,DOB,DOD,Branch
 9,Albert,Tahan,M,2,10,FALSE,1,2,4/5/1931,10/4/2016,A Tahan
 10,Joan,Tahan,F,2,9,FALSE,,,8/31/1935,,A Tahan
 11,Harry,Tahan,M,2,,FALSE,1,2,,,Other
-12,George,Homsany,M,3,14,FALSE,3,4,,,Homsany
+12,George,Homsany,M,3,14,FALSE,3,4,8/11/1943,,Homsany
 13,Jaci,Homsany,F,3,12,TRUE,,,,,Homsany
 14,Patricia,Homsany,F,3,12,FALSE,,,1/8/1956,,Homsany
 15,Shirley,Karaty,F,3,16,FALSE,3,4,9/29/1945,,Homsany
 16,Raymond,Karaty,M,3,15,FALSE,,,9/24/1936,7/14/2023,Homsany
 17,Jean,Marmo,F,3,18,FALSE,3,4,11/2/1948,,Homsany
-18,George,Marmo,M,3,17,FALSE,,,,,Homsany
+18,George,Marmo,M,3,17,FALSE,,,12/5/1948,,Homsany
 19,Fran,Atieh,F,3,20,FALSE,5,6,7/9/1947,,Petriello
 20,Louis,Atieh,M,3,19,FALSE,,,,1/1/1996,Petriello
 21,Joseph,Petriello,M,3,22,FALSE,5,6,2/5/1950,,Petriello
@@ -74,11 +74,11 @@ ID,First,Last,Sex,Gen,Spouse,Divorced,Mother,Father,DOB,DOD,Branch
 73,Orlando,Gonzales,M,4,72,FALSE,,,6/24/1982,,Petriello
 74,Matt,Petriello,M,4,75,FALSE,22,21,9/18/1982,,Petriello
 75,Missy,Petriello,F,4,74,FALSE,,,,,Petriello
-76,Jeff,Petriello,M,4,,FALSE,22,21,,,Petriello
+76,Jeff,Petriello,M,4,,FALSE,22,21,10/25/1986,,Petriello
 77,Mary,Cornish,F,4,78,FALSE,23,24,,,Petriello
 78,Duayne,Cornish,M,4,77,FALSE,,,,,Petriello
 79,Dean,Hawryschuck,M,4,,FALSE,23,24,1/4/1993,,Petriello
-80,Matt,Farraye,M,4,81,FALSE,25,26,,,B Tahan
+80,Matt,Farraye,M,4,81,FALSE,25,26,7/13/1991,,B Tahan
 81,Heather,Farraye,F,4,80,FALSE,,,1/30/1993,,B Tahan
 82,Nancy,Pospiech,F,4,83,TRUE,27,28,6/13/1980,,B Tahan
 83,Chris,Fisher,M,4,82,TRUE,,,,,B Tahan
@@ -86,7 +86,7 @@ ID,First,Last,Sex,Gen,Spouse,Divorced,Mother,Father,DOB,DOD,Branch
 85,Jay,Beins,M,4,84,FALSE,,,9/20/1979,,B Tahan
 86,Carrie,Lauria,F,4,87,FALSE,27,28,9/27/1984,,B Tahan
 87,AJ,Lauria,M,4,86,FALSE,,,9/3/1980,,B Tahan
-88,Jeff,Pospiech,M,4,89,FALSE,27,28,,,B Tahan
+88,Jeff,Pospiech,M,4,89,FALSE,27,28,1/28/1988,,B Tahan
 89,Jessica,Pospiech,F,4,88,FALSE,,,1/18/1990,,B Tahan
 90,Nicole,Fekhoury,F,4,91,FALSE,30,29,2/7/1987,,B Tahan
 91,Elias,Fekhoury,M,4,90,FALSE,,,5/31/1983,,B Tahan
@@ -105,7 +105,7 @@ ID,First,Last,Sex,Gen,Spouse,Divorced,Mother,Father,DOB,DOD,Branch
 104,Leigha,Fahrenfeld,F,4,,FALSE,40,41,1/29/2000,,A Tahan
 105,KJ,Fahrenfeld,M,4,,FALSE,40,41,5/30/2003,,A Tahan
 106,Geran,Homsany,M,5,,FALSE,47,46,1/10/2019,,Homsany
-107,Gio,Homsany,M,5,,FALSE,50,49,,,Homsany
+107,Gio,Homsany,M,5,,FALSE,50,49,12/2/2020,,Homsany
 108,Camilla,Homsany,F,5,,FALSE,53,52,3/23/2021,,Homsany
 109,Avelina,Homsany,F,5,,FALSE,53,52,,,Homsany
 110,Josephine,Russo,F,5,,FALSE,54,55,4/11/2015,,Homsany
