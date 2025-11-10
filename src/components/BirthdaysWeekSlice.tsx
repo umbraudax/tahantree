@@ -14,6 +14,20 @@ interface BirthdaysWeekSliceProps {
 const combineClassNames = (...values: Array<string | false | null | undefined>): string =>
   values.filter(Boolean).join(' ')
 
+const formatDayWithOrdinal = (date: Date): string => {
+  const day = date.getDate()
+  const mod100 = day % 100
+  if (mod100 >= 11 && mod100 <= 13) {
+    return `${day}th`
+  }
+
+  const mod10 = day % 10
+  if (mod10 === 1) return `${day}st`
+  if (mod10 === 2) return `${day}nd`
+  if (mod10 === 3) return `${day}rd`
+  return `${day}th`
+}
+
 const BirthdaysWeekSlice = ({
   week,
   onSelectPerson,
@@ -41,11 +55,13 @@ const BirthdaysWeekSlice = ({
       const container = containerRef.current
       if (container && container.contains(target)) return
       setActiveDayIndex(null)
+      setHoveredDayIndex(null)
     }
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setActiveDayIndex(null)
+        setHoveredDayIndex(null)
       }
     }
 
@@ -67,6 +83,7 @@ const BirthdaysWeekSlice = ({
     if (activeDayIndex === null) return
     if (!week[activeDayIndex] || week[activeDayIndex].entries.length > 0) return
     setActiveDayIndex(null)
+    setHoveredDayIndex(null)
   }, [activeDayIndex, week])
 
   const handleSegmentPointerEnter = useCallback(
@@ -106,10 +123,15 @@ const BirthdaysWeekSlice = ({
         }
         return
       }
-      setActiveDayIndex((current) => (current === index ? null : index))
       if (variant === 'desktop') {
-        setHoveredDayIndex(index)
+        setActiveDayIndex((current) => {
+          const next = current === index ? null : index
+          setHoveredDayIndex(next)
+          return next
+        })
+        return
       }
+      setActiveDayIndex((current) => (current === index ? null : index))
     },
     [variant],
   )
@@ -167,7 +189,7 @@ const BirthdaysWeekSlice = ({
   const containerClasses = combineClassNames(
     'relative text-white',
     variant === 'desktop'
-      ? 'flex min-w-[420px] flex-col justify-center gap-3 rounded-3xl border border-white/20 bg-white/8 px-6 py-5 text-xs shadow-[0_24px_55px_rgba(0,0,0,0.55)] backdrop-blur-sm'
+      ? 'flex min-w-[420px] min-h-[100px] flex-col justify-center gap-3 rounded-3xl border border-white/20 bg-white/8 px-6 py-5 text-xs shadow-[0_24px_55px_rgba(0,0,0,0.55)] backdrop-blur-sm'
       : 'flex w-full flex-col gap-6 px-2 pb-5 pt-3',
     className,
   )
@@ -186,7 +208,7 @@ const BirthdaysWeekSlice = ({
             {daysWithBirthdays.map((day, index) => (
               <div key={day.isoDate} className="flex w-full flex-col">
                 <span className="text-[13px] font-semibold uppercase tracking-[0.32em] text-white/85">
-                  {day.weekdayName} - {day.dateLabel}
+                  {day.weekdayName} - {formatDayWithOrdinal(day.date)}
                 </span>
                 <div className="mt-3 flex flex-col gap-2">{day.entries.map((entry) => renderPersonEntry(entry))}</div>
                 {index < daysWithBirthdays.length - 1 && <div className="mt-5 h-px w-full bg-white/20" />}
@@ -225,7 +247,7 @@ const BirthdaysWeekSlice = ({
               <button
                 type="button"
                 className={combineClassNames(
-                  'group relative flex h-20 w-full flex-col items-center justify-between rounded-2xl bg-transparent text-sm font-semibold uppercase tracking-[0.34em] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black',
+                  'group relative flex h-20 w-full flex-col items-center justify-center gap-2 rounded-2xl bg-transparent text-sm font-semibold uppercase tracking-[0.34em] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black',
                   hasBirthdays
                     ? isActive
                       ? 'bg-white/18 text-white shadow-[0_18px_48px_rgba(255,255,255,0.2)] cursor-pointer'
@@ -256,7 +278,7 @@ const BirthdaysWeekSlice = ({
                     hasBirthdays ? 'text-white/70 group-hover:text-white' : 'text-white/35',
                   )}
                 >
-                  {day.dateLabel}
+                  {formatDayWithOrdinal(day.date)}
                 </span>
               </button>
             </div>

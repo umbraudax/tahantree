@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type {
   ChangeEvent,
   CSSProperties,
@@ -313,6 +313,56 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   const [searchActiveIndex, setSearchActiveIndex] = useState<number | null>(null)
   const controlSheetMaxHeightRef = useRef<number | null>(null)
   const lastMobileLandscapeRef = useRef(isMobileLandscape)
+  const personGeometriesRef = useRef<Record<string, PersonGeometry>>({})
+  const viewportAnchorRef = useRef<{
+    personId: string | null
+    offset: Point
+    world: Point | null
+  }>({
+    personId: null,
+    offset: { x: 0, y: 0 },
+    world: null,
+  })
+  const captureViewportAnchor = useCallback(
+    (transform: ZoomTransform | null) => {
+      if (!transform) return
+      const svgElement = svgRef.current
+      if (!svgElement) return
+      const rect = svgElement.getBoundingClientRect()
+      if (rect.width === 0 || rect.height === 0) return
+
+      const focusX = (rect.width / 2 - transform.x) / transform.k
+      const focusY = (rect.height / 2 - transform.y) / transform.k
+
+      const geometries = personGeometriesRef.current
+      let nearestId: string | null = null
+      let nearestDistance = Number.POSITIVE_INFINITY
+
+      for (const [personId, geometry] of Object.entries(geometries)) {
+        const dx = geometry.center.x - focusX
+        const dy = geometry.center.y - focusY
+        const distance = dx * dx + dy * dy
+        if (distance < nearestDistance) {
+          nearestDistance = distance
+          nearestId = personId
+        }
+      }
+
+      const anchor = viewportAnchorRef.current
+      if (nearestId) {
+        anchor.personId = nearestId
+        const geometry = geometries[nearestId]
+        anchor.offset = geometry
+          ? { x: focusX - geometry.center.x, y: focusY - geometry.center.y }
+          : { x: 0, y: 0 }
+      } else {
+        anchor.personId = null
+        anchor.offset = { x: 0, y: 0 }
+      }
+      anchor.world = { x: focusX, y: focusY }
+    },
+    [svgRef],
+  )
 
   useEffect(() => {
     if (isMobile) {
@@ -348,47 +398,6 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     setSearchActiveIndex(null)
     searchInputRef.current?.blur()
   }, [isMobileLandscape])
-
-  useEffect(() => {
-    if (!isMobile) {
-      lastMobileLandscapeRef.current = isMobileLandscape
-      return
-    }
-    if (!svgRef.current || !zoomBehaviorRef.current || !transformRef.current) {
-      lastMobileLandscapeRef.current = isMobileLandscape
-      return
-    }
-    if (lastMobileLandscapeRef.current === isMobileLandscape) return
-
-    const svgElement = svgRef.current
-    const rect = svgElement.getBoundingClientRect()
-    if (rect.width === 0 || rect.height === 0) {
-      lastMobileLandscapeRef.current = isMobileLandscape
-      return
-    }
-
-    const currentTransform = transformRef.current
-    const focusPoint: [number, number] = [
-      (rect.width / 2 - currentTransform.x) / currentTransform.k,
-      (rect.height / 2 - currentTransform.y) / currentTransform.k,
-    ]
-
-    lastMobileLandscapeRef.current = isMobileLandscape
-
-    const preserveView = () => {
-      if (!svgRef.current || !zoomBehaviorRef.current) return
-      const nextRect = svgRef.current.getBoundingClientRect()
-      if (nextRect.width === 0 || nextRect.height === 0) return
-      const scale = currentTransform.k
-      const translateX = nextRect.width / 2 - focusPoint[0] * scale
-      const translateY = nextRect.height / 2 - focusPoint[1] * scale
-      const nextTransform = zoomIdentity.translate(translateX, translateY).scale(scale)
-      transformRef.current = nextTransform
-      select(svgRef.current).call(zoomBehaviorRef.current.transform as never, nextTransform)
-    }
-
-    window.requestAnimationFrame(() => window.requestAnimationFrame(preserveView))
-  }, [isMobile, isMobileLandscape])
 
   useEffect(() => {
     if (!isMobileLandscape) return
@@ -666,6 +675,12 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
 
     return map
   }, [layout, expanded, graph])
+  useLayoutEffect(() => {
+    personGeometriesRef.current = personGeometries
+  }, [personGeometries])
+  useEffect(() => {
+    captureViewportAnchor(transformRef.current ?? null)
+  }, [captureViewportAnchor, personGeometries])
   const contentBounds = useMemo(() => {
     const allGeometries = Object.values(personGeometries)
     if (allGeometries.length === 0) return null
@@ -691,6 +706,64 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       height: maxBottom - minTop,
     }
   }, [personGeometries])
+  useEffect(() => {
+    if (!isMobile) {
+      lastMobileLandscapeRef.current = isMobileLandscape
+      return
+    }
+    if (!svgRef.current || !zoomBehaviorRef.current || !transformRef.current) {
+      lastMobileLandscapeRef.current = isMobileLandscape
+      return
+    }
+    if (lastMobileLandscapeRef.current === isMobileLandscape) return
+
+    const svgElement = svgRef.current
+    const rect = svgElement.getBoundingClientRect()
+    if (rect.width === 0 || rect.height === 0) {
+      lastMobileLandscapeRef.current = isMobileLandscape
+      return
+    }
+
+    const currentTransform = transformRef.current
+    const anchor = viewportAnchorRef.current
+    const geometries = personGeometriesRef.current
+    let focusPoint: Point | null = null
+    if (anchor.personId) {
+      const geometry = geometries[anchor.personId]
+      if (geometry) {
+        focusPoint = {
+          x: geometry.center.x + anchor.offset.x,
+          y: geometry.center.y + anchor.offset.y,
+        }
+      }
+    }
+    if (!focusPoint && anchor.world) {
+      focusPoint = anchor.world
+    }
+    if (!focusPoint) {
+      focusPoint = {
+        x: (rect.width / 2 - currentTransform.x) / currentTransform.k,
+        y: (rect.height / 2 - currentTransform.y) / currentTransform.k,
+      }
+    }
+
+    lastMobileLandscapeRef.current = isMobileLandscape
+
+    const preserveView = () => {
+      if (!svgRef.current || !zoomBehaviorRef.current) return
+      const nextRect = svgRef.current.getBoundingClientRect()
+      if (nextRect.width === 0 || nextRect.height === 0) return
+      const scale = currentTransform.k
+      const translateX = nextRect.width / 2 - focusPoint.x * scale
+      const translateY = nextRect.height / 2 - focusPoint.y * scale
+      const nextTransform = zoomIdentity.translate(translateX, translateY).scale(scale)
+      transformRef.current = nextTransform
+      select(svgRef.current).call(zoomBehaviorRef.current.transform as never, nextTransform)
+      captureViewportAnchor(nextTransform)
+    }
+
+    window.requestAnimationFrame(() => window.requestAnimationFrame(preserveView))
+  }, [captureViewportAnchor, isMobile, isMobileLandscape])
 
   useEffect(() => {
     if (!svgRef.current || !innerRef.current || !layout || !contentBounds) return
@@ -704,6 +777,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       .on('zoom', (event: { transform: ZoomTransform }) => {
         transformRef.current = event.transform
         innerRef.current?.setAttribute('transform', event.transform.toString())
+        captureViewportAnchor(event.transform)
       })
 
     zoomBehaviorRef.current = zoomBehavior
@@ -737,15 +811,17 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       initialTransformRef.current = initialTransform
       innerRef.current.setAttribute('transform', initialTransform.toString())
       svgSelection.call(zoomBehavior.transform as never, initialTransform)
+      captureViewportAnchor(initialTransform)
       hasInitializedTransform.current = true
     } else {
       innerRef.current.setAttribute('transform', transformRef.current.toString())
+      captureViewportAnchor(transformRef.current)
     }
 
     return () => {
       svgSelection.on('.zoom', null)
     }
-  }, [layout, contentBounds])
+  }, [captureViewportAnchor, layout, contentBounds])
 
   const branchList = useMemo(() => {
     const branches = new Set<string>()
@@ -2764,7 +2840,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
       {!isMobile && (
         <div className="pointer-events-none fixed inset-x-0 bottom-6 flex w-full justify-center px-4 text-xs text-white">
           <div className="flex w/full max-w-[1200px] flex-col items-stretch gap-6 md:flex-row md:items-end md:justify-between md:gap-12">
-            <div className="pointer-events-auto order-2 flex w/full flex-col gap-3 rounded-3xl border border-white/20 bg-black/75 px-6 py-5 shadow-[0_24px_60px_rgba(0,0,0,0.75)] backdrop-blur md:order-1 md:flex-[1_1_0%]">
+            <div className="pointer-events-auto min-h-[121.2px] order-2 flex w/full flex-col gap-3 rounded-3xl border border-white/20 bg-black/75 px-6 py-5 shadow-[0_24px_60px_rgba(0,0,0,0.75)] backdrop-blur md:order-1 md:flex-[1_1_0%]">
                <div className="flex w/full flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex flex-wrap items-center gap-3">
                   <button
