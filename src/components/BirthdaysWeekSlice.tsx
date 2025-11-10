@@ -216,13 +216,13 @@ const BirthdaysWeekSlice = ({
               >
                 <span
                   className={combineClassNames(
-                    'text-[11px] font-semibold tracking-[0.08em] leading-none translate-x-[1px]',
+                    'text-[11px] font-semibold tracking-[0.08em] leading-none translate-x-[-1px]',
                     hasBirthdays ? 'text-white/75 group-hover:text-white' : 'text-white/35',
                   )}
                 >
                   {count}
                 </span>
-                <span className="text-center text-[17px] tracking-[0.38em] leading-tight translate-x-[1px]">{day.dayLetter}</span>
+                <span className="text-center text-[17px] tracking-[0.38em] leading-tight translate-x-[2px]">{day.dayLetter}</span>
                 <span
                   className={combineClassNames(
                     'text-[11px] font-semibold tracking-[0.08em] leading-none translate-x-[1px]',
