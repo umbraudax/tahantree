@@ -929,14 +929,19 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   }
 
   const assignPersonToRole = useCallback(
-    (personId: string, role: 'A' | 'B') => {
+    (personId: string, role: 'A' | 'B', options?: { suppressHighlight?: boolean }) => {
+      const suppressHighlight = options?.suppressHighlight ?? false
       if (role === 'A') {
         setNodeAId(personId)
       } else {
         setNodeBId(personId)
       }
       setSelectionMode('none')
-      setSelectedPersonId(personId)
+      if (suppressHighlight) {
+        setSelectedPersonId(null)
+      } else {
+        setSelectedPersonId(personId)
+      }
 
       if (isMobile) {
         openControlSheet()
@@ -1876,15 +1881,15 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
 
       if (event.pointerType === 'touch') {
         if (selectionMode === 'selectA') {
-          assignPersonToRole(personId, 'A')
-          setHoveredPersonId(personId)
+          assignPersonToRole(personId, 'A', { suppressHighlight: true })
+          setHoveredPersonId(null)
           setHoveredSelection(null)
           return
         }
 
         if (selectionMode === 'selectB') {
-          assignPersonToRole(personId, 'B')
-          setHoveredPersonId(personId)
+          assignPersonToRole(personId, 'B', { suppressHighlight: true })
+          setHoveredPersonId(null)
           setHoveredSelection(null)
           return
         }
@@ -1896,12 +1901,20 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
       }
 
       if (selectionMode === 'selectA') {
-        assignPersonToRole(personId, 'A')
+        assignPersonToRole(personId, 'A', { suppressHighlight: isMobile })
+        if (isMobile) {
+          setHoveredPersonId(null)
+          setHoveredSelection(null)
+        }
         return
       }
 
       if (selectionMode === 'selectB') {
-        assignPersonToRole(personId, 'B')
+        assignPersonToRole(personId, 'B', { suppressHighlight: isMobile })
+        if (isMobile) {
+          setHoveredPersonId(null)
+          setHoveredSelection(null)
+        }
         return
       }
 
