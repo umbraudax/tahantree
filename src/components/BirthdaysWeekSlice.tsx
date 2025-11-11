@@ -154,7 +154,7 @@ const BirthdaysWeekSlice = ({
         <button
           key={entry.person.id}
           type="button"
-          className="flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-2.5 text-left text-sm font-medium text-white transition hover:bg-white/15 focus:bg-white/15 focus:outline-none"
+          className="flex w-full items-center justify-between gap-3 rounded-2xl border border-white/15 px-4 py-2.5 text-left text-sm font-medium text-white transition backdrop-blur-sm hover:bg-white/15 focus:bg-white/15 focus:outline-none"
           style={{ background }}
           onClick={() => handlePersonClick(entry.person.id)}
         >
@@ -247,12 +247,12 @@ const BirthdaysWeekSlice = ({
               <button
                 type="button"
                 className={combineClassNames(
-                  'group relative flex h-20 w-full flex-col items-center justify-center gap-2 rounded-2xl bg-transparent text-sm font-semibold uppercase tracking-[0.34em] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black',
+                  'group relative flex h-20 w-full flex-col items-center justify-center gap-2 rounded-2xl text-sm font-semibold uppercase tracking-[0.34em] transition-colors backdrop-blur-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black',
                   hasBirthdays
                     ? isActive
-                      ? 'bg-white/18 text-white shadow-[0_18px_48px_rgba(255,255,255,0.2)] cursor-pointer'
-                      : 'text-white hover:bg-white/12 cursor-pointer'
-                    : 'text-white/45 cursor-default hover:bg-transparent',
+                      ? 'bg-white/20 text-white shadow-[0_18px_48px_rgba(255,255,255,0.2)] cursor-pointer'
+                      : 'bg-white/10 text-white hover:bg-white/15 cursor-pointer'
+                    : 'bg-white/8 text-white/45 cursor-default hover:bg-white/8',
                 )}
                 aria-expanded={isExpanded}
                 aria-pressed={isActive}

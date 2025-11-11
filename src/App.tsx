@@ -72,7 +72,7 @@ const App = () => {
       tutorialSections.map((section) => (
         <section
           key={section.title}
-          className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 shadow-[0_20px_45px_rgba(0,0,0,0.55)]"
+          className="rounded-2xl border border-white/10 bg-white/10 px-5 py-4 shadow-[0_20px_45px_rgba(0,0,0,0.55)] backdrop-blur"
         >
           <h3 className="text-base font-semibold text-white">{section.title}</h3>
           <ul className="mt-3 space-y-2 text-sm text-white/90">
@@ -107,7 +107,7 @@ const App = () => {
         id="app-help-button"
         type="button"
         onClick={() => setTutorialOpen(true)}
-        className={`fixed z-[80] flex h-12 w-12 items-center justify-center rounded-full border border-white/30 bg-white/10 text-2xl font-semibold text-white shadow-[0_15px_30px_rgba(0,0,0,0.55)] transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-black ${helpButtonPositionClasses}`}
+        className={`fixed z-[80] flex h-12 w-12 items-center justify-center rounded-full border border-white/30 bg-white/15 text-2xl font-semibold text-white backdrop-blur shadow-[0_15px_30px_rgba(0,0,0,0.55)] transition hover:bg-white/25 focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-black ${helpButtonPositionClasses}`}
         style={helpButtonStyle}
         aria-haspopup="dialog"
         aria-expanded={isTutorialOpen}
@@ -132,7 +132,7 @@ const App = () => {
             <button
               type="button"
               onClick={() => setTutorialOpen(false)}
-              className="absolute right-5 top-5 flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-white/10 text-lg text-white transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-black"
+              className="absolute right-5 top-5 flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-white/15 text-lg text-white backdrop-blur transition hover:bg-white/25 focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-black"
             >
               <span aria-hidden="true">×</span>
               <span className="sr-only">Close tutorial</span>
