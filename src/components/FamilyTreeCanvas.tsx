@@ -1789,7 +1789,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
         <div className="flex items-center gap-2">
           <button
             type="button"
-            className="grid h-9 w-9 place-items-center rounded-full border border-white/20 bg-white/12 text-lg text-white transition hover:bg-white/20"
+            className="grid h-9 w-9 place-items-center rounded-full border border-white/20 bg-black/45 text-lg text-white transition hover:bg-black/35"
             onClick={() => zoomByFactor(0.8)}
             aria-label="Zoom out"
           >
@@ -1797,7 +1797,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
           </button>
           <button
             type="button"
-            className="grid h-9 w-9 place-items-center rounded-full border border-white/20 bg-white/12 text-lg text-white transition hover:bg-white/20"
+            className="grid h-9 w-9 place-items-center rounded-full border border-white/20 bg-black/45 text-lg text-white transition hover:bg-black/35"
             onClick={() => zoomByFactor(1.2)}
             aria-label="Zoom in"
           >
@@ -1806,7 +1806,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
         </div>
         <button
           type="button"
-          className="rounded-full border border-white/20 bg-white/12 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-white transition hover:bg-white/20"
+          className="rounded-full border border-white/20 bg-black/45 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-white transition hover:bg-black/35"
           onClick={resetView}
         >
           Reset
@@ -1817,7 +1817,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
         <button
           type="button"
           onClick={toggleLegend}
-          className="mt-3 w-full rounded-full border border-white/20 bg-white/15 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-white backdrop-blur transition hover:bg-white/25"
+          className="mt-3 w-full rounded-full border border-white/20 bg-black/45 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-white backdrop-blur transition hover:bg-black/35"
         >
           {isLegendOpen ? 'Hide Legend' : 'Show Legend'}
         </button>
@@ -1842,12 +1842,12 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
                   setSearchFocused(false)
                 }}
                 onKeyDown={handleSearchInputKeyDown}
-                className="w-full rounded-full border border-white/20 bg-white/12 px-3 py-2 text-xs text-white placeholder-white/60 outline-none transition focus:border-white focus:ring-2 focus:ring-white/50"
+                className="w-full rounded-full border border-white/20 bg-black/45 px-3 py-2 text-xs text-white placeholder-white/60 outline-none transition focus:border-white focus:ring-2 focus:ring-white/50"
               />
               {showSearchResults && (
                 <div
                   ref={searchResultsRef}
-                  className="pointer-events-auto absolute left-0 top-full z-10 mt-2 w-full overflow-hidden rounded-2xl border border-white/20 bg-white/12 shadow-[0_16px_40px_rgba(0,0,0,0.45)] backdrop-blur"
+                  className="pointer-events-auto absolute left-0 top-full z-10 mt-2 w-full overflow-hidden rounded-2xl border border-white/20 bg-black/45 shadow-[0_16px_40px_rgba(0,0,0,0.45)] backdrop-blur"
                 >
                   {searchMatches.length > 0 ? (
                     <ul className="divide-y divide-white/5">
@@ -1858,8 +1858,8 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
                           <li key={person.id}>
                             <button
                               type="button"
-                              className={`flex w-full flex-col gap-1 px-3 py-2 text-left text-xs text-white transition hover:bg-white/15 focus:bg-white/15 focus:outline-none ${
-                                isActive ? 'bg-white/15 backdrop-blur-sm' : ''
+                              className={`flex w-full flex-col gap-1 px-3 py-2 text-left text-xs text-white transition hover:bg-black/35 focus:bg-black/35 focus:outline-none ${
+                                isActive ? 'bg-black/35 backdrop-blur-sm' : ''
                               }`}
                               onMouseDown={(event) => event.preventDefault()}
                               onClick={() => handleSearchResultSelect(person)}
@@ -1891,13 +1891,13 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
             </div>
             <button
               type="submit"
-              className="rounded-full border border-white/20 bg-white/12 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-white/20"
+              className="rounded-full border border-white/20 bg-black/45 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-black/35"
             >
               Search
             </button>
           </form>
           {searchFeedback && (
-            <div className="mt-2 rounded-full border border-white/20 bg-white/12 px-3 py-1 text-[11px] text-white">
+            <div className="mt-2 rounded-full border border-white/20 bg-black/45 px-3 py-1 text-[11px] text-white">
               {searchFeedback}
             </div>
           )}
@@ -1908,7 +1908,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
   const personACard = (
     <div
       className={`flex items-center justify-between rounded-2xl border px-3 backdrop-blur ${personCardPaddingClass} ${
-        isSelectingA ? 'border-white/50 bg-white/18' : 'border-white/20 bg-white/12'
+        isSelectingA ? 'border-white/50 bg-black/35' : 'border-white/20 bg-black/45'
       }`}
     >
       <div>
@@ -1920,7 +1920,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
           <button
             type="button"
             onClick={() => beginSelection('selectA')}
-            className={`rounded-full border border-white/25 bg-white/12 px-3 text-[10px] font-semibold uppercase tracking-[0.3em] text-white backdrop-blur transition hover:bg-white/22 ${personCardButtonPaddingClass}`}
+            className={`rounded-full border border-white/25 bg-black/45 px-3 text-[10px] font-semibold uppercase tracking-[0.3em] text-white backdrop-blur transition hover:bg-black/35 ${personCardButtonPaddingClass}`}
           >
             {isSelectingA ? 'Selecting…' : 'Select'}
           </button>
@@ -1928,7 +1928,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
             <button
               type="button"
               onClick={() => assignLastSearchResultToRole('A')}
-              className={`rounded-full border border-white/25 bg-white/12 px-3 text-[10px] font-semibold uppercase tracking-[0.3em] text-white backdrop-blur transition hover:bg-white/22 ${personCardButtonPaddingClass}`}
+              className={`rounded-full border border-white/25 bg-black/45 px-3 text-[10px] font-semibold uppercase tracking-[0.3em] text-white backdrop-blur transition hover:bg-black/35 ${personCardButtonPaddingClass}`}
             >
               + Search
             </button>
@@ -1940,7 +1940,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
   const personBCard = (
     <div
       className={`flex items-center justify-between rounded-2xl border px-3 backdrop-blur ${personCardPaddingClass} ${
-        isSelectingB ? 'border-white/50 bg-white/18' : 'border-white/20 bg-white/12'
+        isSelectingB ? 'border-white/50 bg-black/35' : 'border-white/20 bg-black/45'
       }`}
     >
       <div>
@@ -1952,7 +1952,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
           <button
             type="button"
             onClick={() => beginSelection('selectB')}
-            className={`rounded-full border border-white/25 bg-white/12 px-3 text-[10px] font-semibold uppercase tracking-[0.3em] text-white backdrop-blur transition hover:bg-white/22 ${personCardButtonPaddingClass}`}
+            className={`rounded-full border border-white/25 bg-black/45 px-3 text-[10px] font-semibold uppercase tracking-[0.3em] text-white backdrop-blur transition hover:bg-black/35 ${personCardButtonPaddingClass}`}
           >
             {isSelectingB ? 'Selecting…' : 'Select'}
           </button>
@@ -1960,7 +1960,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
             <button
               type="button"
               onClick={() => assignLastSearchResultToRole('B')}
-              className={`rounded-full border border-white/25 bg-white/12 px-3 text-[10px] font-semibold uppercase tracking-[0.3em] text-white backdrop-blur transition hover:bg-white/22 ${personCardButtonPaddingClass}`}
+              className={`rounded-full border border-white/25 bg-black/45 px-3 text-[10px] font-semibold uppercase tracking-[0.3em] text-white backdrop-blur transition hover:bg-black/35 ${personCardButtonPaddingClass}`}
             >
               + Search
             </button>
@@ -1987,12 +1987,12 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
             setSearchFocused(false)
           }}
           onKeyDown={handleSearchInputKeyDown}
-          className="w-full rounded-full border border-white/20 bg-white/12 px-3 py-2 text-xs text-white placeholder-white/60 outline-none transition focus:border-white focus:ring-2 focus:ring-white/50"
+          className="w-full rounded-full border border-white/20 bg-black/45 px-3 py-2 text-xs text-white placeholder-white/60 outline-none transition focus:border-white focus:ring-2 focus:ring-white/50"
         />
         {showSearchResults && (
           <div
             ref={searchResultsRef}
-            className="pointer-events-auto absolute left-0 top-full z-10 mt-2 w-full overflow-hidden rounded-2xl border border-white/20 bg-white/12 shadow-[0_16px_40px_rgba(0,0,0,0.45)] backdrop-blur"
+            className="pointer-events-auto absolute left-0 top-full z-10 mt-2 w-full overflow-hidden rounded-2xl border border-white/20 bg-black/45 shadow-[0_16px_40px_rgba(0,0,0,0.45)] backdrop-blur"
           >
             {searchMatches.length > 0 ? (
               <ul className="divide-y divide-white/5">
@@ -2003,8 +2003,8 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
                     <li key={person.id}>
                       <button
                         type="button"
-                        className={`flex w-full flex-col gap-1 px-3 py-2 text-left text-xs text-white transition hover:bg-white/15 focus:bg-white/15 focus:outline-none ${
-                          isActive ? 'bg-white/15 backdrop-blur-sm' : ''
+                        className={`flex w-full flex-col gap-1 px-3 py-2 text-left text-xs text-white transition hover:bg-black/35 focus:bg-black/35 focus:outline-none ${
+                          isActive ? 'bg-black/35 backdrop-blur-sm' : ''
                         }`}
                         onMouseDown={(event) => event.preventDefault()}
                         onClick={() => handleSearchResultSelect(person)}
@@ -2036,7 +2036,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
       </div>
       <button
         type="submit"
-        className="flex-shrink-0 rounded-full border border-white/20 bg-white/12 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-white/20"
+        className="flex-shrink-0 rounded-full border border-white/20 bg-black/45 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-black/35"
       >
         Search
       </button>
@@ -2325,7 +2325,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
       )}
       {!isMobile && selectionMessage && (
         <div className="pointer-events-none absolute inset-x-0 top-0 z-40 flex justify-center pt-4">
-          <div className="rounded-full border border-white/30 bg-white/12 px-4 py-2 text-[10px] uppercase tracking-[0.3em] text-white backdrop-blur">
+          <div className="rounded-full border border-white/30 bg-black/45 px-4 py-2 text-[10px] uppercase tracking-[0.3em] text-white backdrop-blur">
             {selectionMessage}
           </div>
         </div>
@@ -2725,7 +2725,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
                       setLandscapeControlsOpen(false)
                     }
                   }}
-                  className="absolute grid h-12 w-12 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-white/30 bg-white/15 text-xl text-white shadow-[0_8px_18px_rgba(255,255,255,0.2)] backdrop-blur transition duration-200 ease-out hover:bg-white/25 focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-black"
+                  className="absolute grid h-12 w-12 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-white/30 bg-black/45 text-xl text-white shadow-[0_8px_18px_rgba(0,0,0,0.45)] backdrop-blur transition duration-200 ease-out hover:bg-black/35 focus:outline-none focus:ring-2 focus-ring-white/60 focus-ring-offset-2 focus-ring-offset-black"
                   style={{
                     top: '50%',
                     left: '50%',
@@ -2744,7 +2744,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
             <button
               type="button"
               onClick={() => setLandscapeControlsOpen((current) => !current)}
-              className="absolute left-0 top-0 grid h-14 w-14 place-items-center rounded-full border border-white/25 bg-white/12 text-white shadow-[0_12px_32px_rgba(0,0,0,0.45)] backdrop-blur transition hover:bg-white/22 focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-black"
+              className="absolute left-0 top-0 grid h-14 w-14 place-items-center rounded-full border border-white/25 bg-black/45 text-white shadow-[0_12px_32px_rgba(0,0,0,0.45)] backdrop-blur transition hover:bg-black/35 focus:outline-none focus-ring-2 focus-ring-white/50 focus-ring-offset-2 focus-ring-offset-black"
               aria-expanded={isLandscapeControlsOpen}
               aria-controls="landscape-control-panel"
               style={{
@@ -2772,7 +2772,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
           } flex flex-col gap-3 text-xs text-white`}
           style={floatingToolbarStyle}
         >
-          <div className="pointer-events-auto rounded-2xl border border-white/20 bg-white/12 px-4 py-3 shadow-[0_20px_40px_rgba(0,0,0,0.5)] backdrop-blur">
+          <div className="pointer-events-auto rounded-2xl border border-white/20 bg-black/45 px-4 py-3 shadow-[0_20px_40px_rgba(0,0,0,0.5)] backdrop-blur">
             <div className="space-y-3">{topControlsContent}</div>
           </div>
         </div>
@@ -2786,7 +2786,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
         <button
           type="button"
           onClick={toggleLegend}
-          className={`fixed z-50 rounded-full border border-white/20 bg-white/12 px-4 py-2 text-[10px] font-semibold uppercase tracking/[0.35em] text-white backdrop-blur transition hover:bg-white/22 md:text-[11px] ${
+          className={`fixed z-50 rounded-full border border-white/20 bg-black/45 px-4 py-2 text-[10px] font-semibold uppercase tracking/[0.35em] text-white backdrop-blur transition hover:bg-black/35 md:text-[11px] ${
             isMobileLandscape ? '' : 'right-4 top-4'
           }`}
           style={legendButtonStyle}
@@ -2799,7 +2799,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
 
       <div
         id="branch-legend-panel"
-        className={`fixed z-40 max-h-[70vh] overflow-y-auto rounded-3xl border border-white/15 bg-white/12 p-4 text-xs text-white shadow-[0_24px_60px_rgba(0,0,0,0.55)] backdrop-blur transition-all duration-300 ${legendPanelPositionClass} ${
+        className={`fixed z-40 max-h-[70vh] overflow-y-auto rounded-3xl border border-white/15 bg-black/45 p-4 text-xs text-white shadow-[0_24px_60px_rgba(0,0,0,0.55)] backdrop-blur transition-all duration-300 ${legendPanelPositionClass} ${
           isLegendOpen ? 'pointer-events-auto translate-x-0 opacity-100' : 'pointer-events-none translate-x-[120%] opacity-0'
         }`}
       >
@@ -2850,7 +2850,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
       {!isMobile && (
         <div className="pointer-events-none fixed inset-x-0 bottom-6 flex w-full justify-center px-4 text-xs text-white">
           <div className="flex w/full max-w-[1200px] flex-col items-stretch gap-6 md:flex-row md:items-end md:justify-between md:gap-12">
-            <div className="pointer-events-auto min-h-[121.2px] order-2 flex w/full flex-col gap-3 rounded-3xl border border-white/20 bg-white/12 px-6 py-5 shadow-[0_24px_60px_rgba(0,0,0,0.55)] backdrop-blur md:order-1 md:flex-[1_1_0%]">
+            <div className="pointer-events-auto min-h-[121.2px] order-2 flex w/full flex-col gap-3 rounded-3xl border border-white/20 bg-black/45 px-6 py-5 shadow-[0_24px_60px_rgba(0,0,0,0.55)] backdrop-blur md:order-1 md:flex-[1_1_0%]">
                <div className="flex w/full flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex flex-wrap items-center gap-3">
                   <button
@@ -2858,8 +2858,8 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
                     onClick={() => beginSelection('selectA')}
                     className={`rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase tracking/[0.2em] backdrop-blur transition ${
                       isSelectingA
-                        ? 'border border-white bg-white/18 text-white'
-                        : 'border border-white/20 bg-white/12 text-white hover:bg-white/22'
+                        ? 'border border-white bg-black/35 text-white'
+                        : 'border border-white/20 bg-black/45 text-white hover:bg-black/35'
                     }`}
                   >
                     Select A
@@ -2875,8 +2875,8 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
                     onClick={() => beginSelection('selectB')}
                     className={`rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase tracking/[0.2em] backdrop-blur transition ${
                       isSelectingB
-                        ? 'border border-white bg-white/18 text-white'
-                        : 'border border-white/20 bg-white/12 text-white hover:bg-white/22'
+                        ? 'border border-white bg-black/35 text-white'
+                        : 'border border-white/20 bg-black/45 text-white hover:bg-black/35'
                     }`}
                   >
                     Select B
@@ -2890,14 +2890,14 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
                   <button
                     type="button"
                     onClick={clearSelections}
-                    className="rounded-full border border-white/20 bg-white/12 px-3 py-1.5 text-[11px] font-semibold uppercase tracking/[0.2em] text-white backdrop-blur transition hover:bg-white/22"
+                    className={`rounded-full border border-white/25 bg-black/45 px-3 py-2 text-[10px] font-semibold uppercase tracking/[0.35em] text-white backdrop-blur transition hover:bg-black/35 ${personCardButtonPaddingClass}`}
                   >
-                    Clear A & B
+                    Clear A &amp; B
                   </button>
                 </div>
               </div>
               {selectionMode !== 'none' && (
-                <div className="rounded-2xl border border-white/20 bg-white/12 px-3 py-2 text-center text-[10px] uppercase tracking/[0.3em] text-white backdrop-blur">
+                <div className="rounded-2xl border border-white/20 bg-black/45 px-3 py-2 text-center text-[10px] uppercase tracking/[0.3em] text-white backdrop-blur">
                   {isSelectingA ? 'Click a person to set A' : 'Click a person to set B'}
                 </div>
               )}
@@ -2931,7 +2931,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
             <div className="rounded-t-3xl border border-white/20 bg-black/65 px-5 pb-6 pt-4 shadow-[0_-12px_40px_rgba(0,0,0,0.6)] backdrop-blur">
               <div className="mb-4 flex justify-center">
                 <div
-                  className="flex h-14 w-32 cursor-grab items-center justify-center rounded-full bg-white/15 backdrop-blur active:cursor-grabbing"
+                  className="flex h-14 w-32 cursor-grab items-center justify-center rounded-full bg-black/45 backdrop-blur active:cursor-grabbing"
                   role="button"
                   aria-label="Drag to close"
                   onPointerDown={handleControlSheetDragStart}
@@ -2957,12 +2957,12 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
                       <button
                         type="button"
                         onClick={clearSelections}
-                        className={`rounded-full border border-white/25 bg-white/15 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.35em] text-white backdrop-blur transition hover:bg-white/25 ${personCardButtonPaddingClass}`}
+                        className={`rounded-full border border-white/25 bg-black/45 px-3 py-2 text-[10px] font-semibold uppercase tracking/[0.35em] text-white backdrop-blur transition hover:bg-black/35 ${personCardButtonPaddingClass}`}
                       >
                         Clear A &amp; B
                       </button>
                     {selectionMode !== 'none' && (
-                      <div className="rounded-2xl border border-white/20 bg-white/12 px-3 py-2 text-center text-[10px] uppercase tracking-[0.3em] text-white backdrop-blur">
+                      <div className="rounded-2xl border border-white/20 bg-black/45 px-3 py-2 text-center text-[10px] uppercase tracking/[0.3em] text-white backdrop-blur">
                           {selectionMessage}
                         </div>
                       )}
@@ -2973,7 +2973,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
                   <>
                     {mobileSearchForm}
                     {showMobileSearch && searchFeedback && (
-                      <div className="rounded-full border border-white/20 bg-white/12 px-3 py-1 text-[11px] text-white">
+                      <div className="rounded-full border border-white/20 bg-black/45 px-3 py-1 text-[11px] text-white">
                         {searchFeedback}
                       </div>
                     )}
@@ -2984,12 +2984,12 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
                     <button
                       type="button"
                       onClick={clearSelections}
-                      className={`rounded-full border border-white/25 bg-white/15 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.35em] text-white backdrop-blur transition hover:bg-white/25 ${personCardButtonPaddingClass}`}
+                      className={`rounded-full border border-white/25 bg-black/45 px-3 py-2 text-[10px] font-semibold uppercase tracking/[0.35em] text-white backdrop-blur transition hover:bg-black/35 ${personCardButtonPaddingClass}`}
                     >
                       Clear A &amp; B
                     </button>
                     {selectionMode !== 'none' && (
-                      <div className="rounded-2xl border border-white/20 bg-white/12 px-3 py-2 text-center text-[10px] uppercase tracking-[0.3em] text-white backdrop-blur">
+                      <div className="rounded-2xl border border-white/20 bg-black/45 px-3 py-2 text-center text-[10px] uppercase tracking/[0.3em] text-white backdrop-blur">
                         {selectionMessage}
                       </div>
                     )}
@@ -3028,7 +3028,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
             >
               <div className="mb-4 flex justify-center">
                 <div
-                  className="flex h-14 w-32 cursor-grab items-center justify-center rounded-full bg-white/15 backdrop-blur active:cursor-grabbing"
+                  className="flex h-14 w-32 cursor-grab items-center justify-center rounded-full bg-black/45 backdrop-blur active:cursor-grabbing"
                   role="button"
                   aria-label="Drag to close birthdays panel"
                   onPointerDown={handleBirthdaysSheetDragStart}
@@ -3056,10 +3056,10 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
           type="button"
           onClick={toggleBirthdaysSheet}
           disabled={!hasAnyBirthdaysThisWeek}
-          className={`fixed z-[55] rounded-full border px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.35em] transition ${
+          className={`fixed z-[55] rounded-full border px-4 py-2 text-[11px] font-semibold uppercase tracking/[0.35em] transition ${
             hasAnyBirthdaysThisWeek
-              ? 'border-white/25 bg-white/12 text-white hover:bg-white/22'
-              : 'cursor-default border-white/15 bg-white/5 text-white/40'
+              ? 'border-white/25 bg-black/45 text-white hover:bg-black/35'
+              : 'cursor-default border-white/15 bg-black/70 text-white/40'
           } shadow-[0_20px_40px_rgba(0,0,0,0.6)] disabled:pointer-events-none`}
           style={{
             bottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)',
@@ -3081,7 +3081,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
             onClick={() => {
               openControlSheet()
             }}
-            className={`fixed z-50 grid h-14 w-14 place-items-center rounded-full border border-white/20 bg-white/12 text-3xl text-white backdrop-blur shadow-[0_20px_40px_rgba(0,0,0,0.45)] transition hover:bg-white/22 ${
+            className={`fixed z-50 grid h-14 w-14 place-items-center rounded-full border border-white/20 bg-black/45 text-3xl text-white backdrop-blur shadow-[0_20px_40px_rgba(0,0,0,0.45)] transition hover:bg-black/35 ${
               isMobileLandscape ? '' : 'bottom-4 right-4'
             }`}
             style={
@@ -3132,7 +3132,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
               setHoveredPersonId(null)
               openControlSheet()
             }}
-            className={`fixed z-50 grid h-14 w-14 place-items-center rounded-full border border-white/20 bg-white/12 text-3xl text-white backdrop-blur shadow-[0_20px_40px_rgba(0,0,0,0.45)] transition hover:bg-white/22 ${
+            className={`fixed z-50 grid h-14 w-14 place-items-center rounded-full border border-white/20 bg-black/45 text-3xl text-white backdrop-blur shadow-[0_20px_40px_rgba(0,0,0,0.45)] transition hover:bg-black/35 ${
               isMobileLandscape ? '' : 'bottom-4 right-4'
             }`}
             style={

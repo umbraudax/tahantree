@@ -154,7 +154,7 @@ const BirthdaysWeekSlice = ({
         <button
           key={entry.person.id}
           type="button"
-          className="flex w-full items-center justify-between gap-3 rounded-2xl border border-white/15 px-4 py-2.5 text-left text-sm font-medium text-white transition backdrop-blur-sm hover:bg-white/15 focus:bg-white/15 focus:outline-none"
+          className="flex w-full items-center justify-between gap-3 rounded-2xl border border-white/15 px-4 py-2.5 text-left text-sm font-medium text-white transition backdrop-blur hover:bg-black/35 focus:bg-black/35 focus:outline-none"
           style={{ background }}
           onClick={() => handlePersonClick(entry.person.id)}
         >
@@ -189,8 +189,8 @@ const BirthdaysWeekSlice = ({
   const containerClasses = combineClassNames(
     'relative text-white',
     variant === 'desktop'
-      ? 'flex min-w-[420px] min-h-[100px] flex-col justify-center gap-3 rounded-3xl border border-white/20 bg-white/8 px-6 py-5 text-xs shadow-[0_24px_55px_rgba(0,0,0,0.55)] backdrop-blur-sm'
-      : 'flex w-full flex-col gap-6 px-2 pb-5 pt-3',
+      ? 'flex min-w-[420px] min-h-[100px] flex-col justify-center gap-3 rounded-3xl border border-white/20 bg-black/45 px-6 py-5 text-xs shadow-[0_24px_55px_rgba(0,0,0,0.55)] backdrop-blur'
+      : 'flex w-full flex-col gap-6 rounded-3xl border border-white/20 bg-black/45 px-4 pb-5 pt-4 shadow-[0_16px_40px_rgba(0,0,0,0.5)] backdrop-blur',
     className,
   )
 
@@ -211,7 +211,7 @@ const BirthdaysWeekSlice = ({
                   {day.weekdayName} - {formatDayWithOrdinal(day.date)}
                 </span>
                 <div className="mt-3 flex flex-col gap-2">{day.entries.map((entry) => renderPersonEntry(entry))}</div>
-                {index < daysWithBirthdays.length - 1 && <div className="mt-5 h-px w-full bg-white/20" />}
+                {index < daysWithBirthdays.length - 1 && <div className="mt-5 h-px w-full bg-black/50" />}
               </div>
             ))}
           </div>
@@ -247,12 +247,12 @@ const BirthdaysWeekSlice = ({
               <button
                 type="button"
                 className={combineClassNames(
-                  'group relative flex h-20 w-full flex-col items-center justify-center gap-2 rounded-2xl text-sm font-semibold uppercase tracking-[0.34em] transition-colors backdrop-blur-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black',
+                  'group relative flex h-20 w-full flex-col items-center justify-center gap-2 rounded-2xl text-sm font-semibold uppercase tracking-[0.34em] transition-colors backdrop-blur focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black',
                   hasBirthdays
                     ? isActive
-                      ? 'bg-white/20 text-white shadow-[0_18px_48px_rgba(255,255,255,0.2)] cursor-pointer'
-                      : 'bg-white/10 text-white hover:bg-white/15 cursor-pointer'
-                    : 'bg-white/8 text-white/45 cursor-default hover:bg-white/8',
+                      ? 'bg-black/30 text-white shadow-[0_18px_48px_rgba(0,0,0,0.45)] cursor-pointer'
+                      : 'bg-black/45 text-white hover:bg-black/35 cursor-pointer'
+                    : 'bg-black/55 text-white/45 cursor-default hover:bg-black/55',
                 )}
                 aria-expanded={isExpanded}
                 aria-pressed={isActive}
