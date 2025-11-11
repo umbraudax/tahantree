@@ -83,6 +83,20 @@ const getSuffixForRank = (rank: number): string | null => {
   return numeral ? numeral : null
 }
 
+const normalizeBranchName = (branch?: string): string => {
+  if (!branch) return 'unknown'
+  const trimmed = branch.trim()
+  return trimmed.length === 0 ? 'unknown' : trimmed.toLowerCase()
+}
+
+const safeNumericId = (value?: string): number => {
+  if (!value) return Number.POSITIVE_INFINITY
+  const numeric = Number.parseInt(value, 10)
+  return Number.isFinite(numeric) ? numeric : Number.POSITIVE_INFINITY
+}
+
+const BRANCH_ORDER_FALLBACK = 1_000_000
+
 const parseDateValue = (value?: string): number | null => {
   if (!value) return null
   const parsed = Date.parse(value)
@@ -241,6 +255,8 @@ const ensureUnit = (
   person: Person,
   units: Map<string, FamilyUnit>,
   personToUnit: Map<string, string>,
+  personRowIndex: Map<string, number>,
+  unitFirstSeenIndex: Map<string, number>,
 ): FamilyUnit => {
   const createBaseUnit = (id: string): FamilyUnit => ({
     id,
@@ -265,11 +281,19 @@ const ensureUnit = (
     units.set(unitId, unit)
   }
 
+  const rowIndex = personRowIndex.get(person.id)
+  if (rowIndex !== undefined) {
+    const existing = unitFirstSeenIndex.get(unitId)
+    if (existing === undefined || rowIndex < existing) {
+      unitFirstSeenIndex.set(unitId, rowIndex)
+    }
+  }
+
   if (!unit.memberIds.includes(person.id)) {
     unit.memberIds.push(person.id)
     unit.members.push(person)
-    unit.members.sort((a, b) => a.numericId - b.numericId)
-    unit.memberIds.sort((a, b) => Number.parseInt(a, 10) - Number.parseInt(b, 10))
+    unit.members.sort(compareBySeniority)
+    unit.memberIds.sort((a, b) => safeNumericId(a) - safeNumericId(b))
   }
 
   if (!unit.branch || unit.branch === 'Unknown') {
@@ -295,53 +319,301 @@ const assignSpouseBond = (unit: FamilyUnit): SpouseBond | undefined => {
 const getParentUnitId = (
   person: Person,
   personToUnit: Map<string, string>,
+  units: Map<string, FamilyUnit>,
+  peopleById: Record<string, Person>,
+  currentUnitId?: string,
 ): string | undefined => {
-  const motherUnit = person.motherId ? personToUnit.get(person.motherId) : undefined
-  const fatherUnit = person.fatherId ? personToUnit.get(person.fatherId) : undefined
-
-  if (motherUnit && fatherUnit && motherUnit !== fatherUnit) {
-    // Prefer the unit that contains both parents if possible
-    return motherUnit
+  const selectParentUnit = (primary?: string, secondary?: string): string | undefined => {
+    if (primary && secondary && primary !== secondary) {
+      return primary
+    }
+    return primary ?? secondary
   }
 
-  return motherUnit ?? fatherUnit
+  const motherUnit = person.motherId ? personToUnit.get(person.motherId) : undefined
+  const fatherUnit = person.fatherId ? personToUnit.get(person.fatherId) : undefined
+  const directParentUnit = selectParentUnit(motherUnit, fatherUnit)
+
+  if (directParentUnit && directParentUnit !== currentUnitId) {
+    return directParentUnit
+  }
+
+  const spouseId = person.spouseId
+  if (!spouseId) {
+    return undefined
+  }
+
+  const spouseUnitId = personToUnit.get(spouseId)
+  if (spouseUnitId && spouseUnitId !== currentUnitId) {
+    const spouseUnit = units.get(spouseUnitId)
+    const spouseParentFromUnit = spouseUnit?.parentId
+    if (spouseParentFromUnit && spouseParentFromUnit !== currentUnitId) {
+      return spouseParentFromUnit
+    }
+  }
+
+  const spouse = peopleById[spouseId]
+  if (!spouse) {
+    return undefined
+  }
+
+  const spouseMotherUnit = spouse.motherId ? personToUnit.get(spouse.motherId) : undefined
+  const spouseFatherUnit = spouse.fatherId ? personToUnit.get(spouse.fatherId) : undefined
+  const spouseParentUnit = selectParentUnit(spouseMotherUnit, spouseFatherUnit)
+
+  if (spouseParentUnit && spouseParentUnit !== currentUnitId) {
+    return spouseParentUnit
+  }
+
+  return undefined
 }
 
-const finalizeUnit = (unit: FamilyUnit, unitLookup: Map<string, FamilyUnit>): void => {
+const finalizeUnit = (
+  unit: FamilyUnit,
+  unitLookup: Map<string, FamilyUnit>,
+  branchOrder: Map<string, number>,
+  unitFirstSeenIndex: Map<string, number>,
+  peopleById: Record<string, Person>,
+): void => {
+  const branchSortValue = (branch?: string): number => {
+    const normalized = normalizeBranchName(branch)
+    if (normalized === 'other') return BRANCH_ORDER_FALLBACK + 2
+    if (normalized === 'unknown') return BRANCH_ORDER_FALLBACK + 1
+    const index = branchOrder.get(normalized)
+    return index ?? BRANCH_ORDER_FALLBACK
+  }
+
+  const parentMemberIds = new Set(unit.members.map((member) => member.id))
+
+  const resolvePerson = (personId?: string): Person | undefined => {
+    if (!personId) return undefined
+    return peopleById[personId]
+  }
+
+  const isChildOfParent = (person: Person | undefined): boolean => {
+    if (!person) return false
+    const motherId = person.motherId ?? ''
+    const fatherId = person.fatherId ?? ''
+    return parentMemberIds.has(motherId) || parentMemberIds.has(fatherId)
+  }
+
+  type ChildConnectionType = 'childDirect' | 'formerOnly' | 'partnerOnly' | 'unconnected'
+
+  interface ChildUnitInfo {
+    id: string
+    unit: FamilyUnit | null
+    anchorChildId?: string
+    anchorChild?: Person
+    childMember?: Person
+    connectionType: ChildConnectionType
+    connectionRank: number
+    connected: boolean
+    branchValue: number
+    firstSeen: number
+    generation: number
+    spouseMembers: Person[]
+  }
+
+  const CONNECTION_RANK: Record<ChildConnectionType, number> = {
+    formerOnly: 0,
+    childDirect: 1,
+    partnerOnly: 2,
+    unconnected: 3,
+  }
+
+  const infoCache = new Map<string, ChildUnitInfo>()
+
+  const getUnitInfo = (childUnitId: string): ChildUnitInfo => {
+    const cached = infoCache.get(childUnitId)
+    if (cached) return cached
+
+    const target = unitLookup.get(childUnitId)
+    if (!target) {
+      const fallback: ChildUnitInfo = {
+        id: childUnitId,
+        unit: null,
+        connectionType: 'unconnected',
+        connectionRank: CONNECTION_RANK.unconnected,
+        connected: false,
+        branchValue: BRANCH_ORDER_FALLBACK,
+        firstSeen: unitFirstSeenIndex.get(childUnitId) ?? Number.POSITIVE_INFINITY,
+        generation: Number.POSITIVE_INFINITY,
+        spouseMembers: [],
+      }
+      infoCache.set(childUnitId, fallback)
+      return fallback
+    }
+
+    const resolvedMembers = target.members.map((member) => resolvePerson(member.id) ?? member)
+
+    let anchorChildId: string | undefined
+    let anchorChild: Person | undefined
+    let childMember: Person | undefined
+    let connectionType: ChildConnectionType = 'unconnected'
+    let connected = false
+    let spouseMembers: Person[] = []
+
+    for (const member of resolvedMembers) {
+      if (isChildOfParent(member)) {
+        anchorChildId = member.id
+        anchorChild = member
+        childMember = member
+        connectionType = 'childDirect'
+        connected = true
+        spouseMembers = resolvedMembers.filter((candidate) => candidate.id !== member.id)
+        break
+      }
+    }
+
+    if (!anchorChildId) {
+      for (const member of resolvedMembers) {
+        const spouseId = member.spouseId
+        if (!spouseId) continue
+        const spouse = resolvePerson(spouseId)
+        if (!isChildOfParent(spouse)) continue
+        anchorChildId = spouse.id
+        anchorChild = spouse
+        connectionType = member.divorced || spouse?.divorced ? 'formerOnly' : 'partnerOnly'
+        connected = true
+        spouseMembers = [member]
+        break
+      }
+    }
+
+    const branchValue = branchSortValue(anchorChild?.branch ?? target.branch)
+    const firstSeen = unitFirstSeenIndex.get(target.id) ?? Number.POSITIVE_INFINITY
+    const generation = target.generation
+
+    const info: ChildUnitInfo = {
+      id: childUnitId,
+      unit: target,
+      anchorChildId,
+      anchorChild,
+      childMember,
+      connectionType,
+      connectionRank: CONNECTION_RANK[connectionType],
+      connected,
+      branchValue,
+      firstSeen,
+      generation,
+      spouseMembers,
+    }
+
+    infoCache.set(childUnitId, info)
+    return info
+  }
+
   unit.childIds = Array.from(new Set(unit.childIds))
-  unit.childIds.sort((a, b) => {
-    const leftUnit = unitLookup.get(a)
-    const rightUnit = unitLookup.get(b)
+  unit.childIds.sort((leftId, rightId) => {
+    const leftInfo = getUnitInfo(leftId)
+    const rightInfo = getUnitInfo(rightId)
 
-    const branchPriority = (childUnit?: FamilyUnit): number => {
-      if (!childUnit) return 2
-      if (childUnit.branch === unit.branch) return 0
-      if (childUnit.branch.toLowerCase() === 'other') return 2
-      return 1
+    if (leftInfo.anchorChildId && rightInfo.anchorChildId) {
+      if (leftInfo.anchorChildId !== rightInfo.anchorChildId) {
+        const leftChild = leftInfo.anchorChild
+        const rightChild = rightInfo.anchorChild
+        if (leftChild && rightChild) {
+          const childSeniority = compareBySeniority(leftChild, rightChild)
+          if (childSeniority !== 0) {
+            return childSeniority
+          }
+        }
+
+        const leftChildBranch = branchSortValue(leftInfo.anchorChild?.branch)
+        const rightChildBranch = branchSortValue(rightInfo.anchorChild?.branch)
+        if (leftChildBranch !== rightChildBranch) {
+          return leftChildBranch - rightChildBranch
+        }
+
+        return safeNumericId(leftInfo.anchorChildId) - safeNumericId(rightInfo.anchorChildId)
+      }
+
+      if (leftInfo.connectionRank !== rightInfo.connectionRank) {
+        return leftInfo.connectionRank - rightInfo.connectionRank
+      }
     }
 
-    const leftPriority = branchPriority(leftUnit)
-    const rightPriority = branchPriority(rightUnit)
-    if (leftPriority !== rightPriority) {
-      return leftPriority - rightPriority
+    if (leftInfo.connected !== rightInfo.connected) {
+      return leftInfo.connected ? -1 : 1
     }
 
-    const parseNumericId = (value?: string): number => {
-      if (!value) return Number.POSITIVE_INFINITY
-      const numeric = Number.parseInt(value, 10)
-      return Number.isFinite(numeric) ? numeric : Number.POSITIVE_INFINITY
+    if (leftInfo.branchValue !== rightInfo.branchValue) {
+      return leftInfo.branchValue - rightInfo.branchValue
     }
 
-    const leftPrimary = leftUnit?.memberIds[0]
-    const rightPrimary = rightUnit?.memberIds[0]
-    const leftNumeric = parseNumericId(leftPrimary)
-    const rightNumeric = parseNumericId(rightPrimary)
+    if (leftInfo.generation !== rightInfo.generation) {
+      return leftInfo.generation - rightInfo.generation
+    }
+
+    if (leftInfo.firstSeen !== rightInfo.firstSeen) {
+      return leftInfo.firstSeen - rightInfo.firstSeen
+    }
+
+    const leftPrimaryId = leftInfo.anchorChildId ?? leftInfo.unit?.memberIds[0]
+    const rightPrimaryId = rightInfo.anchorChildId ?? rightInfo.unit?.memberIds[0]
+    const leftNumeric = safeNumericId(leftPrimaryId)
+    const rightNumeric = safeNumericId(rightPrimaryId)
     if (leftNumeric !== rightNumeric) {
       return leftNumeric - rightNumeric
     }
 
-    return a.localeCompare(b)
+    const leftUnitId = leftInfo.unit?.id ?? leftInfo.id
+    const rightUnitId = rightInfo.unit?.id ?? rightInfo.id
+    if (leftUnitId !== rightUnitId) {
+      return leftUnitId.localeCompare(rightUnitId)
+    }
+
+    return leftId.localeCompare(rightId)
   })
+
+  const anchorGroups = new Map<string, ChildUnitInfo[]>()
+  for (const childId of unit.childIds) {
+    const info = getUnitInfo(childId)
+    if (!info.anchorChildId) continue
+    let group = anchorGroups.get(info.anchorChildId)
+    if (!group) {
+      group = []
+      anchorGroups.set(info.anchorChildId, group)
+    }
+    group.push(info)
+  }
+
+  const reorderUnitMembers = (target: FamilyUnit, childId: string, orientation: 'left' | 'right') => {
+    const childIndex = target.memberIds.findIndex((memberId) => memberId === childId)
+    if (childIndex === -1) return
+    const childMember = target.members[childIndex]
+    const otherMembers: Person[] = target.members.filter((_, index) => index !== childIndex)
+    const otherIds = target.memberIds.filter((memberId) => memberId !== childId)
+
+    if (orientation === 'left') {
+      target.members = [childMember, ...otherMembers]
+      target.memberIds = [childId, ...otherIds]
+    } else {
+      target.members = [...otherMembers, childMember]
+      target.memberIds = [...otherIds, childId]
+    }
+  }
+
+  for (const group of anchorGroups.values()) {
+    for (let index = 0; index < group.length; index += 1) {
+      const info = group[index]
+      if (!info.unit || !info.anchorChildId) {
+        continue
+      }
+      if (info.connectionType !== 'childDirect') {
+        continue
+      }
+
+      const hasFormerBefore = group.slice(0, index).some((entry) => entry.connectionType === 'formerOnly')
+      const hasFormerAfter = group.slice(index + 1).some((entry) => entry.connectionType === 'formerOnly')
+
+      if (hasFormerBefore && !hasFormerAfter) {
+        reorderUnitMembers(info.unit, info.anchorChildId, 'left')
+      } else if (hasFormerAfter && !hasFormerBefore) {
+        reorderUnitMembers(info.unit, info.anchorChildId, 'right')
+      }
+    }
+  }
 }
 
 const incrementNestedCounter = (store: Map<string, Map<string, number>>, source: string, target: string) => {
@@ -385,21 +657,42 @@ export const loadFamilyGraph = async (url = DATA_URL): Promise<FamilyGraph> => {
 
   const people: Person[] = []
   const peopleById: Record<string, Person> = {}
+  const personRowIndex = new Map<string, number>()
 
-  for (const raw of rows) {
+  rows.forEach((raw, index) => {
     const person = toPerson(raw)
-    if (!person) continue
+    if (!person) {
+      return
+    }
     people.push(person)
     peopleById[person.id] = person
-  }
+    personRowIndex.set(person.id, index)
+  })
 
   assignNameSuffixes(people)
 
+  const branchOrder = new Map<string, number>()
+  for (const person of people) {
+    const normalized = normalizeBranchName(person.branch)
+    if (!branchOrder.has(normalized)) {
+      branchOrder.set(normalized, branchOrder.size)
+    }
+  }
+
+  const branchSortValue = (branch?: string): number => {
+    const normalized = normalizeBranchName(branch)
+    if (normalized === 'other') return BRANCH_ORDER_FALLBACK + 2
+    if (normalized === 'unknown') return BRANCH_ORDER_FALLBACK + 1
+    const index = branchOrder.get(normalized)
+    return index ?? BRANCH_ORDER_FALLBACK
+  }
+
   const units = new Map<string, FamilyUnit>()
   const personToUnit = new Map<string, string>()
+  const unitFirstSeenIndex = new Map<string, number>()
 
   for (const person of people) {
-    const unit = ensureUnit(person, units, personToUnit)
+    const unit = ensureUnit(person, units, personToUnit, personRowIndex, unitFirstSeenIndex)
     // Update branch if spouse contributes a non-unknown branch
     if (unit.branch === 'Unknown' && person.branch !== 'Unknown') {
       unit.branch = person.branch
@@ -416,7 +709,7 @@ export const loadFamilyGraph = async (url = DATA_URL): Promise<FamilyGraph> => {
     const unit = units.get(unitId)
     if (!unit) continue
 
-    const parentUnitId = getParentUnitId(person, personToUnit)
+    const parentUnitId = getParentUnitId(person, personToUnit, units, peopleById, unitId)
     if (!parentUnitId) continue
     if (parentUnitId === unitId) continue
 
@@ -563,19 +856,69 @@ export const loadFamilyGraph = async (url = DATA_URL): Promise<FamilyGraph> => {
   const unitList: FamilyUnit[] = []
 
   for (const unit of units.values()) {
-    finalizeUnit(unit, units)
+    finalizeUnit(unit, units, branchOrder, unitFirstSeenIndex, peopleById)
     unitsById[unit.id] = unit
     unitList.push(unit)
   }
 
   unitList.sort((a, b) => {
-    if (a.generation !== b.generation) return a.generation - b.generation
-    const aPrimary = a.memberIds[0]
-    const bPrimary = b.memberIds[0]
-    return Number.parseInt(aPrimary, 10) - Number.parseInt(bPrimary, 10)
+    const leftBranchOrder = branchSortValue(a.branch)
+    const rightBranchOrder = branchSortValue(b.branch)
+    if (leftBranchOrder !== rightBranchOrder) {
+      return leftBranchOrder - rightBranchOrder
+    }
+
+    const leftFirstSeen = unitFirstSeenIndex.get(a.id) ?? Number.POSITIVE_INFINITY
+    const rightFirstSeen = unitFirstSeenIndex.get(b.id) ?? Number.POSITIVE_INFINITY
+    if (leftFirstSeen !== rightFirstSeen) {
+      return leftFirstSeen - rightFirstSeen
+    }
+
+    if (a.generation !== b.generation) {
+      return a.generation - b.generation
+    }
+
+    const leftPrimary = a.memberIds[0]
+    const rightPrimary = b.memberIds[0]
+    const leftNumeric = safeNumericId(leftPrimary)
+    const rightNumeric = safeNumericId(rightPrimary)
+    if (leftNumeric !== rightNumeric) {
+      return leftNumeric - rightNumeric
+    }
+
+    return a.id.localeCompare(b.id)
   })
 
+  const compareUnitsByBranch = (left: FamilyUnit, right: FamilyUnit): number => {
+    const leftBranchOrder = branchSortValue(left.branch)
+    const rightBranchOrder = branchSortValue(right.branch)
+    if (leftBranchOrder !== rightBranchOrder) {
+      return leftBranchOrder - rightBranchOrder
+    }
+
+    const leftFirstSeen = unitFirstSeenIndex.get(left.id) ?? Number.POSITIVE_INFINITY
+    const rightFirstSeen = unitFirstSeenIndex.get(right.id) ?? Number.POSITIVE_INFINITY
+    if (leftFirstSeen !== rightFirstSeen) {
+      return leftFirstSeen - rightFirstSeen
+    }
+
+    if (left.generation !== right.generation) {
+      return left.generation - right.generation
+    }
+
+    const leftPrimary = left.memberIds[0]
+    const rightPrimary = right.memberIds[0]
+    const leftNumeric = safeNumericId(leftPrimary)
+    const rightNumeric = safeNumericId(rightPrimary)
+    if (leftNumeric !== rightNumeric) {
+      return leftNumeric - rightNumeric
+    }
+
+    return left.id.localeCompare(right.id)
+  }
+
   const roots = unitList.filter((unit) => !unit.parentId)
+  roots.sort(compareUnitsByBranch)
 
   return {
     people,

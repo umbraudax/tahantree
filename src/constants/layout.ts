@@ -4,7 +4,7 @@ export const PERSON_GAP = 32
 export const SPOUSE_GAP_EXTRA = 28
 export const GROUP_PADDING = 16
 export const CORNER_RADIUS = 16
-export const MIN_UNIT_GAP = PERSON_GAP + GROUP_PADDING
+export const MIN_UNIT_GAP = PERSON_GAP + GROUP_PADDING + 60
 export const MIN_PARENT_CHILD_GAP = PERSON_HEIGHT
 
 export const computeUnitDimensions = (memberCount: number, hasSpouseBond = false) => {
