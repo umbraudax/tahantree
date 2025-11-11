@@ -28,7 +28,7 @@ ID,First,Last,Sex,Gen,Spouse,Divorced,Mother,Father,DOB,DOD,Branch
 27,Kathy,Pospiech,F,3,28,FALSE,8,7,3/30/1955,,B Tahan
 28,Steve,Pospiech,M,3,27,FALSE,,,7/23/1955,,B Tahan
 29,Norman,Tahan,M,3,30,TRUE,8,7,9/22/1956,,B Tahan
-30,Kathy,Tahan,F,3,29,TRUE,,,,,B Tahan
+30,Kathy,Tahan,F,3,29,TRUE,,,9/25/1956,,B Tahan
 31,David,Tahan,M,3,32,FALSE,8,7,12/17/1958,,B Tahan
 32,Mimi,Tahan,F,3,31,FALSE,,,11/13/1958,,B Tahan
 33,Sharon,Olivo,F,3,34,FALSE,8,7,2/20/1962,,B Tahan
@@ -145,7 +145,7 @@ ID,First,Last,Sex,Gen,Spouse,Divorced,Mother,Father,DOB,DOD,Branch
 144,Cody,Lauria,M,5,,FALSE,86,87,3/16/2016,,B Tahan
 145,Anna,Pospiech,F,5,,FALSE,89,88,11/26/2018,,B Tahan
 146,Nilo,Fekhoury,M,5,,FALSE,90,91,3/2/2021,,B Tahan
-147,Nicolas,Fekhoury,M,5,,FALSE,90,91,,,B Tahan
+147,Nicolas,Fekhoury,M,5,,FALSE,90,91,5/10/2022,,B Tahan
 148,Noura,Fekhoury,F,5,,FALSE,90,91,7/4/2024,,B Tahan
 149,Leia,Tahan,F,5,,FALSE,93,92,3/30/2024,,B Tahan
 150,Thomas,Tahan,M,5,,FALSE,93,92,4/4/2025,,B Tahan

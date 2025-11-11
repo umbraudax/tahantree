@@ -2768,7 +2768,9 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
       ) : (
         <div
           className={`pointer-events-none absolute z-30 ${
-            isMobile ? 'left-3 right-3 top-32' : 'left-6 top-36 w-[360px]'
+            isMobile
+              ? 'left-3 right-3 top-[calc(env(safe-area-inset-top,0px)+72px)]'
+              : 'left-6 top-36 w-[360px]'
           } flex flex-col gap-3 text-xs text-white`}
           style={floatingToolbarStyle}
         >
