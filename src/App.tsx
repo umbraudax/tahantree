@@ -89,7 +89,7 @@ const App = () => {
   )
 
   return (
-    <div className="flex min-h-screen flex-col bg-black text-white pb-safe-b">
+    <div className="flex h-full flex-col overflow-hidden bg-black text-white pb-safe-b">
       <main className="flex-1 overflow-hidden">
         <FamilyTree />
       </main>

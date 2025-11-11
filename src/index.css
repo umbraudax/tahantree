@@ -27,6 +27,20 @@ body {
   }
 }
 
+@media (max-width: 768px) and (orientation: portrait) {
+  html,
+  body,
+  #root {
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+  }
+
+  body {
+    overscroll-behavior: none;
+  }
+}
+
 body.mobile-control-sheet-open #app-help-button {
   display: none;
 }
