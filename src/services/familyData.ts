@@ -470,6 +470,7 @@ const finalizeUnit = (
         const spouseId = member.spouseId
         if (!spouseId) continue
         const spouse = resolvePerson(spouseId)
+        if (!spouse) continue
         if (!isChildOfParent(spouse)) continue
         anchorChildId = spouse.id
         anchorChild = spouse
