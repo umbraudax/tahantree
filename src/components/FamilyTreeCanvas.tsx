@@ -3021,7 +3021,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
             }}
           >
             <div
-              className="rounded-t-3xl border border-white/20 bg-black/65 px-5 pt-4 shadow-[0_-12px_40px_rgba(255,255,255,0.2)] backdrop-blur"
+              className="rounded-t-3xl border border-white/20 bg-black/65 px-5 pt-4 shadow-[0_-12px_40px_rgba(0,0,0,0.2)] backdrop-blur"
               style={{
                 paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))',
               }}
