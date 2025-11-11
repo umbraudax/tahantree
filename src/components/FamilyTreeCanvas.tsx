@@ -1806,7 +1806,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
         </div>
         <button
           type="button"
-          className="rounded-full border border-white/20 bg-black/45 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-white transition hover:bg-black/35"
+          className="rounded-full border border-white/20 bg-black/45 px-3 py-2 text-[10px] font-semibold uppercase tracking/[0.35em] text-white transition hover:bg-black/35 md:text-[11px]"
           onClick={resetView}
         >
           Reset
@@ -1817,7 +1817,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
         <button
           type="button"
           onClick={toggleLegend}
-          className="mt-3 w-full rounded-full border border-white/20 bg-black/45 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-white backdrop-blur transition hover:bg-black/35"
+          className="mt-3 w-full rounded-full border border-white/20 bg-black/45 px-3 py-2 text-[10px] font-semibold uppercase tracking/[0.35em] text-white backdrop-blur transition hover:bg-black/35 md:text-[11px]"
         >
           {isLegendOpen ? 'Hide Legend' : 'Show Legend'}
         </button>
@@ -1891,7 +1891,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
             </div>
             <button
               type="submit"
-              className="rounded-full border border-white/20 bg-black/45 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-black/35"
+              className="rounded-full border border-white/20 bg-black/45 px-3 py-2 text-[10px] font-semibold uppercase tracking/[0.35em] text-white transition hover:bg-black/35 md:text-[11px]"
             >
               Search
             </button>
