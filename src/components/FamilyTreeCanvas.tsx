@@ -1858,8 +1858,8 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
                           <li key={person.id}>
                             <button
                               type="button"
-                              className={`flex w-full flex-col gap-1 px-3 py-2 text-left text-xs text-white transition hover:bg-black/35 focus:bg-black/35 focus:outline-none ${
-                                isActive ? 'bg-black/35 backdrop-blur-sm' : ''
+                              className={`flex w-full flex-col gap-1 px-3 py-2 text-left text-xs text-white transition hover:bg-white/12 hover:backdrop-blur-sm focus:bg-white/12 focus:backdrop-blur-sm focus:outline-none ${
+                                isActive ? 'bg-white/20 text-white backdrop-blur-sm ring-1 ring-white/25' : ''
                               }`}
                               onMouseDown={(event) => event.preventDefault()}
                               onClick={() => handleSearchResultSelect(person)}
@@ -2768,7 +2768,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
       ) : (
         <div
           className={`pointer-events-none absolute z-30 ${
-            isMobile ? 'left-3 right-3 top-3' : 'left-6 top-6 w-[360px]'
+            isMobile ? 'left-3 right-3 top-32' : 'left-6 top-36 w-[360px]'
           } flex flex-col gap-3 text-xs text-white`}
           style={floatingToolbarStyle}
         >
