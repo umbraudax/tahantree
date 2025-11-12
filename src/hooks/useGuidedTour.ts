@@ -46,10 +46,25 @@ export const useGuidedTour = () => {
       })
 
       config.steps.forEach((step, index) => {
+        const hasAdvanceOn = Boolean(step.advanceOn)
+        const hasWhenHandlers = Boolean(step.when) && Object.keys(step.when ?? {}).length > 0
+        const hasButtons = Array.isArray(step.buttons) && step.buttons.length > 0
+        const needsDefaultButton = !hasAdvanceOn && !hasWhenHandlers && !hasButtons
+
         tour.addStep({
           ...step,
           id: step.id ?? `app-tour-step-${index}`,
-          buttons: step.buttons ?? [],
+          buttons: needsDefaultButton
+            ? [
+                {
+                  text: 'Next',
+                  classes: 'app-tour-button-primary',
+                  action() {
+                    this.next()
+                  },
+                },
+              ]
+            : step.buttons,
         })
       })
 

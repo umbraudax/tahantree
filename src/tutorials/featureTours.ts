@@ -46,8 +46,9 @@ const buildCompareTour: TourBuilder = (bridge) => {
           ? 'Tap the Select button for Person A. This keeps the drawer open so you can choose the relative next.'
           : 'Click Select A to arm the tray. Next you will click the relative who should occupy slot A.',
         attachTo: attachToSelector(selectASelector),
-        advanceOn: { selector: selectASelector, event: 'click' },
+        advanceOn: { selector: 'body', event: 'tutorial:compareSelectingA' },
         beforeShowPromise: async () => {
+          bridge.beginCompareTutorialSession()
           openControls()
           const element = await waitForElement(selectASelector)
           element.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -84,7 +85,7 @@ const buildCompareTour: TourBuilder = (bridge) => {
           ? 'Open the drawer again and tap Select for Person B so we can capture the second relative.'
           : 'Click Select B to move the tray into selection mode for the second relative.',
         attachTo: attachToSelector(selectBSelector),
-        advanceOn: { selector: selectBSelector, event: 'click' },
+        advanceOn: { selector: 'body', event: 'tutorial:compareSelectingB' },
         beforeShowPromise: async () => {
           openControls()
           const element = await waitForElement(selectBSelector)
@@ -162,9 +163,11 @@ const buildCompareTour: TourBuilder = (bridge) => {
       },
     ],
     onCancel: () => {
+      bridge.cancelCompareTutorialSession()
       bridge.highlightPerson(null)
     },
     onComplete: () => {
+      bridge.completeCompareTutorialSession()
       bridge.highlightPerson(null)
     },
   }
@@ -222,9 +225,13 @@ const buildBirthdaysTour: TourBuilder = (bridge) => {
       ],
       onCancel: () => {
         bridge.closeBirthdaysPanel()
+        bridge.highlightPerson(null)
+        bridge.setSelectedPerson(null)
       },
       onComplete: () => {
         bridge.closeBirthdaysPanel()
+        bridge.highlightPerson(null)
+        bridge.setSelectedPerson(null)
       },
     }
   }
@@ -299,73 +306,51 @@ const buildSearchTour: TourBuilder = (bridge) => {
   return {
     steps: [
       {
-        id: 'search-open',
-        title: 'Find anyone fast',
+        id: 'search-single-step',
+        title: 'Practice searching',
         text: bridge.context.isMobile
-          ? 'Open the search field so you can practice finding someone. The drawer will stay open while you work through the flow.'
-          : 'Click into the search field to begin. We suggest a relative so you can see each state of the search workflow.',
+          ? `Tap the search field, type "${person.fullName}", then tap the matching result when it appears.`
+          : `Click the search field, type "${person.fullName}", then click the matching result once it appears.`,
         attachTo: attachToSelector(searchFormSelector),
         beforeShowPromise: async () => {
+          bridge.setSearchTutorialTarget(person)
           bridge.openSearchField()
           await waitForElement(searchInputSelector)
         },
-        advanceOn: { selector: searchInputSelector, event: 'focus' },
-      },
-      {
-        id: 'search-type',
-        title: `Type ${person.fullName}`,
-        text: `Type "${person.fullName}" into the search field so the matching results appear. We will highlight the person once the results load.`,
-        attachTo: attachToSelector(searchInputSelector),
-        beforeShowPromise: async () => {
-          bridge.setSearchTutorialTarget(person)
-          await waitForElement(searchInputSelector)
-        },
         when: {
           show() {
-            const handle = () => {
-              this.tour.next()
-            }
-            window.addEventListener('tutorial:searchTargetMatched', handle, { once: true })
-            this.once('hide', () => {
-              window.removeEventListener('tutorial:searchTargetMatched', handle)
-            })
-          },
-        },
-      },
-      {
-        id: 'search-select',
-        title: 'Jump straight to the match',
-        text: 'Use the arrow keys to confirm the highlighted result, then press Enter or click it to focus on the person.',
-        attachTo: attachToSelector(resultEntrySelector),
-        beforeShowPromise: async () => {
-          await waitForElement(resultEntrySelector)
-        },
-        when: {
-          show() {
-            const listener = (event: MouseEvent) => {
+            const handleResultClick = (event: MouseEvent) => {
               const target = event.target as Element | null
               if (target && target.closest(resultEntrySelector)) {
-                this.tour.next()
+                advance()
               }
             }
-            const keyListener = (event: KeyboardEvent) => {
+            const handleEnter = (event: KeyboardEvent) => {
               if (event.key === 'Enter') {
-                this.tour.next()
+                const active = document.querySelector(resultEntrySelector)
+                if (active) {
+                  advance()
+                }
               }
             }
-            document.addEventListener('click', listener, true)
-            document.addEventListener('keydown', keyListener, true)
-            this.once('hide', () => {
-              document.removeEventListener('click', listener, true)
-              document.removeEventListener('keydown', keyListener, true)
-            })
+            const advance = () => {
+              cleanup()
+                this.tour.next()
+              }
+            const cleanup = () => {
+              document.removeEventListener('click', handleResultClick, true)
+              document.removeEventListener('keydown', handleEnter, true)
+            }
+            document.addEventListener('click', handleResultClick, true)
+            document.addEventListener('keydown', handleEnter, true)
+            this.once('hide', cleanup)
           },
         },
       },
       {
-        id: 'search-focused',
+        id: 'search-centered',
         title: 'Centered and ready',
-        text: 'The tree zoomed to the relative you selected. From here you can assign them to A or B, open birthdays, or keep navigating.',
+        text: 'Great! The tree zoomed to the relative you selected. From here you can assign them to A or B, open birthdays, or keep navigating.',
         attachTo: { element: `g[data-person-id="${person.id}"]`, on: undefined },
         beforeShowPromise: async () => {
           bridge.focusOnPerson(person.id)
@@ -384,9 +369,13 @@ const buildSearchTour: TourBuilder = (bridge) => {
     ],
     onCancel: () => {
       bridge.highlightSearchResult(null)
+        bridge.highlightPerson(null)
+        bridge.setSelectedPerson(null)
     },
     onComplete: () => {
       bridge.highlightSearchResult(null)
+        bridge.highlightPerson(null)
+        bridge.setSelectedPerson(null)
     },
   }
 }
@@ -478,6 +467,7 @@ const buildNodeInfoTour: TourBuilder = (bridge) => {
         text: 'We center the tree on this person so you can see how their card behaves when focused.',
         attachTo: { element: nodeSelector, on: undefined },
         beforeShowPromise: async () => {
+          bridge.beginCompareTutorialSession()
           bridge.focusOnPerson(person.id)
           await waitForElement(() => document.querySelector(nodeSelector))
         },
@@ -486,19 +476,50 @@ const buildNodeInfoTour: TourBuilder = (bridge) => {
         id: 'node-hover',
         title: 'See relatives glow together',
         text: bridge.context.isMobile
-          ? 'Tap the card to expand their details. Watch the branch glow as family relationships light up.'
-          : 'Click the card to highlight immediate family and reveal inline stats in the expanded card.',
+          ? 'Tap the left or right side of the card. The nearby family will glow and you will assign this person to either slot A or slot B.'
+          : 'Hover to see nearby family glow, then hold Shift while clicking the left or right half of the card to toggle this person into slot A or slot B.',
         attachTo: { element: nodeSelector, on: undefined },
-        advanceOn: { selector: nodeSelector, event: 'pointerup' },
         beforeShowPromise: async () => {
           bridge.highlightPerson(person.id)
           await waitForElement(() => document.querySelector(nodeSelector))
+        },
+        when: {
+          show() {
+            const nextStep = () => {
+              this.tour.next()
+            }
+            const handleA = () => {
+              remove()
+              nextStep()
+            }
+            const handleB = () => {
+              remove()
+              nextStep()
+            }
+            const remove = () => {
+              window.removeEventListener('tutorial:compareSelectedA', handleA)
+              window.removeEventListener('tutorial:compareSelectedB', handleB)
+              document.removeEventListener('tutorial:compareSelectedA', handleA)
+              document.removeEventListener('tutorial:compareSelectedB', handleB)
+              document.body?.removeEventListener('tutorial:compareSelectedA', handleA)
+              document.body?.removeEventListener('tutorial:compareSelectedB', handleB)
+            }
+            window.addEventListener('tutorial:compareSelectedA', handleA, { once: true })
+            window.addEventListener('tutorial:compareSelectedB', handleB, { once: true })
+            document.addEventListener('tutorial:compareSelectedA', handleA, { once: true })
+            document.addEventListener('tutorial:compareSelectedB', handleB, { once: true })
+            document.body?.addEventListener('tutorial:compareSelectedA', handleA, { once: true })
+            document.body?.addEventListener('tutorial:compareSelectedB', handleB, { once: true })
+            this.once('hide', remove)
+          },
         },
       },
       {
         id: 'node-details',
         title: 'Read the inline details',
-        text: 'Explore the expanded card. Birth and age info, parents, and spouse details appear inline so you can follow branches without losing your place.',
+        text: bridge.context.isMobile
+          ? 'Great! With this person assigned to a slot, read through their inline details and nearby relatives. You can clear the slot or choose someone else whenever you are ready.'
+          : 'Great! With this person assigned, review their inline details and nearby relatives. You can clear the slot or choose anyone else from here.',
         attachTo: { element: nodeSelector, on: undefined },
         beforeShowPromise: async () => {
           await waitForElement(() => document.querySelector(nodeSelector))
@@ -515,9 +536,11 @@ const buildNodeInfoTour: TourBuilder = (bridge) => {
       },
     ],
     onCancel: () => {
+      bridge.cancelCompareTutorialSession()
       bridge.highlightPerson(null)
     },
     onComplete: () => {
+      bridge.completeCompareTutorialSession({ applyAssignments: false })
       bridge.highlightPerson(null)
     },
   }

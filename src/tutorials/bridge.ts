@@ -14,11 +14,18 @@ export interface FamilyTreeTutorialBridge {
   focusOnPerson(personId: string): void
   highlightPerson(personId: string | null): void
   setSelectedPerson(personId: string | null): void
-  assignPersonToRole(personId: string, role: 'A' | 'B', options?: { suppressHighlight?: boolean }): void
+  assignPersonToRole(
+    personId: string,
+    role: 'A' | 'B',
+    options?: { suppressHighlight?: boolean; emitTutorialEvent?: boolean },
+  ): void
   beginSelection(mode: 'selectA' | 'selectB'): void
   clearSelections(): void
-  openControlSheet(): void
+  openControlSheet(options?: { preserveSearchFocus?: boolean }): void
   closeControlSheet(): void
+  beginCompareTutorialSession(options?: { presetSlotAId?: string | null; presetSlotBId?: string | null }): void
+  completeCompareTutorialSession(options?: { applyAssignments?: boolean }): void
+  cancelCompareTutorialSession(): void
   openBirthdaysPanel(): void
   closeBirthdaysPanel(): void
   openSearchField(): void

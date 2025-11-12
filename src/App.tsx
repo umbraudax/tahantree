@@ -88,7 +88,7 @@ const featureSelectorMap: Record<FeatureTutorialId, string[]> = {
     '[data-tour-id="landscape-control-zoom-in"]',
     '[data-tour-id="landscape-control-zoom-out"]',
     '[data-tour-id="landscape-control-reset"]',
-  ],
+    ],
   nodeInfo: [],
 }
 
@@ -214,20 +214,20 @@ const App = () => {
                   Hover to highlight controls. Click any glowing area to launch its interactive walkthrough. Press Esc or the help button to cancel.
                 </p>
               </div>
-              <button
-                type="button"
+            <button
+              type="button"
                 onClick={() => setHelpMode(false)}
                 className="rounded-full border border-white/20 bg-white/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-white transition hover:bg-white/20"
-              >
+            >
                 Exit
-              </button>
+            </button>
             </div>
             <ul className="mt-3 space-y-2 text-xs text-white/70">
               {activeInstructions.map((feature) => (
                 <li key={feature.id} className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2">
                   <div className="text-[11px] font-semibold uppercase tracking-[0.35em] text-white/55">
                     {isMobile ? feature.mobileTitle ?? feature.desktopTitle : feature.desktopTitle}
-                  </div>
+            </div>
                   <div className="mt-1 text-xs leading-snug text-white/70">{feature.description}</div>
                 </li>
               ))}

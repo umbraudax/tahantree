@@ -74,6 +74,19 @@ body.help-mode g[data-person-id] {
   filter: drop-shadow(0 0 8px rgba(250, 204, 21, 0.45));
 }
 
+g[data-person-id] {
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+g[data-person-id]:focus {
+  outline: none;
+}
+
+g[data-person-id]:focus-visible {
+  outline: none;
+}
+
 .shepherd-element,
 .shepherd-element .shepherd-content {
   background: rgba(12, 14, 18, 0.94);
@@ -147,4 +160,24 @@ body.help-mode g[data-person-id] {
 .app-tour-highlight {
   box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.55) !important;
   border-radius: 18px;
+}
+
+.shepherd-element.app-tour-step {
+  position: fixed !important;
+  top: calc(env(safe-area-inset-top, 0px) + 88px) !important;
+  right: calc(env(safe-area-inset-right, 0px) + 24px) !important;
+  left: auto !important;
+  transform: none !important;
+  max-width: min(380px, 88vw);
+}
+
+.shepherd-element.app-tour-step .shepherd-arrow {
+  display: none !important;
+}
+
+@media (max-width: 768px) {
+  .shepherd-element.app-tour-step {
+    top: calc(env(safe-area-inset-top, 0px) + 72px) !important;
+    right: calc(env(safe-area-inset-right, 0px) + 16px) !important;
+  }
 }
