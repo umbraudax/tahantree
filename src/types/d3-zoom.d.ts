@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 declare module 'd3-zoom' {
   export interface ZoomTransform {
     x: number
