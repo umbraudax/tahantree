@@ -45,6 +45,35 @@ body.mobile-control-sheet-open #app-help-button {
   display: none;
 }
 
+.help-mode #app-help-button {
+  box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.45), 0 15px 30px rgba(0, 0, 0, 0.55);
+}
+
+body.help-mode {
+  cursor: help;
+}
+
+body.help-mode [data-tour-id],
+body.help-mode [data-tour-area],
+body.help-mode [data-tour-birthday-entry],
+body.help-mode [data-tour-birthday-day] {
+  position: relative;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.3);
+}
+
+body.help-mode [data-tour-id]:hover,
+body.help-mode [data-tour-area]:hover,
+body.help-mode [data-tour-birthday-entry]:hover,
+body.help-mode [data-tour-birthday-day]:hover {
+  box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.5);
+  transform: translateY(-1px);
+}
+
+body.help-mode g[data-person-id] {
+  filter: drop-shadow(0 0 8px rgba(250, 204, 21, 0.45));
+}
+
 .shepherd-element,
 .shepherd-element .shepherd-content {
   background: rgba(12, 14, 18, 0.94);
@@ -113,4 +142,9 @@ body.mobile-control-sheet-open #app-help-button {
 .shepherd-modal-overlay-container.shepherd-modal-is-visible {
   background: rgba(0, 0, 0, 0.72);
   backdrop-filter: blur(2px);
+}
+
+.app-tour-highlight {
+  box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.55) !important;
+  border-radius: 18px;
 }

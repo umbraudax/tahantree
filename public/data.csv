@@ -11,7 +11,7 @@ ID,First,Last,Sex,Gen,Spouse,Divorced,Mother,Father,DOB,DOD,Branch
 10,Joan,Tahan,F,2,9,FALSE,,,8/31/1935,,A Tahan
 11,Harry,Tahan,M,2,,FALSE,1,2,3/2/1921,3/12/2025,Other
 12,George,Homsany,M,3,14,FALSE,3,4,8/11/1943,,Homsany
-13,Jaci,Homsany,F,3,12,TRUE,,,6/27/1947,,Homsany
+13,Jaci,Homsany,F,3,12,TRUE,,,,,Homsany
 14,Patricia,Homsany,F,3,12,FALSE,,,1/8/1956,,Homsany
 15,Shirley,Karaty,F,3,16,FALSE,3,4,9/29/1945,,Homsany
 16,Raymond,Karaty,M,3,15,FALSE,,,9/24/1936,7/14/2023,Homsany
@@ -22,13 +22,13 @@ ID,First,Last,Sex,Gen,Spouse,Divorced,Mother,Father,DOB,DOD,Branch
 21,Joseph,Petriello,M,3,22,FALSE,5,6,2/5/1950,,Petriello
 22,Denise,Petriello,F,3,21,FALSE,,,2/2/1952,,Petriello
 23,Jane,Petriello,F,3,24,TRUE,5,6,12/31/1952,,Petriello
-24,Ken,Hawryschuck,M,3,23,TRUE,,,1/9/1950,,Petriello
+24,Ken,Hawryschuck,M,3,23,TRUE,,,,,Petriello
 25,Elaine,Farraye,F,3,26,FALSE,8,7,1/2/1954,,B Tahan
 26,Tony,Farraye,M,3,25,FALSE,,,10/6/1944,,B Tahan
 27,Kathy,Pospiech,F,3,28,FALSE,8,7,3/30/1955,,B Tahan
 28,Steve,Pospiech,M,3,27,FALSE,,,7/23/1955,,B Tahan
 29,Norman,Tahan,M,3,30,TRUE,8,7,9/22/1956,,B Tahan
-30,Kathy,Tahan,F,3,29,TRUE,,,9/25/1956,,B Tahan
+30,Kathy,Tahan,F,3,29,TRUE,,,,,B Tahan
 31,David,Tahan,M,3,32,FALSE,8,7,12/17/1958,,B Tahan
 32,Mimi,Tahan,F,3,31,FALSE,,,11/13/1958,,B Tahan
 33,Sharon,Olivo,F,3,34,FALSE,8,7,2/20/1962,,B Tahan
@@ -39,7 +39,7 @@ ID,First,Last,Sex,Gen,Spouse,Divorced,Mother,Father,DOB,DOD,Branch
 38,Albie,Tahan,M,3,39,FALSE,10,9,5/18/1961,,A Tahan
 39,Ken,Hauser,M,3,38,FALSE,,,6/6/1962,,A Tahan
 40,Michele,Tahan,F,3,41,TRUE,10,9,12/10/1968,,A Tahan
-41,Kevin,Fahrenfeld,M,3,40,TRUE,,,11/22/1969,,A Tahan
+41,Kevin,Fahrenfeld,M,3,40,TRUE,,,,,A Tahan
 42,Mark,Tahan,M,3,43,FALSE,10,9,9/25/1965,,A Tahan
 43,Deirdre,Tahan,F,3,42,FALSE,,,6/24/1960,,A Tahan
 44,Lisa,Scangarello,F,3,45,FALSE,10,9,5/4/1963,,A Tahan

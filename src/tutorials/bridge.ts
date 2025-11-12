@@ -25,6 +25,7 @@ export interface FamilyTreeTutorialBridge {
   setSearchValue(value: string): void
   highlightSearchResult(personId: string | null): void
   assignSearchResultToRole(role: 'A' | 'B'): void
+  setSearchTutorialTarget(person: Person): void
   ensureLandscapeControlsOpen(): void
   zoomBy(factor: number): void
   resetView(): void

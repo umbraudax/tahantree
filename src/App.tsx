@@ -12,61 +12,89 @@ interface FeatureEntry {
   desktopTitle: string
   mobileTitle?: string
   description: string
-  learnLabel: string
-  accent: string
 }
 
 const featureEntries: FeatureEntry[] = [
   {
     id: 'compare',
-    desktopTitle: 'A/B Comparison Menu',
-    mobileTitle: 'Assign A/B & Search Drawer',
-    description:
-      'Walk through assigning relatives into slots A & B, triggering comparisons, and interpreting the relationship summary.',
-    learnLabel: 'Learn about comparing relatives',
-    accent: 'from-amber-400/35 via-orange-400/20 to-transparent',
+    desktopTitle: 'A/B Comparison',
+    mobileTitle: 'Assign A/B',
+    description: 'Click any Select A/B control to learn how comparisons work.',
   },
   {
     id: 'birthdays',
-    desktopTitle: 'Weekly Birthday Menu',
+    desktopTitle: 'Weekly Birthdays',
     mobileTitle: 'Birthday Highlights',
-    description:
-      'See how to open the birthday planner, filter by week, and celebrate upcoming milestones across the branches.',
-    learnLabel: 'Learn about birthday planning',
-    accent: 'from-pink-400/35 via-purple-400/20 to-transparent',
+    description: 'Open the birthday panel or toggle to learn how to celebrate upcoming events.',
   },
   {
     id: 'search',
     desktopTitle: 'Find & Focus Search',
-    mobileTitle: 'Focused Search Shortcuts',
-    description:
-      'Master the search field, jump to a person instantly, and explore quick-assign shortcuts tailored to your layout.',
-    learnLabel: 'Learn about smart searching',
-    accent: 'from-sky-400/35 via-cyan-400/20 to-transparent',
+    mobileTitle: 'Search Drawer',
+    description: 'Use the search bar or drawer controls to explore locating relatives quickly.',
   },
   {
     id: 'zoom',
-    desktopTitle: 'Zoom / Reset Controls',
-    mobileTitle: 'Pinch, Zoom & Reset',
-    description:
-      'Practice zooming in and out, resetting the layout, and balancing the full tree on desktop, phone portrait, and landscape.',
-    learnLabel: 'Learn about navigation controls',
-    accent: 'from-lime-400/35 via-emerald-400/20 to-transparent',
+    desktopTitle: 'Zoom & Reset',
+    description: 'Interacting with the zoom controls or radial wheel starts the navigation walkthrough.',
   },
   {
     id: 'nodeInfo',
-    desktopTitle: 'Node Details & Highlights',
-    mobileTitle: 'Person Detail Cards',
-    description:
-      'Discover the rich tooltips, quick actions, and context glows available when you focus or tap anyone in the tree.',
-    learnLabel: 'Learn about person insights',
-    accent: 'from-amber-300/40 via-rose-300/25 to-transparent',
+    desktopTitle: 'Person Details',
+    description: 'Click any person in the tree to learn about highlights, tooltips, and node details.',
   },
 ]
 
+const featureSelectorMap: Record<FeatureTutorialId, string[]> = {
+  compare: [
+    '[data-tour-area="compare-menu"]',
+    '[data-tour-id="desktop-select-a"]',
+    '[data-tour-id="desktop-select-b"]',
+    '[data-tour-id="desktop-clear-ab"]',
+    '[data-tour-id="mobile-select-a"]',
+    '[data-tour-id="mobile-select-b"]',
+    '[data-tour-id="mobile-clear-ab"]',
+    '[data-tour-id="relationship-summary"]',
+  ],
+  birthdays: [
+    '[data-tour-area="birthdays-panel"]',
+    '[data-tour-id="desktop-birthdays-panel"]',
+    '[data-tour-id="mobile-birthdays-panel"]',
+    '[data-tour-id="mobile-birthdays-sheet"]',
+    '[data-tour-id="mobile-birthdays-toggle"]',
+    '[data-tour-birthday-entry]',
+    '[data-tour-birthday-day]'
+  ],
+  search: [
+    '[data-tour-area="search-controls"]',
+    '[data-tour-id="desktop-search-form"]',
+    '[data-tour-id="desktop-search-field"]',
+    '[data-tour-id="desktop-search-input"]',
+    '[data-tour-id="desktop-search-results"]',
+    '[data-tour-id="desktop-search-submit"]',
+    '[data-tour-id="mobile-search-form"]',
+    '[data-tour-id="mobile-search-field"]',
+    '[data-tour-id="mobile-search-input"]',
+    '[data-tour-id="mobile-search-results"]',
+    '[data-tour-id="mobile-search-submit"]',
+  ],
+  zoom: [
+    '[data-tour-area="zoom-controls"]',
+    '[data-tour-id="top-control-row"]',
+    '[data-tour-id="zoom-in-button"]',
+    '[data-tour-id="zoom-out-button"]',
+    '[data-tour-id="reset-view-button"]',
+    '[data-tour-id="landscape-control-toggle"]',
+    '[data-tour-id="landscape-control-zoom-in"]',
+    '[data-tour-id="landscape-control-zoom-out"]',
+    '[data-tour-id="landscape-control-reset"]',
+  ],
+  nodeInfo: [],
+}
+
 const App = () => {
-  const [isLauncherOpen, setLauncherOpen] = useState(false)
-  const { isMobile, isLandscape, isDesktop } = useBreakpoint()
+  const [isHelpMode, setHelpMode] = useState(false)
+  const { isMobile, isLandscape } = useBreakpoint()
   const { launchFeatureTour } = useFeatureTutorials()
   const isMobileLandscape = isMobile && isLandscape
   const helpButtonStyle = isMobileLandscape
@@ -78,35 +106,85 @@ const App = () => {
   const helpButtonPositionClasses = isMobileLandscape ? '' : 'bottom-4 left-4 md:bottom-6 md:left-6'
 
   useEffect(() => {
-    if (!isLauncherOpen) return
+    if (typeof document === 'undefined') return
+    document.body.classList.toggle('help-mode', isHelpMode)
+    return () => {
+      document.body.classList.remove('help-mode')
+    }
+  }, [isHelpMode])
+
+  const matchFeatureFromElement = useCallback((element: HTMLElement | null): FeatureTutorialId | null => {
+    if (!element) return null
+    const nodeTarget = element.closest('[data-person-id]')
+    if (nodeTarget) {
+      return 'nodeInfo'
+    }
+    const entries = Object.entries(featureSelectorMap) as Array<[FeatureTutorialId, string[]]>
+    for (const [featureId, selectors] of entries) {
+      for (const selector of selectors) {
+        const match = element.closest(selector)
+        if (match) {
+          return featureId
+        }
+      }
+    }
+    return null
+  }, [])
+
+  useEffect(() => {
+    if (!isHelpMode) return
     if (typeof document === 'undefined') return
 
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
+    const handleClickCapture = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null
+      if (!target) return
+      const helpButton = document.getElementById('app-help-button')
+      if (helpButton && (target === helpButton || helpButton.contains(target))) {
+        return
+      }
 
-    return () => {
-      document.body.style.overflow = previousOverflow
-    }
-  }, [isLauncherOpen])
+      if (target.closest('[data-help-overlay]')) {
+        return
+      }
 
-  const featureCards = useMemo(
-    () =>
-      featureEntries.map((feature) => ({
-        ...feature,
-        title: isMobile ? feature.mobileTitle ?? feature.desktopTitle : feature.desktopTitle,
-      })),
-    [isMobile],
-  )
+      const featureId = matchFeatureFromElement(target)
+      if (!featureId) {
+        event.preventDefault()
+        event.stopPropagation()
+        return
+      }
 
-  const handleLaunchFeature = useCallback(
-    (featureId: FeatureTutorialId) => {
-      setLauncherOpen(false)
+      event.preventDefault()
+      event.stopPropagation()
+      setHelpMode(false)
       requestAnimationFrame(() => {
         launchFeatureTour(featureId)
       })
-    },
-    [launchFeatureTour],
-  )
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setHelpMode(false)
+      }
+    }
+
+    document.addEventListener('click', handleClickCapture, true)
+    document.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.removeEventListener('click', handleClickCapture, true)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isHelpMode, launchFeatureTour, matchFeatureFromElement])
+
+  const activeInstructions = useMemo(() => {
+    if (!isHelpMode) return null
+    return featureEntries
+  }, [isHelpMode])
+
+  const handleHelpButtonClick = () => {
+    setHelpMode((current) => !current)
+  }
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-black text-white pb-safe-b">
@@ -117,87 +195,43 @@ const App = () => {
       <button
         id="app-help-button"
         type="button"
-        onClick={() => setLauncherOpen(true)}
-        className={`fixed z-[80] flex h-12 w-12 items-center justify-center rounded-full border border-white/30 bg-white/15 text-2xl font-semibold text-white backdrop-blur shadow-[0_15px_30px_rgba(0,0,0,0.55)] transition hover:bg-white/25 focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-black ${helpButtonPositionClasses}`}
+        onClick={handleHelpButtonClick}
+        className={`fixed z-[95] flex h-12 w-12 items-center justify-center rounded-full border border-white/30 bg-white/15 text-2xl font-semibold text-white backdrop-blur shadow-[0_15px_30px_rgba(0,0,0,0.55)] transition hover:bg-white/25 focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-black ${helpButtonPositionClasses}`}
         style={helpButtonStyle}
-        aria-haspopup="dialog"
-        aria-expanded={isLauncherOpen}
-        aria-controls="app-tutorial-dialog"
+        aria-pressed={isHelpMode}
+        aria-label={isHelpMode ? 'Exit help mode' : 'Enter help mode'}
       >
         <span aria-hidden="true">?</span>
-        <span className="sr-only">Open application tutorial</span>
       </button>
 
-      {isLauncherOpen && (
-        <div
-          id="app-tutorial-dialog"
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-[90] flex items-center justify-center px-4 py-8"
-        >
-          <div
-            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-            onClick={() => setLauncherOpen(false)}
-          />
-          <div className="relative z-[1] flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-white/15 bg-black/90 p-6 text-white shadow-[0_30px_80px_rgba(0,0,0,0.7)]">
-            <button
-              type="button"
-              onClick={() => setLauncherOpen(false)}
-              className="absolute right-5 top-5 flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-white/15 text-lg text-white backdrop-blur transition hover:bg-white/25 focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-black"
-            >
-              <span aria-hidden="true">×</span>
-              <span className="sr-only">Close tutorial</span>
-            </button>
-
-            <div className="pr-3">
-              <div className="mr-12 flex flex-col gap-3">
-                <h2 className="text-2xl font-semibold text-white">Choose a feature to walk through</h2>
-                <p className="text-sm text-white/70">
-                  {isDesktop
-                    ? 'Hover to preview and click to start a guided session. We will bring the live tree into a safe, learnable state with example relatives.'
-                    : 'Tap a card to launch the guided walkthrough. We adapt the steps to portrait, landscape, and touch layouts automatically.'}
+      {isHelpMode && activeInstructions && (
+        <div className="pointer-events-none fixed bottom-24 left-20 z-[94] max-w-sm px-4" data-help-overlay>
+          <div className="pointer-events-auto rounded-3xl border border-white/15 bg-black/80 px-5 py-4 text-sm text-white shadow-[0_20px_50px_rgba(0,0,0,0.55)] backdrop-blur">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2 className="text-base font-semibold text-white">Help mode is active</h2>
+                <p className="mt-1 text-xs text-white/70">
+                  Hover to highlight controls. Click any glowing area to launch its interactive walkthrough. Press Esc or the help button to cancel.
                 </p>
               </div>
+              <button
+                type="button"
+                onClick={() => setHelpMode(false)}
+                className="rounded-full border border-white/20 bg-white/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-white transition hover:bg-white/20"
+              >
+                Exit
+              </button>
             </div>
-
-            <div className="mt-5 flex-1 overflow-y-auto pr-1">
-              <div className="grid grid-cols-1 gap-4 pr-3 sm:grid-cols-2">
-                {featureCards.map((card) => (
-                  <button
-                    key={card.id}
-                    type="button"
-                    onClick={() => handleLaunchFeature(card.id)}
-                    className={`group relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.08] p-5 text-left transition duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black ${
-                      isDesktop
-                        ? 'hover:border-amber-300/70 hover:shadow-[0_24px_60px_rgba(251,191,36,0.22)]'
-                        : 'active:scale-[0.99] active:border-amber-200/80'
-                    }`}
-                  >
-                    <span
-                      aria-hidden="true"
-                      className={`pointer-events-none absolute inset-0 opacity-0 transition group-hover:opacity-100 ${isDesktop ? 'bg-gradient-to-br ' + card.accent : ''}`}
-                    />
-                    <div className="relative z-[1] flex items-start justify-between gap-3">
-                      <div className="flex flex-col gap-2">
-                        <span className="text-xs font-medium uppercase tracking-[0.2em] text-white/45">
-                          Guided Tutorial
-                        </span>
-                        <h3 className="text-lg font-semibold text-white">{card.title}</h3>
-                      </div>
-                      <div className="flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-white/10 text-sm font-semibold uppercase text-amber-200 shadow-[0_15px_35px_rgba(251,191,36,0.18)] transition group-hover:bg-amber-300/20">
-                        Start
-                      </div>
-                    </div>
-                    <p className="relative z-[1] mt-3 text-sm text-white/70 transition group-hover:text-white/90">
-                      {card.description}
-                    </p>
-                    <p className="relative z-[1] mt-5 text-xs font-semibold uppercase tracking-wider text-amber-300/80 transition group-hover:text-amber-200">
-                      {card.learnLabel}
-                    </p>
-                  </button>
-                ))}
-              </div>
-            </div>
+            <ul className="mt-3 space-y-2 text-xs text-white/70">
+              {activeInstructions.map((feature) => (
+                <li key={feature.id} className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.35em] text-white/55">
+                    {isMobile ? feature.mobileTitle ?? feature.desktopTitle : feature.desktopTitle}
+                  </div>
+                  <div className="mt-1 text-xs leading-snug text-white/70">{feature.description}</div>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       )}

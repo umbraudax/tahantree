@@ -1,10 +1,5 @@
 import { useCallback, useRef } from 'react'
-import Shepherd, {
-  type StepOptions,
-  type StepOptionsButton,
-  type Tour,
-  type TourOptions,
-} from 'shepherd.js'
+import Shepherd, { type StepOptions, type Tour, type TourOptions } from 'shepherd.js'
 
 export type GuidedTourStep = StepOptions
 
@@ -13,45 +8,6 @@ export interface GuidedTourConfig {
   tourOptions?: TourOptions
   onCancel?: () => void
   onComplete?: () => void
-}
-
-type ShepherdButton = StepOptionsButton
-
-const buildDefaultButtons = (
-  index: number,
-  total: number,
-  tour: Tour,
-  existing?: ReadonlyArray<ShepherdButton>,
-) => {
-  if (existing && existing.length > 0) {
-    return existing
-  }
-
-  const buttons: ShepherdButton[] = []
-
-  if (index > 0) {
-    buttons.push({
-      text: 'Back',
-      classes: 'app-tour-button-secondary',
-      action() {
-        tour.back()
-      },
-    })
-  }
-
-  buttons.push({
-    text: index === total - 1 ? 'Finish' : 'Next',
-    classes: 'app-tour-button-primary',
-    action() {
-      if (index === total - 1) {
-        tour.complete()
-        return
-      }
-      tour.next()
-    },
-  })
-
-  return buttons
 }
 
 export const useGuidedTour = () => {
@@ -80,9 +36,10 @@ export const useGuidedTour = () => {
           modalOverlayOpeningPadding: 6,
           modalOverlayOpeningRadius: 12,
           classes: 'app-tour-step',
+          highlightClass: 'app-tour-highlight',
           ...config.tourOptions?.defaultStepOptions,
         },
-        useModalOverlay: true,
+        useModalOverlay: false,
         exitOnEsc: true,
         keyboardNavigation: true,
         ...config.tourOptions,
@@ -92,7 +49,7 @@ export const useGuidedTour = () => {
         tour.addStep({
           ...step,
           id: step.id ?? `app-tour-step-${index}`,
-          buttons: buildDefaultButtons(index, config.steps.length, tour, step.buttons),
+          buttons: step.buttons ?? [],
         })
       })
 

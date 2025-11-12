@@ -25,6 +25,7 @@ import BirthdaysWeekSlice from './BirthdaysWeekSlice'
 import { computeBirthdaysForCurrentWeek } from '../utils/birthdays'
 import { getBranchColor, withAlpha } from '../utils/colors'
 import { describeRelationship } from '../utils/relationships'
+import { setTutorialBridge, type FamilyTreeTutorialBridge } from '../tutorials/bridge'
 const slugifyBranch = (branch: string) => branch.toLowerCase().replace(/[^a-z0-9]+/g, '-')
 const MIN_SCALE = 0.05
 const INITIAL_MIN_SCALE = 0.35
@@ -271,7 +272,7 @@ const formatAgeDifferenceSentence = (
 // }
 
 export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
-  const { isMobile, isTablet, isLandscape, height } = useBreakpoint()
+  const { isMobile, isTablet, isLandscape, isDesktop, height } = useBreakpoint()
   const isMobileLandscape = isMobile && isLandscape
   const isMobilePortrait = isMobile && !isLandscape
   const layoutDensity = isMobileLandscape ? 'cozy' : isMobile ? 'compact' : isTablet ? 'cozy' : 'default'
@@ -323,6 +324,10 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     offset: { x: 0, y: 0 },
     world: null,
   })
+  const tutorialSearchTargetRef = useRef<string | null>(null)
+  const tutorialSearchTargetNameRef = useRef<string | null>(null)
+  const tutorialSearchMatchedRef = useRef(false)
+
   const captureViewportAnchor = useCallback(
     (transform: ZoomTransform | null) => {
       if (!transform) return
@@ -1009,6 +1014,14 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       setSearchFeedback(null)
     }
     setSearchActiveIndex(null)
+    tutorialSearchMatchedRef.current = false
+    if (tutorialSearchTargetNameRef.current) {
+      const typed = event.target.value.trim().toLowerCase()
+      const target = tutorialSearchTargetNameRef.current.trim().toLowerCase()
+      if (typed.length > 0 && target.startsWith(typed) && typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('tutorial:searchTyping', { detail: { typed } }))
+      }
+    }
   }
 
   const handleSearchFocus = useCallback(() => {
@@ -1276,6 +1289,12 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     setSelectionMode('none')
     setSelectedPersonId(null)
     collapseAllDetails()
+    tutorialSearchTargetRef.current = null
+    tutorialSearchTargetNameRef.current = null
+    tutorialSearchMatchedRef.current = false
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('tutorial:compareCleared'))
+    }
   }, [collapseAllDetails])
 
   const toggleLegend = () => {
@@ -1299,6 +1318,10 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
 
       if (isMobile) {
         openControlSheet()
+      }
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent(role === 'A' ? 'tutorial:compareSelectedA' : 'tutorial:compareSelectedB'))
       }
     },
     [isMobile, openControlSheet],
@@ -1362,6 +1385,210 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     if (!svgRef.current || !zoomBehaviorRef.current) return
     select(svgRef.current).call(zoomBehaviorRef.current.translateBy as never, dx, dy)
   }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    const randomFrom = <T,>(items: T[]): T | null => {
+      if (items.length === 0) return null
+      const index = Math.floor(Math.random() * items.length)
+      return items[index] ?? null
+    }
+
+    const buildPersonPool = (options?: { excludeIds?: string[]; preferLiving?: boolean }) => {
+      const excludeIds = options?.excludeIds ?? []
+      const excludeSet = excludeIds.length > 0 ? new Set(excludeIds) : null
+      return graph.people.filter((person) => {
+        if (excludeSet?.has(person.id)) return false
+        if (options?.preferLiving && person.dod) return false
+        return true
+      })
+    }
+
+    const getRandomPerson = (options?: { excludeIds?: string[]; preferLiving?: boolean }) => {
+      const pool = buildPersonPool(options)
+      return randomFrom(pool)
+    }
+
+    const getRandomPair = (options?: { excludeIds?: string[]; preferLiving?: boolean }) => {
+      const first = getRandomPerson(options)
+      if (!first) return null
+
+      const second = getRandomPerson({
+        ...options,
+        excludeIds: [...(options?.excludeIds ?? []), first.id],
+      })
+
+      if (!second) return null
+      return { a: first, b: second }
+    }
+
+    const getRandomBirthdayEntry = () => {
+      const daysWithEntries = birthdaysWeek.filter((day) => day.entries.length > 0)
+      const day = randomFrom(daysWithEntries)
+      if (!day) return null
+
+      const entry = randomFrom(day.entries)
+      if (!entry) return null
+
+      return {
+        dateLabel: `${day.weekdayName} ${day.dateLabel}`,
+        isoDate: day.isoDate,
+        person: entry.person,
+      }
+    }
+
+    const bridge: FamilyTreeTutorialBridge = {
+      context: {
+        isMobile,
+        isMobileLandscape,
+        isMobilePortrait,
+        isDesktop,
+      },
+      getPersonById: (personId) => graph.peopleById[personId] ?? null,
+      getRandomPerson,
+      getRandomPair,
+      getRandomBirthdayEntry,
+      focusOnPerson: (personId) => {
+        if (!personId) return
+        centerOnPerson(personId)
+        setSelectedPersonId(personId)
+        setHoveredPersonId(personId)
+      },
+      highlightPerson: (personId) => {
+        setHoveredPersonId(personId)
+      },
+      setSelectedPerson: (personId) => {
+        setSelectedPersonId(personId)
+      },
+      assignPersonToRole: (personId, role, options) => {
+        assignPersonToRole(personId, role, options)
+      },
+      beginSelection: (mode) => {
+        beginSelection(mode)
+      },
+      clearSelections: () => {
+        clearSelections()
+      },
+      openControlSheet: () => {
+        if (isMobile) {
+          openControlSheet()
+        }
+      },
+      closeControlSheet: () => {
+        if (isMobile) {
+          closeControlSheet()
+        }
+      },
+      openBirthdaysPanel: () => {
+        if (isMobilePortrait) {
+          setBirthdaysSheetOpen(true)
+        }
+      },
+      closeBirthdaysPanel: () => {
+        setBirthdaysSheetOpen(false)
+      },
+      openSearchField: () => {
+        if (isMobile && !isMobileLandscape) {
+          openControlSheet()
+        }
+        setSearchFocused(true)
+        focusSearchInput()
+      },
+      setSearchValue: (value) => {
+        setSearchValue(value)
+        setSearchActiveIndex(null)
+      },
+      highlightSearchResult: (personId) => {
+        if (!personId) {
+          setSearchActiveIndex(null)
+          setLastSearchResultId(null)
+          return
+        }
+
+        const index = searchMatches.findIndex((candidate) => candidate.id === personId)
+        setSearchActiveIndex(index >= 0 ? index : null)
+        setLastSearchResultId(personId)
+      },
+      assignSearchResultToRole: (role) => {
+        assignLastSearchResultToRole(role)
+      },
+      setSearchTutorialTarget: (person) => {
+        tutorialSearchTargetRef.current = person.id
+        tutorialSearchTargetNameRef.current = person.fullName
+        tutorialSearchMatchedRef.current = false
+        setSearchValue('')
+        setLastSearchResultId(null)
+        setSearchActiveIndex(null)
+        setSearchFeedback(`Type "${person.fullName}" to find them.`)
+        setSearchFocused(true)
+        focusSearchInput()
+      },
+      ensureLandscapeControlsOpen: () => {
+        if (isMobileLandscape && !isLandscapeControlsOpen) {
+          setLandscapeControlsOpen(true)
+        }
+      },
+      zoomBy: (factor) => {
+        zoomByFactor(factor)
+      },
+      resetView: () => {
+        resetView()
+      },
+    }
+
+    setTutorialBridge(bridge)
+
+    return () => {
+      if (window.__familyTreeTutorialBridge__ === bridge) {
+        setTutorialBridge(null)
+      }
+    }
+  }, [
+    assignLastSearchResultToRole,
+    assignPersonToRole,
+    beginSelection,
+    birthdaysWeek,
+    centerOnPerson,
+    clearSelections,
+    closeControlSheet,
+    focusSearchInput,
+    graph.people,
+    graph.peopleById,
+    isDesktop,
+    isLandscapeControlsOpen,
+    isMobile,
+    isMobileLandscape,
+    isMobilePortrait,
+    openControlSheet,
+    resetView,
+    searchMatches,
+    setBirthdaysSheetOpen,
+    setHoveredPersonId,
+    setLastSearchResultId,
+    setLandscapeControlsOpen,
+    setSearchActiveIndex,
+    setSearchFocused,
+    setSearchValue,
+    setSelectedPersonId,
+    zoomByFactor,
+  ])
+
+  useEffect(() => {
+    const targetId = tutorialSearchTargetRef.current
+    if (!targetId) return
+    if (tutorialSearchMatchedRef.current) return
+    const matchIndex = searchMatches.findIndex((person) => person.id === targetId)
+    if (matchIndex === -1) return
+
+    tutorialSearchMatchedRef.current = true
+    setSearchActiveIndex(matchIndex)
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('tutorial:searchTargetMatched'))
+    }
+  }, [searchMatches])
 
   const legendShortcutActiveRef = useRef(false)
   const legendShortcutRestoreRef = useRef(false)
@@ -1507,6 +1734,9 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       }
 
       setSelectedPersonId(person.id)
+      tutorialSearchTargetRef.current = null
+      tutorialSearchTargetNameRef.current = null
+      tutorialSearchMatchedRef.current = false
     },
     [centerOnPerson, isMobileLandscape, resetControlSheetPosition],
   )
@@ -1765,30 +1995,40 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
   const relationshipPanelTextClass = isMobile ? 'text-[11px] leading-snug' : 'text-sm leading-snug'
   const relationshipPanelLineClass = `${relationshipPanelTextClass} text-center text-white`
 
-  const relationshipPanelContent =
-    relationshipSummary && personA && personB ? (
-      <div className={`${relationshipPanelSpacingClass} text-center`}>
-        <div className={relationshipPanelLineClass}>
-          {personA.fullName} is {relationshipSummary.fromAToB} of {personB.fullName}
-        </div>
-        <div className={relationshipPanelLineClass}>
-          {personB.fullName} is {relationshipSummary.fromBToA} of {personA.fullName}
-        </div>
-        <div className={relationshipPanelLineClass}>
-          {relationshipSummary.ageDifferenceSentence ?? 'Age difference unavailable'}
-        </div>
-      </div>
-    ) : isMobile ? (
-      <div className="text-center text-[11px] leading-snug text-white/70">Choose two people to see their relationship.</div>
-    ) : (
-      <div className="text-center text-sm leading-snug text-white/70">Choose two people to see their relationship.</div>
-    )
+  const relationshipPanelContent = (
+    <div
+      className={
+        relationshipSummary && personA && personB
+          ? `${relationshipPanelSpacingClass} text-center`
+          : `text-center ${isMobile ? 'text-[11px] leading-snug text-white/70' : 'text-sm leading-snug text-white/70'}`
+      }
+      data-tour-id="relationship-summary"
+    >
+      {relationshipSummary && personA && personB ? (
+        <>
+          <div className={relationshipPanelLineClass}>
+            {personA.fullName} is {relationshipSummary.fromAToB} of {personB.fullName}
+          </div>
+          <div className={relationshipPanelLineClass}>
+            {personB.fullName} is {relationshipSummary.fromBToA} of {personA.fullName}
+          </div>
+          <div className={relationshipPanelLineClass}>
+            {relationshipSummary.ageDifferenceSentence ?? 'Age difference unavailable'}
+          </div>
+        </>
+      ) : (
+        'Choose two people to see their relationship.'
+      )}
+    </div>
+  )
+
   const topControlsContent = !isMobileLandscape && (
     <>
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center justify-between gap-2" data-tour-id="top-control-row" data-tour-area="zoom-controls">
         <div className="flex items-center gap-2">
           <button
             type="button"
+            data-tour-id="zoom-out-button"
             className="grid h-9 w-9 place-items-center rounded-full border border-white/20 bg-black/45 text-lg text-white transition hover:bg-black/35"
             onClick={() => zoomByFactor(0.8)}
             aria-label="Zoom out"
@@ -1797,6 +2037,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
           </button>
           <button
             type="button"
+            data-tour-id="zoom-in-button"
             className="grid h-9 w-9 place-items-center rounded-full border border-white/20 bg-black/45 text-lg text-white transition hover:bg-black/35"
             onClick={() => zoomByFactor(1.2)}
             aria-label="Zoom in"
@@ -1806,6 +2047,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
         </div>
         <button
           type="button"
+          data-tour-id="reset-view-button"
           className="rounded-full border border-white/20 bg-black/45 px-3 py-2 text-[10px] font-semibold uppercase tracking/[0.35em] text-white transition hover:bg-black/35 md:text-[11px]"
           onClick={resetView}
         >
@@ -1825,11 +2067,17 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
 
       {!isMobile && (
         <>
-          <form className="mt-3 flex w-full flex-wrap items-start gap-2" onSubmit={handleSearchSubmit}>
-            <div className="relative w-full flex-1">
+          <form
+            className="mt-3 flex w/full flex-wrap items-start gap-2"
+            data-tour-id="desktop-search-form"
+            data-tour-area="search-controls"
+            onSubmit={handleSearchSubmit}
+          >
+            <div className="relative w/full flex-1" data-tour-id="desktop-search-field">
               <input
                 ref={searchInputRef}
                 type="search"
+                data-tour-id="desktop-search-input"
                 placeholder="Find a person"
                 value={searchValue}
                 onChange={handleSearchChange}
@@ -1847,7 +2095,8 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
               {showSearchResults && (
                 <div
                   ref={searchResultsRef}
-                  className="pointer-events-auto absolute left-0 top-full z-10 mt-2 w-full overflow-hidden rounded-2xl border border-white/20 bg-black/45 shadow-[0_16px_40px_rgba(0,0,0,0.45)] backdrop-blur"
+                  data-tour-id="desktop-search-results"
+                  className="pointer-events-auto absolute left-0 top-full z-10 mt-2 w/full overflow-hidden rounded-2xl border border-white/20 bg-black/45 shadow-[0_16px_40px_rgba(0,0,0,0.45)] backdrop-blur"
                 >
                   {searchMatches.length > 0 ? (
                     <ul className="divide-y divide-white/5">
@@ -1858,7 +2107,8 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
                           <li key={person.id}>
                             <button
                               type="button"
-                              className={`flex w-full flex-col gap-1 px-3 py-2 text-left text-xs text-white transition hover:bg-white/12 hover:backdrop-blur-sm focus:bg-white/12 focus:backdrop-blur-sm focus:outline-none ${
+                              data-tour-search-result={person.id}
+                              className={`flex w/full flex-col gap-1 px-3 py-2 text-left text-xs text-white transition hover:bg-white/12 hover:backdrop-blur-sm focus:bg-white/12 focus:backdrop-blur-sm focus:outline-none ${
                                 isActive ? 'bg-white/20 text-white backdrop-blur-sm ring-1 ring-white/25' : ''
                               }`}
                               onMouseDown={(event) => event.preventDefault()}
@@ -1891,6 +2141,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
             </div>
             <button
               type="submit"
+              data-tour-id="desktop-search-submit"
               className="rounded-full border border-white/20 bg-black/45 px-3 py-2 text-[10px] font-semibold uppercase tracking/[0.35em] text-white transition hover:bg-black/35 md:text-[11px]"
             >
               Search
@@ -1920,7 +2171,8 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
           <button
             type="button"
             onClick={() => beginSelection('selectA')}
-            className={`rounded-full border border-white/25 bg-black/45 px-3 text-[10px] font-semibold uppercase tracking-[0.3em] text-white backdrop-blur transition hover:bg-black/35 ${personCardButtonPaddingClass}`}
+            data-tour-id="mobile-select-a"
+            className={`rounded-full border border-white/25 bg-black/45 px-3 text-[10px] font-semibold uppercase tracking/[0.3em] text-white backdrop-blur transition hover:bg-black/35 ${personCardButtonPaddingClass}`}
           >
             {isSelectingA ? 'Selecting…' : 'Select'}
           </button>
@@ -1928,7 +2180,8 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
             <button
               type="button"
               onClick={() => assignLastSearchResultToRole('A')}
-              className={`rounded-full border border-white/25 bg-black/45 px-3 text-[10px] font-semibold uppercase tracking-[0.3em] text-white backdrop-blur transition hover:bg-black/35 ${personCardButtonPaddingClass}`}
+              data-tour-id="mobile-assign-search-a"
+              className={`rounded-full border border-white/25 bg-black/45 px-3 text-[10px] font-semibold uppercase tracking/[0.3em] text-white backdrop-blur transition hover:bg-black/35 ${personCardButtonPaddingClass}`}
             >
               + Search
             </button>
@@ -1952,7 +2205,8 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
           <button
             type="button"
             onClick={() => beginSelection('selectB')}
-            className={`rounded-full border border-white/25 bg-black/45 px-3 text-[10px] font-semibold uppercase tracking-[0.3em] text-white backdrop-blur transition hover:bg-black/35 ${personCardButtonPaddingClass}`}
+            data-tour-id="mobile-select-b"
+            className={`rounded-full border border-white/25 bg-black/45 px-3 text-[10px] font-semibold uppercase tracking/[0.3em] text-white backdrop-blur transition hover:bg-black/35 ${personCardButtonPaddingClass}`}
           >
             {isSelectingB ? 'Selecting…' : 'Select'}
           </button>
@@ -1960,7 +2214,8 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
             <button
               type="button"
               onClick={() => assignLastSearchResultToRole('B')}
-              className={`rounded-full border border-white/25 bg-black/45 px-3 text-[10px] font-semibold uppercase tracking-[0.3em] text-white backdrop-blur transition hover:bg-black/35 ${personCardButtonPaddingClass}`}
+              data-tour-id="mobile-assign-search-b"
+              className={`rounded-full border border-white/25 bg-black/45 px-3 text-[10px] font-semibold uppercase tracking/[0.3em] text-white backdrop-blur transition hover:bg-black/35 ${personCardButtonPaddingClass}`}
             >
               + Search
             </button>
@@ -1970,11 +2225,17 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
     </div>
   )
   const mobileSearchForm = showMobileSearch ? (
-    <form className={mobileSearchFormClass} onSubmit={handleSearchSubmit}>
-      <div className="relative w-full flex-1" style={mobileSearchInputWrapperStyle}>
+    <form
+      className={mobileSearchFormClass}
+      data-tour-id="mobile-search-form"
+      data-tour-area="search-controls"
+      onSubmit={handleSearchSubmit}
+    >
+      <div className="relative w/full flex-1" data-tour-id="mobile-search-field" style={mobileSearchInputWrapperStyle}>
         <input
           ref={searchInputRef}
           type="search"
+          data-tour-id="mobile-search-input"
           placeholder="Find a person"
           value={searchValue}
           onChange={handleSearchChange}
@@ -1992,7 +2253,8 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
         {showSearchResults && (
           <div
             ref={searchResultsRef}
-            className="pointer-events-auto absolute left-0 top-full z-10 mt-2 w-full overflow-hidden rounded-2xl border border-white/20 bg-black/45 shadow-[0_16px_40px_rgba(0,0,0,0.45)] backdrop-blur"
+            data-tour-id="mobile-search-results"
+            className="pointer-events-auto absolute left-0 top-full z-10 mt-2 w/full overflow-hidden rounded-2xl border border-white/20 bg-black/45 shadow-[0_16px_40px_rgba(0,0,0,0.45)] backdrop-blur"
           >
             {searchMatches.length > 0 ? (
               <ul className="divide-y divide-white/5">
@@ -2003,7 +2265,8 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
                     <li key={person.id}>
                       <button
                         type="button"
-                        className={`flex w-full flex-col gap-1 px-3 py-2 text-left text-xs text-white transition hover:bg-black/35 focus:bg-black/35 focus:outline-none ${
+                        data-tour-search-result={person.id}
+                        className={`flex w/full flex-col gap-1 px-3 py-2 text-left text-xs text-white transition hover:bg-black/35 focus:bg-black/35 focus:outline-none ${
                           isActive ? 'bg-black/35 backdrop-blur-sm' : ''
                         }`}
                         onMouseDown={(event) => event.preventDefault()}
@@ -2036,7 +2299,8 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
       </div>
       <button
         type="submit"
-        className="flex-shrink-0 rounded-full border border-white/20 bg-black/45 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-black/35"
+        data-tour-id="mobile-search-submit"
+        className="flex-shrink-0 rounded-full border border-white/20 bg-black/45 px-3 py-2 text-[11px] font-semibold uppercase tracking/[0.2em] text-white transition hover:bg-black/35"
       >
         Search
       </button>
@@ -2299,7 +2563,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
       assignPersonToRole(personId, role)
       setHoveredSelection({ personId, half })
     },
-    [assignPersonToRole, selectionMode],
+    [assignPersonToRole, isMobile, selectionMode],
   )
 
   if (!layout) {
@@ -2719,6 +2983,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
                 <button
                   key={control.key}
                   type="button"
+                  data-tour-id={`landscape-control-${control.key}`}
                   onClick={() => {
                     control.onClick()
                     if (control.autoClose) {
@@ -2744,6 +3009,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
             <button
               type="button"
               onClick={() => setLandscapeControlsOpen((current) => !current)}
+              data-tour-id="landscape-control-toggle"
               className="absolute left-0 top-0 grid h-14 w-14 place-items-center rounded-full border border-white/25 bg-black/45 text-white shadow-[0_12px_32px_rgba(0,0,0,0.45)] backdrop-blur transition hover:bg-black/35 focus:outline-none focus-ring-2 focus-ring-white/50 focus-ring-offset-2 focus-ring-offset-black"
               aria-expanded={isLandscapeControlsOpen}
               aria-controls="landscape-control-panel"
@@ -2852,11 +3118,15 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
       {!isMobile && (
         <div className="pointer-events-none fixed inset-x-0 bottom-6 flex w-full justify-center px-4 text-xs text-white">
           <div className="flex w/full max-w-[1200px] flex-col items-stretch gap-6 md:flex-row md:items-end md:justify-between md:gap-12">
-            <div className="pointer-events-auto min-h-[121.2px] order-2 flex w/full flex-col gap-3 rounded-3xl border border-white/20 bg-black/45 px-6 py-5 shadow-[0_24px_60px_rgba(0,0,0,0.55)] backdrop-blur md:order-1 md:flex-[1_1_0%]">
-               <div className="flex w/full flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div
+              className="pointer-events-auto min-h-[121.2px] order-2 flex w-full flex-col gap-3 rounded-3xl border border-white/20 bg-black/45 px-6 py-5 shadow-[0_24px_60px_rgba(0,0,0,0.55)] backdrop-blur md:order-1 md:flex-[1_1_0%]"
+              data-tour-area="compare-menu"
+            >
+              <div className="flex w/full flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex flex-wrap items-center gap-3">
                   <button
                     type="button"
+                    data-tour-id="desktop-select-a"
                     onClick={() => beginSelection('selectA')}
                     className={`rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase tracking/[0.2em] backdrop-blur transition ${
                       isSelectingA
@@ -2874,6 +3144,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
                 <div className="flex flex-wrap items-center gap-3">
                   <button
                     type="button"
+                    data-tour-id="desktop-select-b"
                     onClick={() => beginSelection('selectB')}
                     className={`rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase tracking/[0.2em] backdrop-blur transition ${
                       isSelectingB
@@ -2891,6 +3162,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
                 <div className="flex justify-center lg:justify-end">
                   <button
                     type="button"
+                    data-tour-id="desktop-clear-ab"
                     onClick={clearSelections}
                     className={`rounded-full border border-white/25 bg-black/45 px-3 py-2 text-[10px] font-semibold uppercase tracking/[0.35em] text-white backdrop-blur transition hover:bg-black/35 ${personCardButtonPaddingClass}`}
                   >
@@ -2905,7 +3177,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
               )}
               {relationshipPanelContent}
             </div>
-            <div className="pointer-events-auto order-1 md:order-2 md:ml-10 md:w-[420px]">
+            <div className="pointer-events-auto order-1 md:order-2 md:ml-10 md:w-[420px]" data-tour-area="birthdays-panel">
               <BirthdaysWeekSlice week={birthdaysWeek} onSelectPerson={handleBirthdayPersonSelect} className="w-full" />
             </div>
           </div>
@@ -2923,6 +3195,8 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
 
           <div
             id="mobile-control-sheet"
+            data-tour-id="mobile-control-sheet"
+            data-tour-area="mobile-controls"
             className={`fixed inset-x-0 bottom-0 z-50 transform ${
               isControlSheetDragging ? '' : 'transition-transform duration-300 ease-out'
             } ${isControlSheetOpen ? 'translate-y-0' : 'translate-y-full'}`}
@@ -2959,6 +3233,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
                       <button
                         type="button"
                         onClick={clearSelections}
+                        data-tour-id="mobile-clear-ab"
                         className={`rounded-full border border-white/25 bg-black/45 px-3 py-2 text-[10px] font-semibold uppercase tracking/[0.35em] text-white backdrop-blur transition hover:bg-black/35 ${personCardButtonPaddingClass}`}
                       >
                         Clear A &amp; B
@@ -2986,6 +3261,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
                     <button
                       type="button"
                       onClick={clearSelections}
+                      data-tour-id="mobile-clear-ab"
                       className={`rounded-full border border-white/25 bg-black/45 px-3 py-2 text-[10px] font-semibold uppercase tracking/[0.35em] text-white backdrop-blur transition hover:bg-black/35 ${personCardButtonPaddingClass}`}
                     >
                       Clear A &amp; B
@@ -3016,6 +3292,8 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
             className={`fixed inset-x-0 bottom-0 z-[60] transform ${
               isBirthdaysSheetDragging ? '' : 'transition-transform duration-300 ease-out'
             } ${isBirthdaysSheetOpen ? 'translate-y-0' : 'translate-y-full'}`}
+            data-tour-id="mobile-birthdays-sheet"
+            data-tour-area="birthdays-panel"
             role="dialog"
             aria-label="Birthdays this week"
             style={{
@@ -3058,6 +3336,8 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
           type="button"
           onClick={toggleBirthdaysSheet}
           disabled={!hasAnyBirthdaysThisWeek}
+          data-tour-id="mobile-birthdays-toggle"
+          data-tour-area="birthdays-panel"
           className={`fixed z-[55] rounded-full border px-4 py-2 text-[11px] font-semibold uppercase tracking/[0.35em] transition ${
             hasAnyBirthdaysThisWeek
               ? 'border-white/25 bg-black/45 text-white hover:bg-black/35'

@@ -199,7 +199,7 @@ const BirthdaysWeekSlice = ({
 
   if (variant === 'mobile') {
     return (
-      <div ref={containerRef} className={containerClasses}>
+      <div ref={containerRef} className={containerClasses} data-tour-id="mobile-birthdays-panel">
         {daysWithBirthdays.length === 0 ? (
           <p className="w-full text-center text-sm font-semibold uppercase tracking-[0.2em] text-white/65">
             No birthdays this week!
@@ -224,6 +224,7 @@ const BirthdaysWeekSlice = ({
   return (
     <div
       ref={containerRef}
+      data-tour-id="desktop-birthdays-panel"
       className={containerClasses}
       onPointerLeave={() => {
         if (activeDayIndex === null) {

@@ -43,8 +43,8 @@ const buildCompareTour: TourBuilder = (bridge) => {
         id: 'compare-start',
         title: 'Start with slot A',
         text: bridge.context.isMobile
-          ? 'Tap the Select button for Person A. This opens the picker so you can assign the first relative.'
-          : 'Click Select A to begin tagging your first relative in the comparison tray.',
+          ? 'Tap the Select button for Person A. This keeps the drawer open so you can choose the relative next.'
+          : 'Click Select A to arm the tray. Next you will click the relative who should occupy slot A.',
         attachTo: attachToSelector(selectASelector),
         advanceOn: { selector: selectASelector, event: 'click' },
         beforeShowPromise: async () => {
@@ -57,22 +57,32 @@ const buildCompareTour: TourBuilder = (bridge) => {
         id: 'compare-set-a',
         title: `Choose ${pair.a.fullName}`,
         text: bridge.context.isMobile
-          ? `Now tap ${pair.a.fullName} on the tree to set them as Person A. The tree glows while the picker is active.`
-          : `Click ${pair.a.fullName} on the canvas to assign them to slot A. Hover text and colors show who is connected.`,
+          ? `Tap ${pair.a.fullName} on the tree now. Watch how the selection glow confirms that A has been assigned.`
+          : `Click ${pair.a.fullName} on the tree to lock them into slot A. Notice the glow around the selected branch.`,
         attachTo: { element: personASelector, on: undefined },
-        advanceOn: { selector: personASelector, event: 'pointerup' },
         beforeShowPromise: async () => {
           bridge.focusOnPerson(pair.a.id)
           bridge.highlightPerson(pair.a.id)
           await waitForElement(() => document.querySelector(personASelector))
+        },
+        when: {
+          show() {
+            const handle = () => {
+              this.tour.next()
+            }
+            window.addEventListener('tutorial:compareSelectedA', handle, { once: true })
+            this.once('hide', () => {
+              window.removeEventListener('tutorial:compareSelectedA', handle)
+            })
+          },
         },
       },
       {
         id: 'compare-start-b',
         title: 'Set up slot B',
         text: bridge.context.isMobile
-          ? 'Open the controls again and tap Select for Person B.'
-          : 'Click Select B to start picking another relative to compare.',
+          ? 'Open the drawer again and tap Select for Person B so we can capture the second relative.'
+          : 'Click Select B to move the tray into selection mode for the second relative.',
         attachTo: attachToSelector(selectBSelector),
         advanceOn: { selector: selectBSelector, event: 'click' },
         beforeShowPromise: async () => {
@@ -85,40 +95,69 @@ const buildCompareTour: TourBuilder = (bridge) => {
         id: 'compare-set-b',
         title: `Choose ${pair.b.fullName}`,
         text: bridge.context.isMobile
-          ? `Tap ${pair.b.fullName} to complete the comparison. We will highlight both relatives for you.`
-          : `Click ${pair.b.fullName} on the tree to fill slot B. Watch the relationship summary update instantly.`,
+          ? `Tap ${pair.b.fullName} on the tree to complete the comparison. Notice how both relatives now glow.`
+          : `Click ${pair.b.fullName} to fill slot B. The comparison tray and highlights update immediately.`,
         attachTo: { element: personBSelector, on: undefined },
-        advanceOn: { selector: personBSelector, event: 'pointerup' },
         beforeShowPromise: async () => {
           bridge.focusOnPerson(pair.b.id)
           bridge.highlightPerson(pair.b.id)
           await waitForElement(() => document.querySelector(personBSelector))
+        },
+        when: {
+          show() {
+            const handle = () => {
+              this.tour.next()
+            }
+            window.addEventListener('tutorial:compareSelectedB', handle, { once: true })
+            this.once('hide', () => {
+              window.removeEventListener('tutorial:compareSelectedB', handle)
+            })
+          },
         },
       },
       {
         id: 'compare-summary',
         title: 'Read the relationship summary',
         text: bridge.context.isMobile
-          ? 'Open the control sheet to review how these relatives connect. The panel spells out the relationship both ways, plus age differences.'
-          : 'The summary explains the relationship in both directions and highlights age differences. You can keep this visible while you explore.',
+          ? 'Open the drawer to review the summary. Read through each line to understand how these relatives are connected.'
+          : 'Review the relationship summary. It spells out the connection in both directions and includes age offsets.',
         attachTo: attachToSelector(summarySelector),
         beforeShowPromise: async () => {
           openControls()
           await waitForElement(summarySelector)
         },
+        buttons: [
+          {
+            text: 'Continue',
+            classes: 'app-tour-button-primary',
+            action() {
+              this.next()
+            },
+          },
+        ],
       },
       {
         id: 'compare-clear',
         title: 'Reset when you are done',
         text: bridge.context.isMobile
-          ? 'Tap Clear A & B to start a new comparison. Try mixing relatives from different branches.'
-          : 'Click Clear A & B anytime to wipe the slots and run another comparison.',
+          ? 'Tap Clear A & B to reset the tray. You can now repeat the flow with any other relatives.'
+          : 'Click Clear A & B to reset the comparison. Try experimenting with other relatives afterwards.',
         attachTo: attachToSelector(clearSelector),
-        advanceOn: { selector: clearSelector, event: 'click' },
         beforeShowPromise: async () => {
           openControls()
           const element = await waitForElement(clearSelector)
           element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        },
+        when: {
+          show() {
+            const handle = () => {
+              this.tour.next()
+            }
+            window.addEventListener('tutorial:compareCleared', handle, { once: true })
+            this.once('hide', () => {
+              window.removeEventListener('tutorial:compareCleared', handle)
+            })
+          },
         },
       },
     ],
@@ -151,7 +190,7 @@ const buildBirthdaysTour: TourBuilder = (bridge) => {
         {
           id: 'birthdays-open-mobile',
           title: 'Open the birthdays tray',
-          text: 'Tap the Birthdays button to slide up this week’s celebrations.',
+          text: 'Tap the Birthdays button at the bottom of the tree. We will keep the sheet open while you interact.',
           attachTo: attachToSelector(toggleSelector),
           advanceOn: { selector: toggleSelector, event: 'click' },
           beforeShowPromise: async () => {
@@ -162,7 +201,7 @@ const buildBirthdaysTour: TourBuilder = (bridge) => {
         {
           id: 'birthdays-highlight-entry',
           title: `${entry.person.fullName} has a birthday`,
-          text: `Tap ${entry.person.fullName} in the list to jump straight to their place in the tree.`,
+          text: `Tap ${entry.person.fullName} in the list to jump straight to their place in the tree and close the sheet automatically.`,
           attachTo: attachToSelector(entrySelector),
           advanceOn: { selector: entrySelector, event: 'click' },
           beforeShowPromise: async () => {
@@ -173,7 +212,7 @@ const buildBirthdaysTour: TourBuilder = (bridge) => {
         {
           id: 'birthdays-focus',
           title: 'Celebrate in context',
-          text: 'The tree recenters on the selected person so you can explore their branch or assign them to a comparison slot.',
+          text: 'When the tree recenters on the birthday person, explore the branch glow and consider starting a comparison from here.',
           attachTo: { element: `g[data-person-id="${entry.person.id}"]`, on: undefined },
           beforeShowPromise: async () => {
             bridge.focusOnPerson(entry.person.id)
@@ -199,7 +238,7 @@ const buildBirthdaysTour: TourBuilder = (bridge) => {
       {
         id: 'birthdays-locate-panel',
         title: 'Weekly birthday planner',
-        text: 'This panel keeps upcoming celebrations for the current week at your fingertips.',
+        text: 'Hover this panel to reveal the planner. We keep the birthdays for the current week grouped by day.',
         attachTo: attachToSelector(panelSelector),
         beforeShowPromise: async () => {
           bridge.closeBirthdaysPanel()
@@ -209,7 +248,7 @@ const buildBirthdaysTour: TourBuilder = (bridge) => {
       {
         id: 'birthdays-focus-day',
         title: `${entry.dateLabel} celebrations`,
-        text: `Click the ${entry.dateLabel} segment to reveal the relatives celebrating on that day.`,
+        text: `Click the ${entry.dateLabel} segment to expand that day. The badge shows how many birthdays are waiting.`,
         attachTo: attachToSelector(daySelector),
         advanceOn: { selector: daySelector, event: 'click' },
         beforeShowPromise: async () => {
@@ -219,7 +258,7 @@ const buildBirthdaysTour: TourBuilder = (bridge) => {
       {
         id: 'birthdays-select-person',
         title: `Jump to ${entry.person.fullName}`,
-        text: 'Select their card to center the tree and explore their branch.',
+        text: 'Select the highlighted person to center the tree. This also collapses the panel so you can stay focused.',
         attachTo: attachToSelector(entrySelector),
         advanceOn: { selector: entrySelector, event: 'click' },
         beforeShowPromise: async () => {
@@ -229,7 +268,7 @@ const buildBirthdaysTour: TourBuilder = (bridge) => {
       {
         id: 'birthdays-centered',
         title: 'Ready to explore',
-        text: 'The tree zooms to the birthday person so you can send wishes, compare relatives, or keep navigating.',
+        text: 'The tree now tracks the birthday person. Use this view to reach out, compare with relatives, or continue browsing.',
         attachTo: { element: `g[data-person-id="${entry.person.id}"]`, on: undefined },
         beforeShowPromise: async () => {
           bridge.focusOnPerson(entry.person.id)
@@ -255,9 +294,6 @@ const buildSearchTour: TourBuilder = (bridge) => {
   const searchFormSelector = bridge.context.isMobile && !bridge.context.isMobileLandscape
     ? '[data-tour-id="mobile-search-form"]'
     : '[data-tour-id="desktop-search-form"]'
-  const resultsSelector = bridge.context.isMobile && !bridge.context.isMobileLandscape
-    ? '[data-tour-id="mobile-search-results"]'
-    : '[data-tour-id="desktop-search-results"]'
   const resultEntrySelector = `[data-tour-search-result="${person.id}"]`
 
   return {
@@ -266,44 +302,84 @@ const buildSearchTour: TourBuilder = (bridge) => {
         id: 'search-open',
         title: 'Find anyone fast',
         text: bridge.context.isMobile
-          ? 'Use the search field to pull down anyone in the tree. We will open it for you.'
-          : 'This search field jumps to any relative instantly. Click inside to get started.',
+          ? 'Open the search field so you can practice finding someone. The drawer will stay open while you work through the flow.'
+          : 'Click into the search field to begin. We suggest a relative so you can see each state of the search workflow.',
         attachTo: attachToSelector(searchFormSelector),
         beforeShowPromise: async () => {
           bridge.openSearchField()
           await waitForElement(searchInputSelector)
         },
+        advanceOn: { selector: searchInputSelector, event: 'focus' },
       },
       {
         id: 'search-type',
-        title: `Look for ${person.fullName}`,
-        text: 'We pre-filled the name so you can see exactly how results appear as you type.',
+        title: `Type ${person.fullName}`,
+        text: `Type "${person.fullName}" into the search field so the matching results appear. We will highlight the person once the results load.`,
         attachTo: attachToSelector(searchInputSelector),
         beforeShowPromise: async () => {
-          bridge.setSearchValue(person.fullName)
-          bridge.highlightSearchResult(person.id)
-          await waitForElement(resultsSelector)
+          bridge.setSearchTutorialTarget(person)
+          await waitForElement(searchInputSelector)
+        },
+        when: {
+          show() {
+            const handle = () => {
+              this.tour.next()
+            }
+            window.addEventListener('tutorial:searchTargetMatched', handle, { once: true })
+            this.once('hide', () => {
+              window.removeEventListener('tutorial:searchTargetMatched', handle)
+            })
+          },
         },
       },
       {
         id: 'search-select',
         title: 'Jump straight to the match',
-        text: 'Click the highlighted result to center the tree on this relative.',
+        text: 'Use the arrow keys to confirm the highlighted result, then press Enter or click it to focus on the person.',
         attachTo: attachToSelector(resultEntrySelector),
-        advanceOn: { selector: resultEntrySelector, event: 'click' },
         beforeShowPromise: async () => {
           await waitForElement(resultEntrySelector)
+        },
+        when: {
+          show() {
+            const listener = (event: MouseEvent) => {
+              const target = event.target as Element | null
+              if (target && target.closest(resultEntrySelector)) {
+                this.tour.next()
+              }
+            }
+            const keyListener = (event: KeyboardEvent) => {
+              if (event.key === 'Enter') {
+                this.tour.next()
+              }
+            }
+            document.addEventListener('click', listener, true)
+            document.addEventListener('keydown', keyListener, true)
+            this.once('hide', () => {
+              document.removeEventListener('click', listener, true)
+              document.removeEventListener('keydown', keyListener, true)
+            })
+          },
         },
       },
       {
         id: 'search-focused',
         title: 'Centered and ready',
-        text: 'The tree zoomed to focus on the selected relative. From here you can assign them to A or B, open birthdays, or keep navigating.',
+        text: 'The tree zoomed to the relative you selected. From here you can assign them to A or B, open birthdays, or keep navigating.',
         attachTo: { element: `g[data-person-id="${person.id}"]`, on: undefined },
         beforeShowPromise: async () => {
           bridge.focusOnPerson(person.id)
           await waitForElement(() => document.querySelector(`g[data-person-id="${person.id}"]`))
         },
+        buttons: [
+          {
+            text: 'Finish',
+            classes: 'app-tour-button-primary',
+            action() {
+              this.complete()
+            },
+          },
+        ],
       },
     ],
     onCancel: () => {
@@ -342,8 +418,8 @@ const buildZoomTour: TourBuilder = (bridge) => {
         id: 'zoom-in',
         title: 'Zoom in for detail',
         text: bridge.context.isMobile
-          ? 'Tap + to zoom closer with touch-friendly controls. Try it now.'
-          : 'Click + to zoom in on the tree. The canvas animates smoothly so you never lose your place.',
+          ? 'Tap the + control to zoom closer. The tree will animate so you stay oriented.'
+          : 'Click the + control to zoom in a notch. Notice how the camera keeps your focus within view.',
         attachTo: attachToSelector(zoomInSelector),
         advanceOn: { selector: zoomInSelector, event: 'click' },
         beforeShowPromise: async () => {
@@ -356,7 +432,7 @@ const buildZoomTour: TourBuilder = (bridge) => {
       {
         id: 'zoom-out',
         title: 'Zoom back out',
-        text: 'Use − to pull back and view the wider family structure.',
+        text: 'Use the − control to pull back out to the wider family structure.',
         attachTo: attachToSelector(zoomOutSelector),
         advanceOn: { selector: zoomOutSelector, event: 'click' },
         beforeShowPromise: async () => {
@@ -369,7 +445,7 @@ const buildZoomTour: TourBuilder = (bridge) => {
       {
         id: 'zoom-reset',
         title: 'Reset the view',
-        text: 'The reset control recenters and restores the default zoom, perfect for regaining your bearings.',
+        text: 'Use the Reset control to restore the default zoom and position. This is useful after detailed exploration.',
         attachTo: attachToSelector(resetSelector),
         advanceOn: { selector: resetSelector, event: 'click' },
         beforeShowPromise: async () => {
@@ -399,7 +475,7 @@ const buildNodeInfoTour: TourBuilder = (bridge) => {
       {
         id: 'node-focus',
         title: `${person.fullName} on the tree`,
-        text: 'We will zoom to this relative so you can see how hovering or tapping reveals context.',
+        text: 'We center the tree on this person so you can see how their card behaves when focused.',
         attachTo: { element: nodeSelector, on: undefined },
         beforeShowPromise: async () => {
           bridge.focusOnPerson(person.id)
@@ -410,8 +486,8 @@ const buildNodeInfoTour: TourBuilder = (bridge) => {
         id: 'node-hover',
         title: 'See relatives glow together',
         text: bridge.context.isMobile
-          ? 'Tap the card to expand their details. The branch color glows around parents, siblings, spouse, and children.'
-          : 'Click the card to highlight immediate family and reveal quick stats.',
+          ? 'Tap the card to expand their details. Watch the branch glow as family relationships light up.'
+          : 'Click the card to highlight immediate family and reveal inline stats in the expanded card.',
         attachTo: { element: nodeSelector, on: undefined },
         advanceOn: { selector: nodeSelector, event: 'pointerup' },
         beforeShowPromise: async () => {
@@ -422,11 +498,20 @@ const buildNodeInfoTour: TourBuilder = (bridge) => {
       {
         id: 'node-details',
         title: 'Read the inline details',
-        text: 'Birth and age info, parents, and spouse details display directly on the card. Use this to follow branches without losing your place.',
+        text: 'Explore the expanded card. Birth and age info, parents, and spouse details appear inline so you can follow branches without losing your place.',
         attachTo: { element: nodeSelector, on: undefined },
         beforeShowPromise: async () => {
           await waitForElement(() => document.querySelector(nodeSelector))
         },
+        buttons: [
+          {
+            text: 'Finish',
+            classes: 'app-tour-button-primary',
+            action() {
+              this.complete()
+            },
+          },
+        ],
       },
     ],
     onCancel: () => {
