@@ -287,6 +287,8 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   const [hoveredSelection, setHoveredSelection] = useState<{ personId: string; half: 'left' | 'right' } | null>(
     null,
   )
+  const [pinnedHighlightPersonId, setPinnedHighlightPersonId] = useState<string | null>(null)
+  const lastPointerHalfRef = useRef<{ personId: string; half: SelectionHalf } | null>(null)
   const [isShiftSelecting, setIsShiftSelecting] = useState(false)
   const [searchValue, setSearchValue] = useState('')
   const [searchFeedback, setSearchFeedback] = useState<string | null>(null)
@@ -439,6 +441,21 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     if (isShiftSelecting) return
     setHoveredSelection(null)
   }, [isShiftSelecting, selectionMode])
+
+  useEffect(() => {
+    if (!isShiftSelecting) return
+    if (selectionMode !== 'none') return
+    const last = lastPointerHalfRef.current
+    if (!last) return
+    setHoveredSelection(last)
+  }, [isShiftSelecting, selectionMode])
+
+  useEffect(() => {
+    if (selectionMode !== 'none' || isShiftSelecting) {
+      setPinnedHighlightPersonId(null)
+      setHoveredPersonId((current) => (current === pinnedHighlightPersonId ? null : current))
+    }
+  }, [isShiftSelecting, pinnedHighlightPersonId, selectionMode])
 
   const emitTutorialEvent = useCallback((name: string, detail?: unknown) => {
     if (typeof window === 'undefined') return
@@ -1195,6 +1212,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       setSelectionMode('none')
       setSelectedPersonId(null)
       setHoveredPersonId(null)
+      setPinnedHighlightPersonId(null)
       setHoveredSelection(null)
       collapseAllDetails()
       setBirthdaysSheetOpen(false)
@@ -1538,12 +1556,13 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
         return next
       })
     } else {
-    setNodeAId(null)
-    setNodeBId(null)
+      setNodeAId(null)
+      setNodeBId(null)
     }
     setSelectionMode('none')
     setSelectedPersonId(null)
     setHoveredPersonId(null)
+    setPinnedHighlightPersonId(null)
     setHoveredSelection(null)
     collapseAllDetails()
     tutorialSearchTargetRef.current = null
@@ -1587,9 +1606,9 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
           setTutorialCompareState(nextState)
 
           if (shouldEmitTutorialEvent && action === 'assigned') {
-            emitTutorialEvent(role === 'A' ? 'tutorial:compareSelectedA' : 'tutorial:compareSelectedB', {
-              personId,
-            })
+          emitTutorialEvent(role === 'A' ? 'tutorial:compareSelectedA' : 'tutorial:compareSelectedB', {
+            personId,
+          })
           }
 
           if (action === 'cleared' && !nextState.slotAId && !nextState.slotBId && typeof window !== 'undefined') {
@@ -1604,16 +1623,20 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
           if (suppressHighlight) {
             setSelectedPersonId(null)
             setHoveredPersonId(null)
+            setPinnedHighlightPersonId(null)
           } else {
             setSelectedPersonId((current) => (current === personId ? null : current))
             setHoveredPersonId((current) => (current === personId ? null : current))
+            setPinnedHighlightPersonId((current) => (current === personId ? null : current))
           }
         } else if (suppressHighlight) {
           setSelectedPersonId(null)
           setHoveredPersonId(null)
+          setPinnedHighlightPersonId(null)
         } else {
           setSelectedPersonId(personId)
           setHoveredPersonId(personId)
+          setPinnedHighlightPersonId(null)
         }
 
         if (action === 'assigned' && isMobile) {
@@ -1637,6 +1660,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
           setSelectedPersonId((current) => (current === personId ? null : current))
         }
         setHoveredSelection(null)
+        setPinnedHighlightPersonId((current) => (current === personId ? null : current))
         return 'cleared'
       }
 
@@ -1646,12 +1670,13 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
         setNodeBId(personId)
       }
       setSelectionMode('none')
-    setHoveredSelection(null)
+      setHoveredSelection(null)
       if (suppressHighlight) {
         setSelectedPersonId(null)
       } else {
         setSelectedPersonId(personId)
       }
+      setPinnedHighlightPersonId(null)
 
       if (isMobile) {
         openControlSheet()
@@ -1665,12 +1690,13 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   const updateHoveredSelectionHalf = useCallback(
     (personId: string, event: ReactPointerEvent<SVGGElement>) => {
       if (event.pointerType === 'touch') return
+      const half = computeSelectionHalf(event)
+      lastPointerHalfRef.current = { personId, half }
       const directSetActive = event.shiftKey || isShiftSelecting
       if (!directSetActive) {
         setHoveredSelection((current) => (current?.personId === personId ? null : current))
         return
       }
-      const half = computeSelectionHalf(event)
       setHoveredSelection({ personId, half })
     },
     [isShiftSelecting],
@@ -2182,6 +2208,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     setSelectedPersonId(null)
     collapseAllDetails()
     setHoveredPersonId(null)
+    setPinnedHighlightPersonId(null)
     setHoveredSelection(null)
   }, [collapseAllDetails])
 
@@ -2322,10 +2349,21 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
     (personId: string, event: ReactPointerEvent<SVGGElement>) => {
       if (event.pointerType === 'touch') return
       collapsePerson(personId)
-      setHoveredPersonId((current) => (current === personId ? null : current))
+      setHoveredPersonId((current) => {
+        if (current !== personId) {
+          return current
+        }
+        if (!isMobile && selectionMode === 'none' && !isShiftSelecting && pinnedHighlightPersonId) {
+          return pinnedHighlightPersonId
+        }
+        return null
+      })
       setHoveredSelection((current) => (current?.personId === personId ? null : current))
+      if (lastPointerHalfRef.current?.personId === personId) {
+        lastPointerHalfRef.current = null
+      }
     },
-    [collapsePerson],
+    [collapsePerson, isMobile, isShiftSelecting, pinnedHighlightPersonId, selectionMode],
   )
 
   const activeNodeAId = tutorialCompareState.active ? tutorialCompareState.slotAId : nodeAId
@@ -2943,6 +2981,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
       if (event.pointerType === 'touch') {
         if (selectionMode === 'selectA') {
           assignPersonToRole(personId, 'A', { suppressHighlight: true, emitTutorialEvent: true })
+          setPinnedHighlightPersonId(null)
           setHoveredPersonId(null)
           setHoveredSelection(null)
           return
@@ -2950,11 +2989,13 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
 
         if (selectionMode === 'selectB') {
           assignPersonToRole(personId, 'B', { suppressHighlight: true, emitTutorialEvent: true })
+          setPinnedHighlightPersonId(null)
           setHoveredPersonId(null)
           setHoveredSelection(null)
           return
         }
 
+        setPinnedHighlightPersonId(null)
         setHoveredPersonId(personId)
         setHoveredSelection(null)
         setSelectedPersonId(null)
@@ -2964,6 +3005,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
       if (selectionMode === 'selectA') {
         assignPersonToRole(personId, 'A', { suppressHighlight: isMobile, emitTutorialEvent: true })
         if (isMobile) {
+          setPinnedHighlightPersonId(null)
           setHoveredPersonId(null)
           setHoveredSelection(null)
         }
@@ -2973,6 +3015,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
       if (selectionMode === 'selectB') {
         assignPersonToRole(personId, 'B', { suppressHighlight: isMobile, emitTutorialEvent: true })
         if (isMobile) {
+          setPinnedHighlightPersonId(null)
           setHoveredPersonId(null)
           setHoveredSelection(null)
         }
@@ -2980,10 +3023,25 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
       }
 
       if (!shiftActive) {
+        if (!isMobile && selectionMode === 'none') {
+          setPinnedHighlightPersonId((current) => {
+            if (current === personId) {
+              setHoveredPersonId(null)
+              return null
+            }
+            setHoveredPersonId(personId)
+            return personId
+          })
+        } else {
+          setPinnedHighlightPersonId(null)
+          setHoveredPersonId(personId)
+        }
         setSelectedPersonId(personId)
         setHoveredSelection(null)
         return
       }
+
+      setPinnedHighlightPersonId(null)
 
       const half = computeSelectionHalf(event)
       const role = half === 'left' ? 'A' : 'B'
@@ -3167,7 +3225,6 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
             const ageYears = calculateAge(person)
             const ageDisplay = ageYears !== null ? `${ageYears}` : null
             const nameY = 32
-            const setLabelY = Math.max(16, nameY - 16)
             const infoLineStartY = nameY + 28
             const infoLineSpacing = 14
             const infoLines: Array<{ key: string; text: string }> = []
@@ -3253,16 +3310,6 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
                       fill={hoveredFill}
                       clipPath={`url(#${clipPathId})`}
                     />
-                    {!tutorialCompareState.active && (
-                    <text
-                      x={hoveredHalf === 'left' ? width / 4 : (width * 3) / 4}
-                      y={setLabelY}
-                      textAnchor="middle"
-                      className="fill-white text-[11px] font-semibold uppercase tracking-[0.25em]"
-                    >
-                      Set {hoveredRole}
-                    </text>
-                    )}
                   </g>
                 )}
                 <g style={{ pointerEvents: 'none' }} clipPath={`url(#${clipPathId})`}>
