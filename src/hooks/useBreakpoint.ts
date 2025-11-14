@@ -21,6 +21,12 @@ interface BreakpointState {
 const PALM_MAX = 359
 const HANDSET_MAX = 767
 const TABLET_MAX = 1023
+const MOBILE_USER_AGENT_REGEX = /Android|iPhone|iPod|iPad|IEMobile|Windows Phone|BlackBerry|webOS/i
+
+type DeviceCharacteristics = {
+  isMobileUserAgent: boolean
+  hasCoarsePointer: boolean
+}
 
 const resolveBreakpoint = (width: number): Breakpoint => {
   if (width <= PALM_MAX) return 'palm'
@@ -32,9 +38,46 @@ const resolveBreakpoint = (width: number): Breakpoint => {
 let cachedWidth: number | null = null
 let cachedHeight: number | null = null
 let cachedSnapshot: BreakpointState | null = null
+let cachedDeviceSignature: string | null = null
+
+const extractDeviceCharacteristics = (): DeviceCharacteristics => {
+  if (typeof window === 'undefined') {
+    return { isMobileUserAgent: false, hasCoarsePointer: false }
+  }
+
+  const navigatorWithUAData = window.navigator as Navigator & {
+    userAgentData?: {
+      mobile?: boolean
+    }
+  }
+
+  const uaDataMobile =
+    typeof navigatorWithUAData.userAgentData?.mobile === 'boolean'
+      ? navigatorWithUAData.userAgentData.mobile
+      : undefined
+
+  const userAgent = navigatorWithUAData.userAgent || ''
+  const isMobileUserAgent = uaDataMobile ?? MOBILE_USER_AGENT_REGEX.test(userAgent)
+
+  const hasCoarsePointer =
+    typeof window.matchMedia === 'function' ? window.matchMedia('(pointer:coarse)').matches : false
+
+  return {
+    isMobileUserAgent,
+    hasCoarsePointer,
+  }
+}
 
 const snapshotFromDimensions = (width: number, height: number): BreakpointState => {
-  if (cachedSnapshot && cachedWidth === width && cachedHeight === height) {
+  const deviceCharacteristics = extractDeviceCharacteristics()
+  const deviceSignature = `${deviceCharacteristics.isMobileUserAgent}-${deviceCharacteristics.hasCoarsePointer}`
+
+  if (
+    cachedSnapshot &&
+    cachedWidth === width &&
+    cachedHeight === height &&
+    cachedDeviceSignature === deviceSignature
+  ) {
     return cachedSnapshot
   }
 
@@ -42,18 +85,20 @@ const snapshotFromDimensions = (width: number, height: number): BreakpointState 
   const shortestSide = Math.min(width, height)
   const longestSide = Math.max(width, height)
   const breakpoint = resolveBreakpoint(longestSide)
-  const isMobile = shortestSide <= HANDSET_MAX
-  const isTablet = !isMobile && shortestSide <= TABLET_MAX
+  const isLikelyMobileDevice = deviceCharacteristics.isMobileUserAgent || deviceCharacteristics.hasCoarsePointer
+  const isMobile = isLikelyMobileDevice && shortestSide <= HANDSET_MAX
+  const isTablet = isLikelyMobileDevice && !isMobile && shortestSide <= TABLET_MAX
 
   cachedWidth = width
   cachedHeight = height
+  cachedDeviceSignature = deviceSignature
   cachedSnapshot = {
     width,
     height,
     breakpoint,
     isMobile,
     isTablet,
-    isDesktop: breakpoint === 'desktop',
+    isDesktop: !isMobile && !isTablet,
     isNarrowPhone: isMobile && shortestSide <= PALM_MAX,
     isLargePhone: isMobile && shortestSide > PALM_MAX && shortestSide <= HANDSET_MAX,
     orientation,
