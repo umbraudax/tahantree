@@ -1108,7 +1108,6 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   }, [resetControlSheetPosition])
 
   const toggleBirthdaysSheet = useCallback(() => {
-    if (!hasAnyBirthdaysThisWeek) return
     resetBirthdaysSheetPosition()
     setBirthdaysSheetOpen((current) => {
       const next = !current
@@ -1117,7 +1116,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       }
       return next
     })
-  }, [hasAnyBirthdaysThisWeek, resetBirthdaysSheetPosition])
+  }, [resetBirthdaysSheetPosition])
 
   const closeBirthdaysSheet = useCallback(() => {
     setBirthdaysSheetOpen(false)
@@ -3231,22 +3230,47 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
         <button
           type="button"
           onClick={toggleBirthdaysSheet}
-          disabled={!hasAnyBirthdaysThisWeek}
-          className={`fixed z-[55] rounded-full border px-4 py-2 text-[11px] font-semibold uppercase tracking/[0.35em] transition ${
-            hasAnyBirthdaysThisWeek
-              ? 'border-white/25 bg-black/45 text-white hover:bg-black/35'
-              : 'cursor-default border-white/15 bg-black/70 text-white/40'
-          } shadow-[0_20px_40px_rgba(0,0,0,0.6)] disabled:pointer-events-none`}
+          className="fixed z-[55] grid h-14 w-14 place-items-center rounded-full border border-white/20 bg-black/45 text-white backdrop-blur shadow-[0_20px_40px_rgba(0,0,0,0.45)] transition hover:bg-black/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
           style={{
             bottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)',
-            left: '50%',
-            transform: 'translateX(-50%)',
+            left: 'calc(env(safe-area-inset-left, 0px) + 12px)',
           }}
           aria-pressed={isBirthdaysSheetOpen}
           aria-expanded={isBirthdaysSheetOpen}
-          aria-label="Toggle birthdays for this week"
+          aria-label={
+            hasAnyBirthdaysThisWeek
+              ? 'Show birthdays happening this week'
+              : 'Show birthdays this week (none scheduled)'
+          }
         >
-          Birthdays
+          <svg
+            aria-hidden="true"
+            className="h-7 w-7 text-white"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M7 11H17V14C17 15.1046 16.1046 16 15 16H9C7.89543 16 7 15.1046 7 14V11Z"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M5 20V19C5 17.8954 5.89543 17 7 17H17C18.1046 17 19 17.8954 19 19V20"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <line x1="5" y1="20" x2="19" y2="20" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+            <line x1="12" y1="11" x2="12" y2="6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+            <circle cx="12" cy="4.5" r="1.2" fill="currentColor" />
+          </svg>
+          <span className="sr-only">
+            {hasAnyBirthdaysThisWeek ? 'Birthdays this week' : 'No birthdays this week'}
+          </span>
         </button>
       )}
 

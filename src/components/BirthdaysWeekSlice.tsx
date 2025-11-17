@@ -201,7 +201,7 @@ const BirthdaysWeekSlice = ({
       <div ref={containerRef} className={containerClasses}>
         {daysWithBirthdays.length === 0 ? (
           <p className="w-full text-center text-sm font-semibold uppercase tracking-[0.2em] text-white/65">
-            No birthdays this week!
+            There are no birthdays this week.
           </p>
         ) : (
           <div className="flex w-full flex-col gap-6">

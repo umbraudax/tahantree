@@ -49,7 +49,7 @@ export const withAlpha = (hex: string, alpha: number): string => {
 export const dimColor = (
   hex: string,
   {
-    darken = 0.16,
+    darken = 0.76,
     greyMix = 0.18,
   }: {
     darken?: number
