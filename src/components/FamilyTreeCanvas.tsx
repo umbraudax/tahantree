@@ -1178,13 +1178,6 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   }, [isBirthdaysSheetOpen, isMobilePortrait, resetBirthdaysSheetPosition])
 
   useEffect(() => {
-    if (!hasAnyBirthdaysThisWeek && isBirthdaysSheetOpen) {
-      setBirthdaysSheetOpen(false)
-      resetBirthdaysSheetPosition()
-    }
-  }, [hasAnyBirthdaysThisWeek, isBirthdaysSheetOpen, resetBirthdaysSheetPosition])
-
-  useEffect(() => {
     if (!isMobilePortrait || !isBirthdaysSheetOpen) return
     if (isBirthdaysSheetDragging) return
     if (birthdaysSheetDragOffset === 0) return
@@ -3230,11 +3223,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
         <button
           type="button"
           onClick={toggleBirthdaysSheet}
-          className="fixed z-[55] grid h-14 w-14 place-items-center rounded-full border border-white/20 bg-black/45 text-white backdrop-blur shadow-[0_20px_40px_rgba(0,0,0,0.45)] transition hover:bg-black/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
-          style={{
-            bottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)',
-            left: 'calc(env(safe-area-inset-left, 0px) + 12px)',
-          }}
+          className="fixed bottom-4 left-4 z-[55] grid h-14 w-14 place-items-center rounded-full border border-white/20 bg-black/45 text-white backdrop-blur shadow-[0_20px_40px_rgba(0,0,0,0.45)] transition hover:bg-black/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
           aria-pressed={isBirthdaysSheetOpen}
           aria-expanded={isBirthdaysSheetOpen}
           aria-label={
