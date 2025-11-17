@@ -23,9 +23,8 @@ import { useFamilyLayout } from '../hooks/useFamilyLayout'
 import type { FamilyGraph, FamilyUnit, Person } from '../types/family'
 import BirthdaysWeekSlice from './BirthdaysWeekSlice'
 import { computeBirthdaysForCurrentWeek } from '../utils/birthdays'
-import { getBranchColor, withAlpha } from '../utils/colors'
+import { dimColor, getBranchColor, withAlpha } from '../utils/colors'
 import { describeRelationship } from '../utils/relationships'
-import { setTutorialBridge, type FamilyTreeTutorialBridge } from '../tutorials/bridge'
 const slugifyBranch = (branch: string) => branch.toLowerCase().replace(/[^a-z0-9]+/g, '-')
 const MIN_SCALE = 0.05
 const INITIAL_MIN_SCALE = 0.35
@@ -272,7 +271,7 @@ const formatAgeDifferenceSentence = (
 // }
 
 export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
-  const { isMobile, isTablet, isLandscape, isDesktop, height } = useBreakpoint()
+  const { isMobile, isTablet, isLandscape, height } = useBreakpoint()
   const isMobileLandscape = isMobile && isLandscape
   const isMobilePortrait = isMobile && !isLandscape
   const layoutDensity = isMobileLandscape ? 'cozy' : isMobile ? 'compact' : isTablet ? 'cozy' : 'default'
@@ -296,17 +295,6 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   const [selectionMode, setSelectionMode] = useState<'none' | 'selectA' | 'selectB'>('none')
   const [nodeAId, setNodeAId] = useState<string | null>(null)
   const [nodeBId, setNodeBId] = useState<string | null>(null)
-  const [tutorialCompareState, setTutorialCompareState] = useState<{
-    active: boolean
-    slotAId: string | null
-    slotBId: string | null
-    pendingRole: 'A' | 'B' | null
-  }>({
-    active: false,
-    slotAId: null,
-    slotBId: null,
-    pendingRole: null,
-  })
   const [hoveredPersonId, setHoveredPersonId] = useState<string | null>(null)
   const [isControlSheetOpen, setControlSheetOpen] = useState(false)
   const [isLegendOpen, setLegendOpen] = useState(false)
@@ -338,21 +326,6 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     offset: { x: 0, y: 0 },
     world: null,
   })
-  const tutorialSearchTargetRef = useRef<string | null>(null)
-  const tutorialSearchTargetNameRef = useRef<string | null>(null)
-  const tutorialSearchMatchedRef = useRef(false)
-  const tutorialCompareStateRef = useRef(tutorialCompareState)
-  const tutorialComparePrevRef = useRef(tutorialCompareState)
-  const compareTutorialRestoreRef = useRef<{
-    nodeAId: string | null
-    nodeBId: string | null
-    selectionMode: 'none' | 'selectA' | 'selectB'
-    selectedPersonId: string | null
-    hoveredPersonId: string | null
-    controlSheetOpen: boolean
-    birthdaysSheetOpen: boolean
-    landscapeControlsOpen: boolean
-  } | null>(null)
 
   const captureViewportAnchor = useCallback(
     (transform: ZoomTransform | null) => {
@@ -401,10 +374,6 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       setLegendOpen(false)
     }
   }, [isMobile])
-
-  useEffect(() => {
-    tutorialCompareStateRef.current = tutorialCompareState
-  }, [tutorialCompareState])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -456,56 +425,6 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       setHoveredPersonId((current) => (current === pinnedHighlightPersonId ? null : current))
     }
   }, [isShiftSelecting, pinnedHighlightPersonId, selectionMode])
-
-  const emitTutorialEvent = useCallback((name: string, detail?: unknown) => {
-    if (typeof window === 'undefined') return
-    const init = detail ? { detail } : undefined
-    const dispatch = (target: Window | Document | HTMLElement | null | undefined) => {
-      if (!target) return
-      target.dispatchEvent(new CustomEvent(name, init))
-    }
-
-    dispatch(window)
-    if (typeof document !== 'undefined') {
-      dispatch(document)
-      dispatch(document.body)
-    }
-  }, [])
-
-  useEffect(() => {
-    const previous = tutorialComparePrevRef.current
-    const current = tutorialCompareState
-
-    const dispatchTutorialEvent = (name: string, detail?: unknown) => {
-      if (typeof window === 'undefined') return
-      const init = detail ? { detail } : undefined
-      window.dispatchEvent(new CustomEvent(name, init))
-      if (typeof document !== 'undefined') {
-        document.dispatchEvent(new CustomEvent(name, init))
-        document.body?.dispatchEvent(new CustomEvent(name, init))
-      }
-    }
-
-    if (current.active) {
-      if (current.pendingRole !== previous.pendingRole) {
-        if (current.pendingRole === 'A') {
-          dispatchTutorialEvent('tutorial:compareSelectingA')
-        } else if (current.pendingRole === 'B') {
-          dispatchTutorialEvent('tutorial:compareSelectingB')
-        }
-      }
-
-      if (current.slotAId && current.slotAId !== previous.slotAId) {
-        dispatchTutorialEvent('tutorial:compareSelectedA', { personId: current.slotAId })
-      }
-
-      if (current.slotBId && current.slotBId !== previous.slotBId) {
-        dispatchTutorialEvent('tutorial:compareSelectedB', { personId: current.slotBId })
-      }
-    }
-
-    tutorialComparePrevRef.current = current
-  }, [tutorialCompareState])
 
   useEffect(() => {
     if (!isMobile) {
@@ -1145,14 +1064,6 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       setSearchFeedback(null)
     }
     setSearchActiveIndex(null)
-    tutorialSearchMatchedRef.current = false
-    if (tutorialSearchTargetNameRef.current) {
-      const typed = event.target.value.trim().toLowerCase()
-      const target = tutorialSearchTargetNameRef.current.trim().toLowerCase()
-      if (typed.length > 0 && target.startsWith(typed) && typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('tutorial:searchTyping', { detail: { typed } }))
-      }
-    }
   }
 
   const handleSearchFocus = useCallback(() => {
@@ -1189,112 +1100,6 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     searchInputRef.current?.blur()
     }
   }, [resetBirthdaysSheetPosition, resetControlSheetPosition])
-
-  const beginCompareTutorialSession = useCallback(
-    (options?: { presetSlotAId?: string | null; presetSlotBId?: string | null }) => {
-      if (tutorialCompareStateRef.current.active) {
-        return
-      }
-
-      compareTutorialRestoreRef.current = {
-        nodeAId,
-        nodeBId,
-        selectionMode,
-        selectedPersonId,
-        hoveredPersonId,
-        controlSheetOpen: isControlSheetOpen,
-        birthdaysSheetOpen: isBirthdaysSheetOpen,
-        landscapeControlsOpen: isLandscapeControlsOpen,
-      }
-
-      setNodeAId(null)
-      setNodeBId(null)
-      setSelectionMode('none')
-      setSelectedPersonId(null)
-      setHoveredPersonId(null)
-      setPinnedHighlightPersonId(null)
-      setHoveredSelection(null)
-      collapseAllDetails()
-      setBirthdaysSheetOpen(false)
-      if (isMobile) {
-        setControlSheetOpen(true)
-      }
-      if (isMobileLandscape) {
-        setLandscapeControlsOpen(true)
-      }
-
-      const nextState = {
-        active: true,
-        slotAId: options?.presetSlotAId ?? null,
-        slotBId: options?.presetSlotBId ?? null,
-        pendingRole: null,
-      }
-      tutorialCompareStateRef.current = nextState
-      setTutorialCompareState(nextState)
-    },
-    [
-      collapseAllDetails,
-      hoveredPersonId,
-      isBirthdaysSheetOpen,
-      isControlSheetOpen,
-      isLandscapeControlsOpen,
-      isMobile,
-      isMobileLandscape,
-      nodeAId,
-      nodeBId,
-      selectedPersonId,
-      selectionMode,
-    ],
-  )
-
-  const finishCompareTutorialSession = useCallback(
-    (options?: { applyAssignments?: boolean }) => {
-      if (!tutorialCompareStateRef.current.active) {
-        return
-      }
-
-      const applyAssignments = options?.applyAssignments ?? false
-      const restore = compareTutorialRestoreRef.current
-      compareTutorialRestoreRef.current = null
-
-      const slotAId = tutorialCompareStateRef.current.slotAId
-      const slotBId = tutorialCompareStateRef.current.slotBId
-
-      const nextState = {
-        active: false,
-        slotAId: null,
-        slotBId: null,
-        pendingRole: null,
-      }
-      tutorialCompareStateRef.current = nextState
-      setTutorialCompareState(nextState)
-
-      if (applyAssignments) {
-        setNodeAId(slotAId)
-        setNodeBId(slotBId)
-      } else {
-        setNodeAId(restore?.nodeAId ?? null)
-        setNodeBId(restore?.nodeBId ?? null)
-      }
-
-      setSelectionMode(applyAssignments ? 'none' : restore?.selectionMode ?? 'none')
-
-      if (applyAssignments) {
-        const nextSelected = slotBId ?? slotAId ?? null
-        setSelectedPersonId(nextSelected)
-        setHoveredPersonId(nextSelected)
-      } else {
-        setSelectedPersonId(restore?.selectedPersonId ?? null)
-        setHoveredPersonId(restore?.hoveredPersonId ?? null)
-      }
-
-      setHoveredSelection(null)
-      setControlSheetOpen(restore?.controlSheetOpen ?? false)
-      setBirthdaysSheetOpen(restore?.birthdaysSheetOpen ?? false)
-      setLandscapeControlsOpen(restore?.landscapeControlsOpen ?? false)
-    },
-    [],
-  )
 
   const closeControlSheet = useCallback(() => {
     setControlSheetOpen(false)
@@ -1416,24 +1221,6 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
 
   useEffect(() => {
     if (typeof document === 'undefined') return
-    const helpButton = document.getElementById('app-help-button')
-    if (!helpButton) return
-
-    if (isMobilePortrait && isBirthdaysSheetOpen) {
-      helpButton.style.display = 'none'
-    } else {
-      helpButton.style.display = ''
-    }
-
-    return () => {
-      if (helpButton) {
-        helpButton.style.display = ''
-      }
-    }
-  }, [isBirthdaysSheetOpen, isMobilePortrait])
-
-  useEffect(() => {
-    if (typeof document === 'undefined') return
 
     const htmlElement = document.documentElement
     const bodyElement = document.body
@@ -1516,61 +1303,22 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   const beginSelection = useCallback(
     (target: 'selectA' | 'selectB') => {
       setSelectionMode(target)
-      if (tutorialCompareStateRef.current.active) {
-        setTutorialCompareState((current) => {
-          if (!current.active) {
-            return current
-          }
-          const pendingRole: 'A' | 'B' = target === 'selectA' ? 'A' : 'B'
-          const next = {
-            ...current,
-            pendingRole,
-          }
-          tutorialCompareStateRef.current = next
-          emitTutorialEvent(
-            pendingRole === 'A' ? 'tutorial:compareSelectingA' : 'tutorial:compareSelectingB',
-          )
-          return next
-        })
-      }
       if (isMobile) {
         closeControlSheet()
       }
     },
-    [closeControlSheet, emitTutorialEvent, isMobile],
+    [closeControlSheet, isMobile],
   )
 
   const clearSelections = useCallback(() => {
-    if (tutorialCompareStateRef.current.active) {
-      setTutorialCompareState((current) => {
-        if (!current.active) {
-          return current
-        }
-        const next = {
-          active: true,
-          slotAId: null,
-          slotBId: null,
-          pendingRole: null,
-        }
-        tutorialCompareStateRef.current = next
-        return next
-      })
-    } else {
-      setNodeAId(null)
-      setNodeBId(null)
-    }
+    setNodeAId(null)
+    setNodeBId(null)
     setSelectionMode('none')
     setSelectedPersonId(null)
     setHoveredPersonId(null)
     setPinnedHighlightPersonId(null)
     setHoveredSelection(null)
     collapseAllDetails()
-    tutorialSearchTargetRef.current = null
-    tutorialSearchTargetNameRef.current = null
-    tutorialSearchMatchedRef.current = false
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('tutorial:compareCleared'))
-    }
   }, [collapseAllDetails])
 
   const toggleLegend = () => {
@@ -1581,70 +1329,10 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     (
       personId: string,
       role: 'A' | 'B',
-      options?: { suppressHighlight?: boolean; emitTutorialEvent?: boolean; allowToggle?: boolean },
+      options?: { suppressHighlight?: boolean; allowToggle?: boolean },
     ): 'assigned' | 'cleared' | 'unchanged' => {
       const suppressHighlight = options?.suppressHighlight ?? false
       const allowToggle = options?.allowToggle ?? false
-      const shouldEmitTutorialEvent = options?.emitTutorialEvent ?? true
-
-      if (tutorialCompareStateRef.current.active) {
-        const currentState = tutorialCompareStateRef.current
-        let action: 'assigned' | 'cleared' | 'unchanged' = 'unchanged'
-
-        if (currentState.active) {
-          const currentRoleId = role === 'A' ? currentState.slotAId : currentState.slotBId
-          const isClearing = allowToggle && currentRoleId === personId
-          action = isClearing ? 'cleared' : 'assigned'
-
-          const nextState = {
-            active: true,
-            slotAId: role === 'A' ? (isClearing ? null : personId) : currentState.slotAId,
-            slotBId: role === 'B' ? (isClearing ? null : personId) : currentState.slotBId,
-            pendingRole: null,
-          }
-          tutorialCompareStateRef.current = nextState
-          setTutorialCompareState(nextState)
-
-          if (shouldEmitTutorialEvent && action === 'assigned') {
-          emitTutorialEvent(role === 'A' ? 'tutorial:compareSelectedA' : 'tutorial:compareSelectedB', {
-            personId,
-          })
-          }
-
-          if (action === 'cleared' && !nextState.slotAId && !nextState.slotBId && typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('tutorial:compareCleared'))
-          }
-        }
-
-        setSelectionMode('none')
-        setHoveredSelection(null)
-
-        if (action === 'cleared') {
-          if (suppressHighlight) {
-            setSelectedPersonId(null)
-            setHoveredPersonId(null)
-            setPinnedHighlightPersonId(null)
-          } else {
-            setSelectedPersonId((current) => (current === personId ? null : current))
-            setHoveredPersonId((current) => (current === personId ? null : current))
-            setPinnedHighlightPersonId((current) => (current === personId ? null : current))
-          }
-        } else if (suppressHighlight) {
-          setSelectedPersonId(null)
-          setHoveredPersonId(null)
-          setPinnedHighlightPersonId(null)
-        } else {
-          setSelectedPersonId(personId)
-          setHoveredPersonId(personId)
-          setPinnedHighlightPersonId(null)
-        }
-
-        if (action === 'assigned' && isMobile) {
-          openControlSheet()
-        }
-
-        return action
-      }
 
       const currentRoleId = role === 'A' ? nodeAId : nodeBId
       if (allowToggle && currentRoleId === personId) {
@@ -1684,7 +1372,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
 
       return 'assigned'
     },
-    [emitTutorialEvent, isMobile, nodeAId, nodeBId, openControlSheet],
+    [isMobile, nodeAId, nodeBId, openControlSheet],
   )
 
   const updateHoveredSelectionHalf = useCallback(
@@ -1733,9 +1421,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
         return
       }
 
-      const emitTutorialEvent =
-        selectionMode === (role === 'A' ? 'selectA' : 'selectB')
-      assignPersonToRole(person.id, role, { emitTutorialEvent })
+      assignPersonToRole(person.id, role)
       setSearchFeedback(null)
     },
     [assignPersonToRole, focusSearchInput, graph.peopleById, lastSearchResultId, selectionMode],
@@ -1758,221 +1444,6 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     if (!svgRef.current || !zoomBehaviorRef.current) return
     select(svgRef.current).call(zoomBehaviorRef.current.translateBy as never, dx, dy)
   }, [])
-
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return
-    }
-
-    const randomFrom = <T,>(items: T[]): T | null => {
-      if (items.length === 0) return null
-      const index = Math.floor(Math.random() * items.length)
-      return items[index] ?? null
-    }
-
-    const buildPersonPool = (options?: { excludeIds?: string[]; preferLiving?: boolean }) => {
-      const excludeIds = options?.excludeIds ?? []
-      const excludeSet = excludeIds.length > 0 ? new Set(excludeIds) : null
-      return graph.people.filter((person) => {
-        if (excludeSet?.has(person.id)) return false
-        if (options?.preferLiving && person.dod) return false
-        return true
-      })
-    }
-
-    const getRandomPerson = (options?: { excludeIds?: string[]; preferLiving?: boolean }) => {
-      const pool = buildPersonPool(options)
-      return randomFrom(pool)
-    }
-
-    const getRandomPair = (options?: { excludeIds?: string[]; preferLiving?: boolean }) => {
-      const first = getRandomPerson(options)
-      if (!first) return null
-
-      const second = getRandomPerson({
-        ...options,
-        excludeIds: [...(options?.excludeIds ?? []), first.id],
-      })
-
-      if (!second) return null
-      return { a: first, b: second }
-    }
-
-    const getRandomBirthdayEntry = () => {
-      const daysWithEntries = birthdaysWeek.filter((day) => day.entries.length > 0)
-      const day = randomFrom(daysWithEntries)
-      if (!day) return null
-
-      const entry = randomFrom(day.entries)
-      if (!entry) return null
-
-      return {
-        dateLabel: `${day.weekdayName} ${day.dateLabel}`,
-        isoDate: day.isoDate,
-        person: entry.person,
-      }
-    }
-
-    const bridge: FamilyTreeTutorialBridge = {
-      context: {
-        isMobile,
-        isMobileLandscape,
-        isMobilePortrait,
-        isDesktop,
-      },
-      getPersonById: (personId) => graph.peopleById[personId] ?? null,
-      getRandomPerson,
-      getRandomPair,
-      getRandomBirthdayEntry,
-      focusOnPerson: (personId) => {
-        if (!personId) return
-        centerOnPerson(personId)
-        setSelectedPersonId(personId)
-        setHoveredPersonId(personId)
-      },
-      highlightPerson: (personId) => {
-        setHoveredPersonId(personId)
-      },
-      setSelectedPerson: (personId) => {
-        setSelectedPersonId(personId)
-      },
-      assignPersonToRole: (personId, role, options) => {
-        assignPersonToRole(personId, role, options)
-      },
-      beginSelection: (mode) => {
-        beginSelection(mode)
-      },
-      clearSelections: () => {
-        clearSelections()
-      },
-      beginCompareTutorialSession: (options) => {
-        beginCompareTutorialSession(options)
-      },
-      completeCompareTutorialSession: (options) => {
-        finishCompareTutorialSession({ applyAssignments: options?.applyAssignments ?? false })
-      },
-      cancelCompareTutorialSession: () => {
-        finishCompareTutorialSession({ applyAssignments: false })
-      },
-      openControlSheet: (options) => {
-        if (isMobile) {
-          openControlSheet(options)
-        }
-      },
-      closeControlSheet: () => {
-        if (isMobile) {
-          closeControlSheet()
-        }
-      },
-      openBirthdaysPanel: () => {
-        if (isMobilePortrait) {
-          setBirthdaysSheetOpen(true)
-        }
-      },
-      closeBirthdaysPanel: () => {
-        setBirthdaysSheetOpen(false)
-      },
-      openSearchField: () => {
-        if (isMobile && !isMobileLandscape) {
-          openControlSheet({ preserveSearchFocus: true })
-        }
-        setSearchFocused(true)
-        focusSearchInput()
-      },
-      setSearchValue: (value) => {
-        setSearchValue(value)
-        setSearchActiveIndex(null)
-      },
-      highlightSearchResult: (personId) => {
-        if (!personId) {
-          setSearchActiveIndex(null)
-          setLastSearchResultId(null)
-          return
-        }
-
-        const index = searchMatches.findIndex((candidate) => candidate.id === personId)
-        setSearchActiveIndex(index >= 0 ? index : null)
-        setLastSearchResultId(personId)
-      },
-      assignSearchResultToRole: (role) => {
-        assignLastSearchResultToRole(role)
-      },
-      setSearchTutorialTarget: (person) => {
-        tutorialSearchTargetRef.current = person.id
-        tutorialSearchTargetNameRef.current = person.fullName
-        tutorialSearchMatchedRef.current = false
-        setSearchValue('')
-        setLastSearchResultId(null)
-        setSearchActiveIndex(null)
-        setSearchFeedback(`Type "${person.fullName}" to find them.`)
-        setSearchFocused(true)
-        focusSearchInput()
-      },
-      ensureLandscapeControlsOpen: () => {
-        if (isMobileLandscape && !isLandscapeControlsOpen) {
-          setLandscapeControlsOpen(true)
-        }
-      },
-      zoomBy: (factor) => {
-        zoomByFactor(factor)
-      },
-      resetView: () => {
-        resetView()
-      },
-    }
-
-    setTutorialBridge(bridge)
-
-    return () => {
-      if (window.__familyTreeTutorialBridge__ === bridge) {
-        setTutorialBridge(null)
-      }
-    }
-  }, [
-    assignLastSearchResultToRole,
-    assignPersonToRole,
-    beginSelection,
-    beginCompareTutorialSession,
-    birthdaysWeek,
-    centerOnPerson,
-    clearSelections,
-    closeControlSheet,
-    focusSearchInput,
-    graph.people,
-    graph.peopleById,
-    isDesktop,
-    isLandscapeControlsOpen,
-    isMobile,
-    isMobileLandscape,
-    isMobilePortrait,
-    openControlSheet,
-    resetView,
-    searchMatches,
-    setBirthdaysSheetOpen,
-    setHoveredPersonId,
-    setLastSearchResultId,
-    setLandscapeControlsOpen,
-    setSearchActiveIndex,
-    setSearchFocused,
-    setSearchValue,
-    setSelectedPersonId,
-    finishCompareTutorialSession,
-    zoomByFactor,
-  ])
-
-  useEffect(() => {
-    const targetId = tutorialSearchTargetRef.current
-    if (!targetId) return
-    if (tutorialSearchMatchedRef.current) return
-    const matchIndex = searchMatches.findIndex((person) => person.id === targetId)
-    if (matchIndex === -1) return
-
-    tutorialSearchMatchedRef.current = true
-    setSearchActiveIndex(matchIndex)
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('tutorial:searchTargetMatched'))
-    }
-  }, [searchMatches])
 
   const legendShortcutActiveRef = useRef(false)
   const legendShortcutRestoreRef = useRef(false)
@@ -2118,9 +1589,6 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       }
 
       setSelectedPersonId(person.id)
-      tutorialSearchTargetRef.current = null
-      tutorialSearchTargetNameRef.current = null
-      tutorialSearchMatchedRef.current = false
     },
     [centerOnPerson, isMobileLandscape, resetControlSheetPosition],
   )
@@ -2366,18 +1834,10 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
     [collapsePerson, isMobile, isShiftSelecting, pinnedHighlightPersonId, selectionMode],
   )
 
-  const activeNodeAId = tutorialCompareState.active ? tutorialCompareState.slotAId : nodeAId
-  const activeNodeBId = tutorialCompareState.active ? tutorialCompareState.slotBId : nodeBId
-  const personA = activeNodeAId ? graph.peopleById[activeNodeAId] ?? null : null
-  const personB = activeNodeBId ? graph.peopleById[activeNodeBId] ?? null : null
-  const effectiveSelectionMode =
-    tutorialCompareState.active && tutorialCompareState.pendingRole
-      ? tutorialCompareState.pendingRole === 'A'
-        ? 'selectA'
-        : 'selectB'
-      : selectionMode
-  const isSelectingA = effectiveSelectionMode === 'selectA'
-  const isSelectingB = effectiveSelectionMode === 'selectB'
+  const personA = nodeAId ? graph.peopleById[nodeAId] ?? null : null
+  const personB = nodeBId ? graph.peopleById[nodeBId] ?? null : null
+  const isSelectingA = selectionMode === 'selectA'
+  const isSelectingB = selectionMode === 'selectB'
   const personALabel = personA?.fullName ?? '—'
   const personBLabel = personB?.fullName ?? '—'
   const relationshipSummary = useMemo(() => {
@@ -2405,7 +1865,6 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
           ? `${relationshipPanelSpacingClass} text-center`
           : `text-center ${isMobile ? 'text-[11px] leading-snug text-white/70' : 'text-sm leading-snug text-white/70'}`
       }
-      data-tour-id="relationship-summary"
     >
       {relationshipSummary && personA && personB ? (
         <>
@@ -2427,11 +1886,10 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
 
   const topControlsContent = !isMobileLandscape && (
     <>
-      <div className="flex items-center justify-between gap-2" data-tour-id="top-control-row" data-tour-area="zoom-controls">
+      <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <button
             type="button"
-            data-tour-id="zoom-out-button"
             className="grid h-9 w-9 place-items-center rounded-full border border-white/20 bg-black/45 text-lg text-white transition hover:bg-black/35"
             onClick={() => zoomByFactor(0.8)}
             aria-label="Zoom out"
@@ -2440,7 +1898,6 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
           </button>
           <button
             type="button"
-            data-tour-id="zoom-in-button"
             className="grid h-9 w-9 place-items-center rounded-full border border-white/20 bg-black/45 text-lg text-white transition hover:bg-black/35"
             onClick={() => zoomByFactor(1.2)}
             aria-label="Zoom in"
@@ -2450,7 +1907,6 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
         </div>
         <button
           type="button"
-          data-tour-id="reset-view-button"
           className="rounded-full border border-white/20 bg-black/45 px-3 py-2 text-[10px] font-semibold uppercase tracking/[0.35em] text-white transition hover:bg-black/35 md:text-[11px]"
           onClick={resetView}
         >
@@ -2472,15 +1928,12 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
         <>
           <form
             className="mt-3 flex w/full flex-wrap items-start gap-2"
-            data-tour-id="desktop-search-form"
-            data-tour-area="search-controls"
             onSubmit={handleSearchSubmit}
           >
-            <div className="relative w/full flex-1" data-tour-id="desktop-search-field">
+            <div className="relative w/full flex-1">
               <input
                 ref={searchInputRef}
                 type="search"
-                data-tour-id="desktop-search-input"
                 placeholder="Find a person"
                 value={searchValue}
                 onChange={handleSearchChange}
@@ -2497,9 +1950,6 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
                   if (next === searchInputRef.current) {
                     return
                   }
-                  if (next.closest('.shepherd-element')) {
-                    return
-                  }
                   setSearchFocused(false)
                 }}
                 onKeyDown={handleSearchInputKeyDown}
@@ -2508,7 +1958,6 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
               {showSearchResults && (
                 <div
                   ref={searchResultsRef}
-                  data-tour-id="desktop-search-results"
                   className="pointer-events-auto absolute left-0 top-full z-10 mt-2 w/full overflow-hidden rounded-2xl border border-white/20 bg-black/45 shadow-[0_16px_40px_rgba(0,0,0,0.45)] backdrop-blur"
                 >
                   {searchMatches.length > 0 ? (
@@ -2520,7 +1969,6 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
                           <li key={person.id}>
                             <button
                               type="button"
-                              data-tour-search-result={person.id}
                               className={`group relative flex w-full flex-col gap-1 px-3 py-2 text-left text-xs text-white transition hover:backdrop-blur-sm focus:outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/25 focus-visible:backdrop-blur-sm ${
                                 isActive ? 'ring-1 ring-white/25 backdrop-blur-sm' : ''
                               }`}
@@ -2538,9 +1986,6 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
                                   return
                                 }
                                 if (searchResultsRef.current?.contains(next)) {
-                                  return
-                                }
-                                if (next.closest('.shepherd-element')) {
                                   return
                                 }
                                 setSearchFocused(false)
@@ -2574,7 +2019,6 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
             </div>
             <button
               type="submit"
-              data-tour-id="desktop-search-submit"
               className="rounded-full border border-white/20 bg-black/45 px-3 py-2 text-[10px] font-semibold uppercase tracking/[0.35em] text-white transition hover:bg-black/35 md:text-[11px]"
             >
               Search
@@ -2604,7 +2048,6 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
           <button
             type="button"
             onClick={() => beginSelection('selectA')}
-            data-tour-id="mobile-select-a"
             className={`rounded-full border border-white/25 bg-black/45 px-3 text-[10px] font-semibold uppercase tracking/[0.3em] text-white backdrop-blur transition hover:bg-black/35 ${personCardButtonPaddingClass}`}
           >
             {isSelectingA ? 'Selecting…' : 'Select'}
@@ -2613,7 +2056,6 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
             <button
               type="button"
               onClick={() => assignLastSearchResultToRole('A')}
-              data-tour-id="mobile-assign-search-a"
               className={`rounded-full border border-white/25 bg-black/45 px-3 text-[10px] font-semibold uppercase tracking/[0.3em] text-white backdrop-blur transition hover:bg-black/35 ${personCardButtonPaddingClass}`}
             >
               + Search
@@ -2638,7 +2080,6 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
           <button
             type="button"
             onClick={() => beginSelection('selectB')}
-            data-tour-id="mobile-select-b"
             className={`rounded-full border border-white/25 bg-black/45 px-3 text-[10px] font-semibold uppercase tracking/[0.3em] text-white backdrop-blur transition hover:bg-black/35 ${personCardButtonPaddingClass}`}
           >
             {isSelectingB ? 'Selecting…' : 'Select'}
@@ -2647,7 +2088,6 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
             <button
               type="button"
               onClick={() => assignLastSearchResultToRole('B')}
-              data-tour-id="mobile-assign-search-b"
               className={`rounded-full border border-white/25 bg-black/45 px-3 text-[10px] font-semibold uppercase tracking/[0.3em] text-white backdrop-blur transition hover:bg-black/35 ${personCardButtonPaddingClass}`}
             >
               + Search
@@ -2660,15 +2100,12 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
   const mobileSearchForm = showMobileSearch ? (
     <form
       className={mobileSearchFormClass}
-      data-tour-id="mobile-search-form"
-      data-tour-area="search-controls"
       onSubmit={handleSearchSubmit}
     >
-      <div className="relative w/full flex-1" data-tour-id="mobile-search-field" style={mobileSearchInputWrapperStyle}>
+      <div className="relative w/full flex-1" style={mobileSearchInputWrapperStyle}>
         <input
           ref={searchInputRef}
           type="search"
-          data-tour-id="mobile-search-input"
           placeholder="Find a person"
           value={searchValue}
           onChange={handleSearchChange}
@@ -2685,9 +2122,6 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
             if (next === searchInputRef.current) {
               return
             }
-            if (next.closest('.shepherd-element')) {
-              return
-            }
             setSearchFocused(false)
           }}
           onKeyDown={handleSearchInputKeyDown}
@@ -2696,7 +2130,6 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
         {showSearchResults && (
           <div
             ref={searchResultsRef}
-            data-tour-id="mobile-search-results"
             className="pointer-events-auto absolute left-0 top-full z-10 mt-2 w/full overflow-hidden rounded-2xl border border-white/20 bg-black/45 shadow-[0_16px_40px_rgba(0,0,0,0.45)] backdrop-blur"
           >
             {searchMatches.length > 0 ? (
@@ -2708,7 +2141,6 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
                     <li key={person.id}>
                       <button
                         type="button"
-                        data-tour-search-result={person.id}
                         className={`group relative flex w-full flex-col gap-1 px-3 py-2 text-left text-xs text-white transition focus:outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/25 ${
                           isActive ? 'ring-1 ring-white/25 backdrop-blur-sm' : ''
                         }`}
@@ -2726,9 +2158,6 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
                             return
                           }
                           if (searchResultsRef.current?.contains(next)) {
-                            return
-                          }
-                          if (next.closest('.shepherd-element')) {
                             return
                           }
                           setSearchFocused(false)
@@ -2760,7 +2189,6 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
       </div>
       <button
         type="submit"
-        data-tour-id="mobile-search-submit"
         className="flex-shrink-0 rounded-full border border-white/20 bg-black/45 px-3 py-2 text-[11px] font-semibold uppercase tracking/[0.2em] text-white transition hover:bg-black/35"
       >
         Search
@@ -2980,7 +2408,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
 
       if (event.pointerType === 'touch') {
         if (selectionMode === 'selectA') {
-          assignPersonToRole(personId, 'A', { suppressHighlight: true, emitTutorialEvent: true })
+          assignPersonToRole(personId, 'A', { suppressHighlight: true })
           setPinnedHighlightPersonId(null)
           setHoveredPersonId(null)
           setHoveredSelection(null)
@@ -2988,7 +2416,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
         }
 
         if (selectionMode === 'selectB') {
-          assignPersonToRole(personId, 'B', { suppressHighlight: true, emitTutorialEvent: true })
+          assignPersonToRole(personId, 'B', { suppressHighlight: true })
           setPinnedHighlightPersonId(null)
           setHoveredPersonId(null)
           setHoveredSelection(null)
@@ -3003,7 +2431,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
       }
 
       if (selectionMode === 'selectA') {
-        assignPersonToRole(personId, 'A', { suppressHighlight: isMobile, emitTutorialEvent: true })
+        assignPersonToRole(personId, 'A', { suppressHighlight: isMobile })
         if (isMobile) {
           setPinnedHighlightPersonId(null)
           setHoveredPersonId(null)
@@ -3013,7 +2441,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
       }
 
       if (selectionMode === 'selectB') {
-        assignPersonToRole(personId, 'B', { suppressHighlight: isMobile, emitTutorialEvent: true })
+        assignPersonToRole(personId, 'B', { suppressHighlight: isMobile })
         if (isMobile) {
           setPinnedHighlightPersonId(null)
           setHoveredPersonId(null)
@@ -3045,7 +2473,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
 
       const half = computeSelectionHalf(event)
       const role = half === 'left' ? 'A' : 'B'
-      assignPersonToRole(personId, role, { emitTutorialEvent: false, allowToggle: true })
+      assignPersonToRole(personId, role, { allowToggle: true })
     },
     [assignPersonToRole, isMobile, isShiftSelecting, selectionMode],
   )
@@ -3163,14 +2591,16 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
 
           {Object.values(personGeometries).map((geometry) => {
             const { person, bounds, width, height, unit } = geometry
-            const branchColor = getBranchColor(person.branch)
+            const baseBranchColor = getBranchColor(person.branch)
+            const isMarriedInDivorced = Boolean(person.divorced && !person.fatherId && !person.motherId)
+            const branchColor = isMarriedInDivorced ? dimColor(baseBranchColor) : baseBranchColor
             const isTouchExpanded = expanded.has(person.id)
             const isHovered = hoveredPersonId === person.id
             const isSelected = selectedPersonId === person.id
             const hoveredHalf = hoveredSelection?.personId === person.id ? hoveredSelection.half : null
             const clipPathId = `person-card-clip-${sanitizeId(person.id)}`
-            const personIsA = activeNodeAId === person.id
-            const personIsB = activeNodeBId === person.id
+            const personIsA = nodeAId === person.id
+            const personIsB = nodeBId === person.id
             const hoveredRole = hoveredHalf ? (hoveredHalf === 'left' ? 'A' : 'B') : null
             const hoveredFill = hoveredRole
               ? hoveredRole === 'A'
@@ -3221,7 +2651,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
             const rawDod = person.dod ?? ''
             const hasDob = rawDob.trim().length > 0
             const hasDod = rawDod.trim().length > 0
-            const birthDisplay = hasDob ? rawDob : 'Birth Date'
+            const birthDisplay = hasDob ? rawDob : ''
             const ageYears = calculateAge(person)
             const ageDisplay = ageYears !== null ? `${ageYears}` : null
             const nameY = 32
@@ -3234,7 +2664,9 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
             }
             infoLines.push({ key: 'birth', text: birthDisplay })
             if (hasDod) {
-              infoLines.push({ key: 'dash', text: '—' })
+              if (hasDob) {
+                infoLines.push({ key: 'dash', text: '—' })
+              }
               infoLines.push({ key: 'death', text: rawDod })
             }
             const relationshipBlockStartY = infoLineStartY
@@ -3459,7 +2891,6 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
                 <button
                   key={control.key}
                   type="button"
-                  data-tour-id={`landscape-control-${control.key}`}
                   onClick={() => {
                     control.onClick()
                     if (control.autoClose) {
@@ -3485,7 +2916,6 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
             <button
               type="button"
               onClick={() => setLandscapeControlsOpen((current) => !current)}
-              data-tour-id="landscape-control-toggle"
               className="absolute left-0 top-0 grid h-14 w-14 place-items-center rounded-full border border-white/25 bg-black/45 text-white shadow-[0_12px_32px_rgba(0,0,0,0.45)] backdrop-blur transition hover:bg-black/35 focus:outline-none focus-ring-2 focus-ring-white/50 focus-ring-offset-2 focus-ring-offset-black"
               aria-expanded={isLandscapeControlsOpen}
               aria-controls="landscape-control-panel"
@@ -3596,13 +3026,11 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
           <div className="flex w/full max-w-[1200px] flex-col items-stretch gap-6 md:flex-row md:items-end md:justify-between md:gap-12">
             <div
               className="pointer-events-auto min-h-[121.2px] order-2 flex w-full flex-col gap-3 rounded-3xl border border-white/20 bg-black/45 px-6 py-5 shadow-[0_24px_60px_rgba(0,0,0,0.55)] backdrop-blur md:order-1 md:flex-[1_1_0%]"
-              data-tour-area="compare-menu"
             >
                <div className="flex w/full flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex flex-wrap items-center gap-3">
                   <button
                     type="button"
-                    data-tour-id="desktop-select-a"
                     onClick={() => beginSelection('selectA')}
                     className={`rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase tracking/[0.2em] backdrop-blur transition ${
                       isSelectingA
@@ -3620,7 +3048,6 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
                 <div className="flex flex-wrap items-center gap-3">
                   <button
                     type="button"
-                    data-tour-id="desktop-select-b"
                     onClick={() => beginSelection('selectB')}
                     className={`rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase tracking/[0.2em] backdrop-blur transition ${
                       isSelectingB
@@ -3638,7 +3065,6 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
                 <div className="flex justify-center lg:justify-end">
                   <button
                     type="button"
-                    data-tour-id="desktop-clear-ab"
                     onClick={clearSelections}
                     className={`rounded-full border border-white/25 bg-black/45 px-3 py-2 text-[10px] font-semibold uppercase tracking/[0.35em] text-white backdrop-blur transition hover:bg-black/35 ${personCardButtonPaddingClass}`}
                   >
@@ -3653,7 +3079,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
               )}
               {relationshipPanelContent}
             </div>
-            <div className="pointer-events-auto order-1 md:order-2 md:ml-10 md:w-[420px]" data-tour-area="birthdays-panel">
+            <div className="pointer-events-auto order-1 md:order-2 md:ml-10 md:w-[420px]">
               <BirthdaysWeekSlice week={birthdaysWeek} onSelectPerson={handleBirthdayPersonSelect} className="w-full" />
             </div>
           </div>
@@ -3671,8 +3097,6 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
 
           <div
             id="mobile-control-sheet"
-            data-tour-id="mobile-control-sheet"
-            data-tour-area="mobile-controls"
             className={`fixed inset-x-0 bottom-0 z-50 transform ${
               isControlSheetDragging ? '' : 'transition-transform duration-300 ease-out'
             } ${isControlSheetOpen ? 'translate-y-0' : 'translate-y-full'}`}
@@ -3709,7 +3133,6 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
                       <button
                         type="button"
                         onClick={clearSelections}
-                        data-tour-id="mobile-clear-ab"
                         className={`rounded-full border border-white/25 bg-black/45 px-3 py-2 text-[10px] font-semibold uppercase tracking/[0.35em] text-white backdrop-blur transition hover:bg-black/35 ${personCardButtonPaddingClass}`}
                       >
                         Clear A &amp; B
@@ -3737,7 +3160,6 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
                     <button
                       type="button"
                       onClick={clearSelections}
-                      data-tour-id="mobile-clear-ab"
                       className={`rounded-full border border-white/25 bg-black/45 px-3 py-2 text-[10px] font-semibold uppercase tracking/[0.35em] text-white backdrop-blur transition hover:bg-black/35 ${personCardButtonPaddingClass}`}
                     >
                       Clear A &amp; B
@@ -3768,8 +3190,6 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
             className={`fixed inset-x-0 bottom-0 z-[60] transform ${
               isBirthdaysSheetDragging ? '' : 'transition-transform duration-300 ease-out'
             } ${isBirthdaysSheetOpen ? 'translate-y-0' : 'translate-y-full'}`}
-            data-tour-id="mobile-birthdays-sheet"
-            data-tour-area="birthdays-panel"
             role="dialog"
             aria-label="Birthdays this week"
             style={{
@@ -3812,8 +3232,6 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
           type="button"
           onClick={toggleBirthdaysSheet}
           disabled={!hasAnyBirthdaysThisWeek}
-          data-tour-id="mobile-birthdays-toggle"
-          data-tour-area="birthdays-panel"
           className={`fixed z-[55] rounded-full border px-4 py-2 text-[11px] font-semibold uppercase tracking/[0.35em] transition ${
             hasAnyBirthdaysThisWeek
               ? 'border-white/25 bg-black/45 text-white hover:bg-black/35'

@@ -154,7 +154,6 @@ const BirthdaysWeekSlice = ({
         <button
           key={entry.person.id}
           type="button"
-          data-tour-birthday-entry={entry.person.id}
           className="flex w-full items-center justify-between gap-3 rounded-2xl border border-white/15 px-4 py-2.5 text-left text-sm font-medium text-white transition backdrop-blur hover:bg-black/35 focus:bg-black/35 focus:outline-none"
           style={{ background }}
           onClick={() => handlePersonClick(entry.person.id)}
@@ -199,7 +198,7 @@ const BirthdaysWeekSlice = ({
 
   if (variant === 'mobile') {
     return (
-      <div ref={containerRef} className={containerClasses} data-tour-id="mobile-birthdays-panel">
+      <div ref={containerRef} className={containerClasses}>
         {daysWithBirthdays.length === 0 ? (
           <p className="w-full text-center text-sm font-semibold uppercase tracking-[0.2em] text-white/65">
             No birthdays this week!
@@ -224,7 +223,6 @@ const BirthdaysWeekSlice = ({
   return (
     <div
       ref={containerRef}
-      data-tour-id="desktop-birthdays-panel"
       className={containerClasses}
       onPointerLeave={() => {
         if (activeDayIndex === null) {
@@ -248,7 +246,6 @@ const BirthdaysWeekSlice = ({
             >
               <button
                 type="button"
-                data-tour-birthday-day={day.isoDate}
                 className={combineClassNames(
                   'group relative flex h-20 w-full flex-col items-center justify-center gap-2 rounded-2xl text-sm font-semibold uppercase tracking-[0.34em] transition-colors backdrop-blur focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black',
                   hasBirthdays
