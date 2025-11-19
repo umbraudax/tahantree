@@ -2564,6 +2564,20 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
               </filter>
             )
           })}
+          <mask id="lines-mask">
+            <rect x="-40000" y="-40000" width="80000" height="80000" fill="white" />
+            {Object.values(personGeometries).map((geometry) => (
+              <rect
+                key={geometry.person.id}
+                x={geometry.bounds.left}
+                y={geometry.bounds.top}
+                width={geometry.width}
+                height={geometry.height}
+                rx={CORNER_RADIUS}
+                fill="black"
+              />
+            ))}
+          </mask>
         </defs>
         <g ref={innerRef}>
           <rect
@@ -2576,47 +2590,49 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
             style={{ touchAction: 'none' }}
             onClick={handleCanvasBackgroundClick}
           />
-          {parentChildLinks.map((link) => {
-            const parentsHighlighted = link.parentIds.some((parentId) =>
-              highlightContext?.highlightPeople.has(parentId) ?? false,
-            )
-            const childHighlighted = highlightContext?.highlightPeople.has(link.childId) ?? false
-            const linkHighlighted = highlightActive ? parentsHighlighted && childHighlighted : false
-            const strokeOpacity = highlightActive ? (linkHighlighted ? 0.85 : 0.12) : 0.7
-            const strokeWidth = linkHighlighted ? 3 : 1.6
+          <g mask="url(#lines-mask)">
+            {parentChildLinks.map((link) => {
+              const parentsHighlighted = link.parentIds.some((parentId) =>
+                highlightContext?.highlightPeople.has(parentId) ?? false,
+              )
+              const childHighlighted = highlightContext?.highlightPeople.has(link.childId) ?? false
+              const linkHighlighted = highlightActive ? parentsHighlighted && childHighlighted : false
+              const strokeOpacity = highlightActive ? (linkHighlighted ? 0.85 : 0.12) : 0.7
+              const strokeWidth = linkHighlighted ? 3 : 1.6
 
-            return (
-              <path
-                key={link.id}
-                d={link.d}
-                fill="none"
-                stroke={PARENT_CHILD_LINE_COLOR}
-                strokeOpacity={strokeOpacity}
-                strokeWidth={strokeWidth}
-              />
-            )
-          })}
+              return (
+                <path
+                  key={link.id}
+                  d={link.d}
+                  fill="none"
+                  stroke={PARENT_CHILD_LINE_COLOR}
+                  strokeOpacity={strokeOpacity}
+                  strokeWidth={strokeWidth}
+                />
+              )
+            })}
 
-          {spouseLines.map((line) => {
-            const lineHighlighted = highlightActive
-              ? (highlightContext?.highlightPeople.has(line.personId) ?? false) &&
-                (highlightContext?.highlightPeople.has(line.spouseId) ?? false)
-              : false
-            const strokeOpacity = highlightActive ? (lineHighlighted ? 0.95 : 0.3) : 0.85
+            {spouseLines.map((line) => {
+              const lineHighlighted = highlightActive
+                ? (highlightContext?.highlightPeople.has(line.personId) ?? false) &&
+                  (highlightContext?.highlightPeople.has(line.spouseId) ?? false)
+                : false
+              const strokeOpacity = highlightActive ? (lineHighlighted ? 0.95 : 0.3) : 0.85
 
-            return (
-              <path
-                key={line.id}
-                d={line.d}
-                fill="none"
-                stroke={line.color}
-                strokeWidth={4}
-                strokeOpacity={strokeOpacity}
-                strokeDasharray={line.dasharray}
-                strokeLinecap="round"
-              />
-            )
-          })}
+              return (
+                <path
+                  key={line.id}
+                  d={line.d}
+                  fill="none"
+                  stroke={line.color}
+                  strokeWidth={4}
+                  strokeOpacity={strokeOpacity}
+                  strokeDasharray={line.dasharray}
+                  strokeLinecap="round"
+                />
+              )
+            })}
+          </g>
 
           {Object.values(personGeometries).map((geometry) => {
             const { person, bounds, width, height, unit } = geometry
