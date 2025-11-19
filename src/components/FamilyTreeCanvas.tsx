@@ -34,7 +34,7 @@ const SPOUSE_LINK_PADDING = 12
 const SPOUSE_COLOR_MARRIED = '#d16bf6'
 const SPOUSE_COLOR_DIVORCED = '#ff4d6d'
 const SPOUSE_DASHARRAY_DIVORCED = '10 6'
-const PARENT_CHILD_LINE_COLOR = '#ffffff55'
+const PARENT_CHILD_LINE_COLOR = '#ffffff85'
 const sanitizeId = (value: string) => value.replace(/[^a-zA-Z0-9_-]/g, '-')
 
 type SelectionHalf = 'left' | 'right'
@@ -1134,7 +1134,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     setBirthdaysSheetOpen(false)
     resetBirthdaysSheetPosition()
     if (!preserveSearchFocus) {
-    searchInputRef.current?.blur()
+      searchInputRef.current?.blur()
     }
   }, [resetBirthdaysSheetPosition, resetControlSheetPosition])
 
@@ -1747,11 +1747,11 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     [closeControlSheet, resetControlSheetPosition],
   )
 
-const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
-  if (controlSheetDragState.current.pointerId !== event.pointerId) return
-  event.currentTarget.releasePointerCapture(event.pointerId)
-  resetControlSheetPosition()
-}, [resetControlSheetPosition])
+  const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    if (controlSheetDragState.current.pointerId !== event.pointerId) return
+    event.currentTarget.releasePointerCapture(event.pointerId)
+    resetControlSheetPosition()
+  }, [resetControlSheetPosition])
 
   const landscapeContentPadding = isMobileLandscape
     ? 'pl-[calc(env(safe-area-inset-left,0px)+12px)] pr-[calc(env(safe-area-inset-right,0px)+12px)]'
@@ -1777,9 +1777,9 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
   const personCardButtonPaddingClass = isMobileLandscape ? 'px-3 py-1' : 'px-3 py-1.5'
   const legendButtonStyle: CSSProperties | undefined = isMobileLandscape
     ? {
-        top: 'calc(env(safe-area-inset-top, 0px) + 8px)',
-        right: 'calc(env(safe-area-inset-right, 0px) + 12px)',
-      }
+      top: 'calc(env(safe-area-inset-top, 0px) + 8px)',
+      right: 'calc(env(safe-area-inset-right, 0px) + 12px)',
+    }
     : undefined
 
   const legendPanelPositionClass = isMobileLandscape
@@ -1806,31 +1806,31 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
     offset: { x: number; y: number }
     autoClose: boolean
   }> = [
-    {
-      key: 'zoom-in',
-      label: 'Zoom in',
-      icon: '+',
-      onClick: () => zoomByFactor(1.2),
-      offset: { x: 64, y: 0 },
-      autoClose: false,
-    },
-    {
-      key: 'zoom-out',
-      label: 'Zoom out',
-      icon: '−',
-      onClick: () => zoomByFactor(0.8),
-      offset: { x: 56, y: 56 },
-      autoClose: false,
-    },
-    {
-      key: 'reset',
-      label: 'Reset view',
-      icon: '↺',
-      onClick: resetView,
-      offset: { x: 0, y: 72 },
-      autoClose: true,
-    },
-  ]
+      {
+        key: 'zoom-in',
+        label: 'Zoom in',
+        icon: '+',
+        onClick: () => zoomByFactor(1.2),
+        offset: { x: 64, y: 0 },
+        autoClose: false,
+      },
+      {
+        key: 'zoom-out',
+        label: 'Zoom out',
+        icon: '−',
+        onClick: () => zoomByFactor(0.8),
+        offset: { x: 56, y: 56 },
+        autoClose: false,
+      },
+      {
+        key: 'reset',
+        label: 'Reset view',
+        icon: '↺',
+        onClick: resetView,
+        offset: { x: 0, y: 72 },
+        autoClose: true,
+      },
+    ]
 
 
   const handlePersonPointerEnter = useCallback(
@@ -1897,21 +1897,21 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
     >
       {relationshipSummary && personA && personB ? (
         <>
-        <div className={relationshipPanelLineClass}>
-          {personA.fullName} is {relationshipSummary.fromAToB} of {personB.fullName}
-        </div>
-        <div className={relationshipPanelLineClass}>
-          {personB.fullName} is {relationshipSummary.fromBToA} of {personA.fullName}
-        </div>
-        <div className={relationshipPanelLineClass}>
-          {relationshipSummary.ageDifferenceSentence ?? 'Age difference unavailable'}
-        </div>
+          <div className={relationshipPanelLineClass}>
+            {personA.fullName} is {relationshipSummary.fromAToB} of {personB.fullName}
+          </div>
+          <div className={relationshipPanelLineClass}>
+            {personB.fullName} is {relationshipSummary.fromBToA} of {personA.fullName}
+          </div>
+          <div className={relationshipPanelLineClass}>
+            {relationshipSummary.ageDifferenceSentence ?? 'Age difference unavailable'}
+          </div>
         </>
-    ) : (
+      ) : (
         'Choose two people to see their relationship.'
       )}
     </div>
-    )
+  )
 
   const topControlsContent = !isMobileLandscape && (
     <>
@@ -1998,9 +1998,8 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
                           <li key={person.id}>
                             <button
                               type="button"
-                              className={`group relative flex w-full flex-col gap-1 px-3 py-2 text-left text-xs text-white transition hover:backdrop-blur-sm focus:outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/25 focus-visible:backdrop-blur-sm ${
-                                isActive ? 'ring-1 ring-white/25 backdrop-blur-sm' : ''
-                              }`}
+                              className={`group relative flex w-full flex-col gap-1 px-3 py-2 text-left text-xs text-white transition hover:backdrop-blur-sm focus:outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/25 focus-visible:backdrop-blur-sm ${isActive ? 'ring-1 ring-white/25 backdrop-blur-sm' : ''
+                                }`}
                               onMouseDown={(event) => event.preventDefault()}
                               onClick={() => handleSearchResultSelect(person)}
                               onMouseEnter={() => setSearchActiveIndex(index)}
@@ -2022,11 +2021,10 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
                             >
                               <span
                                 aria-hidden="true"
-                                className={`pointer-events-none absolute inset-0 rounded-none bg-transparent transition duration-150 ${
-                                  isActive
-                                    ? 'bg-white/20 group-hover:bg-white/20 group-focus-visible:bg-white/20'
-                                    : 'group-hover:bg-white/12 group-focus-visible:bg-white/12'
-                                }`}
+                                className={`pointer-events-none absolute inset-0 rounded-none bg-transparent transition duration-150 ${isActive
+                                  ? 'bg-white/20 group-hover:bg-white/20 group-focus-visible:bg-white/20'
+                                  : 'group-hover:bg-white/12 group-focus-visible:bg-white/12'
+                                  }`}
                               />
                               <span className="relative z-10 text-sm font-semibold text-white">{person.fullName}</span>
                               <span className="relative z-10 text-[11px] uppercase tracking-[0.25em] text-white/60">
@@ -2064,9 +2062,8 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
   )
   const personACard = (
     <div
-      className={`flex items-center justify-between rounded-2xl border px-3 backdrop-blur ${personCardPaddingClass} ${
-        isSelectingA ? 'border-white/50 bg-black/35' : 'border-white/20 bg-black/45'
-      }`}
+      className={`flex items-center justify-between rounded-2xl border px-3 backdrop-blur ${personCardPaddingClass} ${isSelectingA ? 'border-white/50 bg-black/35' : 'border-white/20 bg-black/45'
+        }`}
     >
       <div>
         <div className="text-[10px] uppercase tracking-[0.3em] text-white/60">Person A</div>
@@ -2096,9 +2093,8 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
   )
   const personBCard = (
     <div
-      className={`flex items-center justify-between rounded-2xl border px-3 backdrop-blur ${personCardPaddingClass} ${
-        isSelectingB ? 'border-white/50 bg-black/35' : 'border-white/20 bg-black/45'
-      }`}
+      className={`flex items-center justify-between rounded-2xl border px-3 backdrop-blur ${personCardPaddingClass} ${isSelectingB ? 'border-white/50 bg-black/35' : 'border-white/20 bg-black/45'
+        }`}
     >
       <div>
         <div className="text-[10px] uppercase tracking-[0.3em] text-white/60">Person B</div>
@@ -2170,9 +2166,8 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
                     <li key={person.id}>
                       <button
                         type="button"
-                        className={`group relative flex w-full flex-col gap-1 px-3 py-2 text-left text-xs text-white transition focus:outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/25 ${
-                          isActive ? 'ring-1 ring-white/25 backdrop-blur-sm' : ''
-                        }`}
+                        className={`group relative flex w-full flex-col gap-1 px-3 py-2 text-left text-xs text-white transition focus:outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/25 ${isActive ? 'ring-1 ring-white/25 backdrop-blur-sm' : ''
+                          }`}
                         onMouseDown={(event) => event.preventDefault()}
                         onClick={() => handleSearchResultSelect(person)}
                         onMouseEnter={() => setSearchActiveIndex(index)}
@@ -2194,11 +2189,10 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
                       >
                         <span
                           aria-hidden="true"
-                          className={`pointer-events-none absolute inset-0 rounded-none bg-transparent transition duration-150 ${
-                            isActive
-                              ? 'bg-black/35 backdrop-blur-sm group-hover:bg-black/35 group-focus-visible:bg-black/35'
-                              : 'group-hover:bg-black/35 group-focus-visible:bg-black/35'
-                          }`}
+                          className={`pointer-events-none absolute inset-0 rounded-none bg-transparent transition duration-150 ${isActive
+                            ? 'bg-black/35 backdrop-blur-sm group-hover:bg-black/35 group-focus-visible:bg-black/35'
+                            : 'group-hover:bg-black/35 group-focus-visible:bg-black/35'
+                            }`}
                         />
                         <span className="relative z-10 text-sm font-semibold text-white">{person.fullName}</span>
                         <span className="relative z-10 text-[11px] uppercase tracking-[0.25em] text-white/60">
@@ -2228,8 +2222,8 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
     selectionMode === 'selectA'
       ? 'Tap a person to set Person A'
       : selectionMode === 'selectB'
-      ? 'Tap a person to set Person B'
-      : null
+        ? 'Tap a person to set Person B'
+        : null
   const selectionRingClass = ''
 
   const controlSheetHeightSource = controlSheetMaxHeightRef.current ?? height
@@ -2237,34 +2231,34 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
 
   const floatingToolbarStyle: CSSProperties | undefined = isMobileLandscape
     ? {
-        top: 'calc(env(safe-area-inset-top, 0px) + 8px)',
-        left: 'calc(env(safe-area-inset-left, 0px) + 12px)',
-        right: 'calc(env(safe-area-inset-right, 0px) + 12px)',
-        maxWidth: '360px',
-        margin: '0 auto',
-      }
+      top: 'calc(env(safe-area-inset-top, 0px) + 8px)',
+      left: 'calc(env(safe-area-inset-left, 0px) + 12px)',
+      right: 'calc(env(safe-area-inset-right, 0px) + 12px)',
+      maxWidth: '360px',
+      margin: '0 auto',
+    }
     : undefined
 
   const mobileControlSheetStyle: CSSProperties | undefined = isMobile
     ? {
-        maxHeight: mobileSheetMaxHeight ? `${mobileSheetMaxHeight}px` : '75vh',
-        ...(isControlSheetOpen ? { transform: `translateY(${controlSheetDragOffset}px)` } : {}),
-      }
+      maxHeight: mobileSheetMaxHeight ? `${mobileSheetMaxHeight}px` : '75vh',
+      ...(isControlSheetOpen ? { transform: `translateY(${controlSheetDragOffset}px)` } : {}),
+    }
     : undefined
 
   const birthdaysSheetStyle: CSSProperties | undefined = isMobilePortrait
     ? {
-        maxHeight: mobileSheetMaxHeight ? `${mobileSheetMaxHeight}px` : '75vh',
-        ...(isBirthdaysSheetOpen ? { transform: `translateY(${birthdaysSheetDragOffset}px)` } : {}),
-      }
+      maxHeight: mobileSheetMaxHeight ? `${mobileSheetMaxHeight}px` : '75vh',
+      ...(isBirthdaysSheetOpen ? { transform: `translateY(${birthdaysSheetDragOffset}px)` } : {}),
+    }
     : undefined
 
   const mobileControlSheetContentStyle: CSSProperties | undefined = isMobile
     ? isMobileLandscape
       ? { maxHeight: 'none', overflowY: 'visible' }
       : {
-          maxHeight: mobileSheetMaxHeight ? `${Math.max(200, mobileSheetMaxHeight - 120)}px` : 'calc(75vh - 120px)',
-        }
+        maxHeight: mobileSheetMaxHeight ? `${Math.max(200, mobileSheetMaxHeight - 120)}px` : 'calc(75vh - 120px)',
+      }
     : undefined
 
   const parentChildLinks = useMemo(() => {
@@ -2366,8 +2360,8 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
       const inferredBondType: 'married' | 'divorced' = spouseBondType
         ? spouseBondType
         : person.divorced || graph.peopleById[spouseId]?.divorced
-        ? 'divorced'
-        : 'married'
+          ? 'divorced'
+          : 'married'
 
       let leftGeometry = personGeometry
       let rightGeometry = spouseGeometry
@@ -2564,6 +2558,9 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
               </filter>
             )
           })}
+          <filter id="glow-white" filterUnits="userSpaceOnUse" x="-50000" y="-50000" width="100000" height="100000">
+            <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="white" floodOpacity="0.8" />
+          </filter>
           <mask id="lines-mask">
             <rect x="-40000" y="-40000" width="80000" height="80000" fill="white" />
             {Object.values(personGeometries).map((geometry) => (
@@ -2597,17 +2594,19 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
               )
               const childHighlighted = highlightContext?.highlightPeople.has(link.childId) ?? false
               const linkHighlighted = highlightActive ? parentsHighlighted && childHighlighted : false
-              const strokeOpacity = highlightActive ? (linkHighlighted ? 0.85 : 0.12) : 0.7
+              const strokeOpacity = highlightActive ? (linkHighlighted ? 1 : 0.12) : 0.7
               const strokeWidth = linkHighlighted ? 3 : 1.6
+              const strokeColor = linkHighlighted ? '#ffffff' : PARENT_CHILD_LINE_COLOR
 
               return (
                 <path
                   key={link.id}
                   d={link.d}
                   fill="none"
-                  stroke={PARENT_CHILD_LINE_COLOR}
+                  stroke={strokeColor}
                   strokeOpacity={strokeOpacity}
                   strokeWidth={strokeWidth}
+                  filter={linkHighlighted ? 'url(#glow-white)' : undefined}
                 />
               )
             })}
@@ -2615,7 +2614,7 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
             {spouseLines.map((line) => {
               const lineHighlighted = highlightActive
                 ? (highlightContext?.highlightPeople.has(line.personId) ?? false) &&
-                  (highlightContext?.highlightPeople.has(line.spouseId) ?? false)
+                (highlightContext?.highlightPeople.has(line.spouseId) ?? false)
                 : false
               const strokeOpacity = highlightActive ? (lineHighlighted ? 0.95 : 0.3) : 0.85
 
@@ -2653,8 +2652,8 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
                   ? SELECTION_A_HOVER_FILL_ACTIVE
                   : SELECTION_A_HOVER_FILL
                 : personIsB
-                ? SELECTION_B_HOVER_FILL_ACTIVE
-                : SELECTION_B_HOVER_FILL
+                  ? SELECTION_B_HOVER_FILL_ACTIVE
+                  : SELECTION_B_HOVER_FILL
               : null
             const personHighlighted = highlightContext?.highlightPeople.has(person.id) ?? false
             const personDimmed = highlightActive && !personHighlighted
@@ -2984,11 +2983,10 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
         </div>
       ) : (
         <div
-          className={`pointer-events-none absolute z-30 ${
-            isMobile
-              ? 'left-3 right-3 top-[calc(env(safe-area-inset-top,0px)+72px)]'
-              : 'left-6 top-36 w-[360px]'
-          } flex flex-col gap-3 text-xs text-white`}
+          className={`pointer-events-none absolute z-30 ${isMobile
+            ? 'left-3 right-3 top-[calc(env(safe-area-inset-top,0px)+72px)]'
+            : 'left-6 top-36 w-[360px]'
+            } flex flex-col gap-3 text-xs text-white`}
           style={floatingToolbarStyle}
         >
           <div className="pointer-events-auto rounded-2xl border border-white/20 bg-black/45 px-4 py-3 shadow-[0_20px_40px_rgba(0,0,0,0.5)] backdrop-blur">
@@ -3005,9 +3003,8 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
         <button
           type="button"
           onClick={toggleLegend}
-          className={`fixed z-50 rounded-full border border-white/20 bg-black/45 px-4 py-2 text-[10px] font-semibold uppercase tracking/[0.35em] text-white backdrop-blur transition hover:bg-black/35 md:text-[11px] ${
-            isMobileLandscape ? '' : 'right-4 top-4'
-          }`}
+          className={`fixed z-50 rounded-full border border-white/20 bg-black/45 px-4 py-2 text-[10px] font-semibold uppercase tracking/[0.35em] text-white backdrop-blur transition hover:bg-black/35 md:text-[11px] ${isMobileLandscape ? '' : 'right-4 top-4'
+            }`}
           style={legendButtonStyle}
           aria-expanded={isLegendOpen}
           aria-controls="branch-legend-panel"
@@ -3018,9 +3015,8 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
 
       <div
         id="branch-legend-panel"
-        className={`fixed z-40 max-h-[70vh] overflow-y-auto rounded-3xl border border-white/15 bg-black/45 p-4 text-xs text-white shadow-[0_24px_60px_rgba(0,0,0,0.55)] backdrop-blur transition-all duration-300 ${legendPanelPositionClass} ${
-          isLegendOpen ? 'pointer-events-auto translate-x-0 opacity-100' : 'pointer-events-none translate-x-[120%] opacity-0'
-        }`}
+        className={`fixed z-40 max-h-[70vh] overflow-y-auto rounded-3xl border border-white/15 bg-black/45 p-4 text-xs text-white shadow-[0_24px_60px_rgba(0,0,0,0.55)] backdrop-blur transition-all duration-300 ${legendPanelPositionClass} ${isLegendOpen ? 'pointer-events-auto translate-x-0 opacity-100' : 'pointer-events-none translate-x-[120%] opacity-0'
+          }`}
       >
         <div className={legendContentWrapperClass}>
           <div className={legendBranchSectionClass}>
@@ -3072,16 +3068,15 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
             <div
               className="pointer-events-auto min-h-[121.2px] order-2 flex w-full flex-col gap-3 rounded-3xl border border-white/20 bg-black/45 px-6 py-5 shadow-[0_24px_60px_rgba(0,0,0,0.55)] backdrop-blur md:order-1 md:flex-[1_1_0%]"
             >
-               <div className="flex w/full flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex w/full flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex flex-wrap items-center gap-3">
                   <button
                     type="button"
                     onClick={() => beginSelection('selectA')}
-                    className={`rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase tracking/[0.2em] backdrop-blur transition ${
-                      isSelectingA
-                        ? 'border border-white bg-black/35 text-white'
-                        : 'border border-white/20 bg-black/45 text-white hover:bg-black/35'
-                    }`}
+                    className={`rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase tracking/[0.2em] backdrop-blur transition ${isSelectingA
+                      ? 'border border-white bg-black/35 text-white'
+                      : 'border border-white/20 bg-black/45 text-white hover:bg-black/35'
+                      }`}
                   >
                     Select A
                   </button>
@@ -3094,11 +3089,10 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
                   <button
                     type="button"
                     onClick={() => beginSelection('selectB')}
-                    className={`rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase tracking/[0.2em] backdrop-blur transition ${
-                      isSelectingB
-                        ? 'border border-white bg-black/35 text-white'
-                        : 'border border-white/20 bg-black/45 text-white hover:bg-black/35'
-                    }`}
+                    className={`rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase tracking/[0.2em] backdrop-blur transition ${isSelectingB
+                      ? 'border border-white bg-black/35 text-white'
+                      : 'border border-white/20 bg-black/45 text-white hover:bg-black/35'
+                      }`}
                   >
                     Select B
                   </button>
@@ -3134,17 +3128,15 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
       {isMobile && (
         <>
           <div
-            className={`fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity duration-200 ${
-              isControlSheetOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
-            }`}
+            className={`fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity duration-200 ${isControlSheetOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
+              }`}
             onClick={closeControlSheet}
           />
 
           <div
             id="mobile-control-sheet"
-            className={`fixed inset-x-0 bottom-0 z-50 transform ${
-              isControlSheetDragging ? '' : 'transition-transform duration-300 ease-out'
-            } ${isControlSheetOpen ? 'translate-y-0' : 'translate-y-full'}`}
+            className={`fixed inset-x-0 bottom-0 z-50 transform ${isControlSheetDragging ? '' : 'transition-transform duration-300 ease-out'
+              } ${isControlSheetOpen ? 'translate-y-0' : 'translate-y-full'}`}
             style={mobileControlSheetStyle}
             role="dialog"
             aria-label="Family tree controls"
@@ -3182,8 +3174,8 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
                       >
                         Clear A &amp; B
                       </button>
-                    {selectionMode !== 'none' && (
-                      <div className="rounded-2xl border border-white/20 bg-black/45 px-3 py-2 text-center text-[10px] uppercase tracking/[0.3em] text-white backdrop-blur">
+                      {selectionMode !== 'none' && (
+                        <div className="rounded-2xl border border-white/20 bg-black/45 px-3 py-2 text-center text-[10px] uppercase tracking/[0.3em] text-white backdrop-blur">
                           {selectionMessage}
                         </div>
                       )}
@@ -3226,15 +3218,13 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
       {isMobilePortrait && (
         <>
           <div
-            className={`fixed inset-0 z-[48] bg-black/60 backdrop-blur-sm transition-opacity duration-200 ${
-              isBirthdaysSheetOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
-            }`}
+            className={`fixed inset-0 z-[48] bg-black/60 backdrop-blur-sm transition-opacity duration-200 ${isBirthdaysSheetOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
+              }`}
             onClick={closeBirthdaysSheet}
           />
           <div
-            className={`fixed inset-x-0 bottom-0 z-[60] transform ${
-              isBirthdaysSheetDragging ? '' : 'transition-transform duration-300 ease-out'
-            } ${isBirthdaysSheetOpen ? 'translate-y-0' : 'translate-y-full'}`}
+            className={`fixed inset-x-0 bottom-0 z-[60] transform ${isBirthdaysSheetDragging ? '' : 'transition-transform duration-300 ease-out'
+              } ${isBirthdaysSheetOpen ? 'translate-y-0' : 'translate-y-full'}`}
             role="dialog"
             aria-label="Birthdays this week"
             style={{
@@ -3323,15 +3313,14 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
             onClick={() => {
               openControlSheet()
             }}
-            className={`fixed z-50 grid h-14 w-14 place-items-center rounded-full border border-white/20 bg-black/45 text-3xl text-white backdrop-blur shadow-[0_20px_40px_rgba(0,0,0,0.45)] transition hover:bg-black/35 ${
-              isMobileLandscape ? '' : 'bottom-4 right-4'
-            }`}
+            className={`fixed z-50 grid h-14 w-14 place-items-center rounded-full border border-white/20 bg-black/45 text-3xl text-white backdrop-blur shadow-[0_20px_40px_rgba(0,0,0,0.45)] transition hover:bg-black/35 ${isMobileLandscape ? '' : 'bottom-4 right-4'
+              }`}
             style={
               isMobileLandscape
                 ? {
-                    bottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)',
-                    right: 'calc(env(safe-area-inset-right, 0px) + 12px)',
-                  }
+                  bottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)',
+                  right: 'calc(env(safe-area-inset-right, 0px) + 12px)',
+                }
                 : undefined
             }
           >
@@ -3374,15 +3363,14 @@ const handleControlSheetDragCancel = useCallback((event: ReactPointerEvent<HTMLD
               setHoveredPersonId(null)
               openControlSheet()
             }}
-            className={`fixed z-50 grid h-14 w-14 place-items-center rounded-full border border-white/20 bg-black/45 text-3xl text-white backdrop-blur shadow-[0_20px_40px_rgba(0,0,0,0.45)] transition hover:bg-black/35 ${
-              isMobileLandscape ? '' : 'bottom-4 right-4'
-            }`}
+            className={`fixed z-50 grid h-14 w-14 place-items-center rounded-full border border-white/20 bg-black/45 text-3xl text-white backdrop-blur shadow-[0_20px_40px_rgba(0,0,0,0.45)] transition hover:bg-black/35 ${isMobileLandscape ? '' : 'bottom-4 right-4'
+              }`}
             style={
               isMobileLandscape
                 ? {
-                    bottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)',
-                    right: 'calc(env(safe-area-inset-right, 0px) + 12px)',
-                  }
+                  bottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)',
+                  right: 'calc(env(safe-area-inset-right, 0px) + 12px)',
+                }
                 : undefined
             }
           >
