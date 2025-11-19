@@ -34,7 +34,7 @@ const SPOUSE_LINK_PADDING = 12
 const SPOUSE_COLOR_MARRIED = '#d16bf6'
 const SPOUSE_COLOR_DIVORCED = '#ff4d6d'
 const SPOUSE_DASHARRAY_DIVORCED = '10 6'
-const PARENT_CHILD_LINE_COLOR = '#ffffff33'
+const PARENT_CHILD_LINE_COLOR = '#ffffff55'
 const sanitizeId = (value: string) => value.replace(/[^a-zA-Z0-9_-]/g, '-')
 
 type SelectionHalf = 'left' | 'right'
@@ -87,15 +87,52 @@ interface FamilyTreeCanvasProps {
   graph: FamilyGraph
 }
 
-const computeUnitLayout = (unit: FamilyUnit, expanded: Set<string>): UnitLayoutBox => {
+const orderUnitMembersForDisplay = (unit: FamilyUnit, graph: FamilyGraph): Person[] => {
+  if (unit.members.length <= 1) {
+    return unit.members.slice()
+  }
+
+  if (!unit.parentId) {
+    return unit.members.slice()
+  }
+
+  const parentUnit = graph.unitsById[unit.parentId]
+  if (!parentUnit || parentUnit.memberIds.length === 0) {
+    return unit.members.slice()
+  }
+
+  const parentMemberIds = new Set(parentUnit.memberIds)
+  const withMeta = unit.members.map((member, index) => {
+    const motherId = member.motherId
+    const fatherId = member.fatherId
+    const isDescendant =
+      (motherId && parentMemberIds.has(motherId)) || (fatherId && parentMemberIds.has(fatherId))
+
+    return { member, index, isDescendant }
+  })
+
+  const descendants = withMeta.filter((entry) => entry.isDescendant)
+  if (descendants.length === 0 || descendants.length === withMeta.length) {
+    return unit.members.slice()
+  }
+
+  const nonDescendants = withMeta.filter((entry) => !entry.isDescendant)
+  descendants.sort((a, b) => a.index - b.index)
+  nonDescendants.sort((a, b) => a.index - b.index)
+
+  return [...descendants, ...nonDescendants].map((entry) => entry.member)
+}
+
+const computeUnitLayout = (unit: FamilyUnit, expanded: Set<string>, graph: FamilyGraph): UnitLayoutBox => {
+  const membersForDisplay = orderUnitMembersForDisplay(unit, graph)
   const hasSpouseBond = Boolean(unit.spouseBond)
-  const { width, height } = computeUnitDimensions(unit.members.length, hasSpouseBond)
+  const { width, height } = computeUnitDimensions(membersForDisplay.length, hasSpouseBond)
   const horizontalGap = hasSpouseBond ? PERSON_GAP + SPOUSE_GAP_EXTRA : PERSON_GAP
 
   const segments: UnitLayoutSegment[] = []
   let currentX = GROUP_PADDING
 
-  for (const person of unit.members) {
+  for (const person of membersForDisplay) {
     const expandedState = expanded.has(person.id)
     segments.push({
       person,
@@ -108,7 +145,7 @@ const computeUnitLayout = (unit: FamilyUnit, expanded: Set<string>): UnitLayoutB
     currentX += PERSON_WIDTH + horizontalGap
   }
 
-  if (unit.members.length === 0) {
+  if (membersForDisplay.length === 0) {
     segments.push({
       person: {
         id: `${unit.id}-placeholder`,
@@ -698,7 +735,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     const map: Record<string, PersonGeometry> = {}
 
     for (const { unit, position } of layout.nodes) {
-      const layoutBox = computeUnitLayout(unit, expanded)
+      const layoutBox = computeUnitLayout(unit, expanded, graph)
       const unitCenter = { x: position.x, y: position.y }
       const left = unitCenter.x - layoutBox.width / 2
       const top = unitCenter.y - layoutBox.height / 2

@@ -77,8 +77,7 @@ const toRomanNumeral = (value: number): string => {
 }
 
 const getSuffixForRank = (rank: number): string | null => {
-  if (rank === 0) return 'Sr.'
-  if (rank === 1) return 'Jr.'
+  if (rank <= 1) return null
   const numeral = toRomanNumeral(rank + 1)
   return numeral ? numeral : null
 }
