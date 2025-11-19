@@ -27,17 +27,69 @@ body {
   }
 }
 
-@media (max-width: 768px) and (orientation: portrait) {
+@media (pointer: coarse) {
+  body {
+    overscroll-behavior: none;
+  }
+}
+
+@media (pointer: coarse) and (orientation: portrait) {
   html,
   body,
   #root {
-    height: 100dvh;
-    max-height: 100dvh;
+    height: 100vh;
+    max-height: 100vh;
     overflow: hidden;
   }
+}
 
-  body {
-    overscroll-behavior: none;
+@media (pointer: coarse) and (orientation: landscape) {
+  html,
+  body,
+  #root {
+    height: 100vh;
+    max-height: 100vh;
+    overflow: hidden;
+  }
+}
+
+@supports (-webkit-touch-callout: none) {
+  @media (pointer: coarse) and (orientation: portrait) {
+    html,
+    body,
+    #root {
+      height: -webkit-fill-available;
+      max-height: -webkit-fill-available;
+    }
+  }
+
+  @media (pointer: coarse) and (orientation: landscape) {
+    html,
+    body,
+    #root {
+      height: -webkit-fill-available;
+      max-height: -webkit-fill-available;
+    }
+  }
+}
+
+@supports (height: 100svh) {
+  @media (pointer: coarse) and (orientation: portrait) {
+    html,
+    body,
+    #root {
+      height: 100svh;
+      max-height: 100svh;
+    }
+  }
+
+  @media (pointer: coarse) and (orientation: landscape) {
+    html,
+    body,
+    #root {
+      height: 100svh;
+      max-height: 100svh;
+    }
   }
 }
 
