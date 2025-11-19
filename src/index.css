@@ -52,6 +52,37 @@ body {
   }
 }
 
+@media (display-mode: standalone), (display-mode: fullscreen) {
+  html,
+  body,
+  #root {
+    height: 100vh;
+    max-height: 100vh;
+  }
+}
+
+@supports (-webkit-touch-callout: none) {
+  @media (display-mode: standalone), (display-mode: fullscreen) {
+    html,
+    body,
+    #root {
+      height: -webkit-fill-available;
+      max-height: -webkit-fill-available;
+    }
+  }
+}
+
+@supports (height: 100dvh) {
+  @media (display-mode: standalone), (display-mode: fullscreen) {
+    html,
+    body,
+    #root {
+      height: 100dvh;
+      max-height: 100dvh;
+    }
+  }
+}
+
 g[data-person-id] {
   outline: none;
   -webkit-tap-highlight-color: transparent;
