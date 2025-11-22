@@ -2599,15 +2599,28 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
               const strokeColor = linkHighlighted ? '#ffffff' : PARENT_CHILD_LINE_COLOR
 
               return (
-                <path
-                  key={link.id}
-                  d={link.d}
-                  fill="none"
-                  stroke={strokeColor}
-                  strokeOpacity={strokeOpacity}
-                  strokeWidth={strokeWidth}
-                  filter={linkHighlighted ? 'url(#glow-white)' : undefined}
-                />
+                <g key={link.id}>
+                  {/* Glow layer - rendered behind the main line */}
+                  {linkHighlighted && (
+                    <path
+                      d={link.d}
+                      fill="none"
+                      stroke="white"
+                      strokeOpacity={0.6}
+                      strokeWidth={6}
+                      strokeLinecap="round"
+                      style={{ filter: 'blur(3px)' }}
+                    />
+                  )}
+                  {/* Main line */}
+                  <path
+                    d={link.d}
+                    fill="none"
+                    stroke={strokeColor}
+                    strokeOpacity={strokeOpacity}
+                    strokeWidth={strokeWidth}
+                  />
+                </g>
               )
             })}
 
@@ -2744,7 +2757,10 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
             const detailContent = detailLines.length > 0 ? detailLines : ['Details unavailable']
             const showDetailLines = !isMobile && isTouchExpanded
 
-            const showMaidenName = (isHovered || isSelected) && Boolean(person.maidenName)
+            const showMaidenName =
+              ((isHovered || isSelected) && Boolean(person.maidenName)) ||
+              (person.divorced && Boolean(person.maidenName))
+
             const displayName = showMaidenName
               ? `${person.firstName} ${person.maidenName}`
               : person.fullName

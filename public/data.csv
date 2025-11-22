@@ -41,7 +41,7 @@ ID,First,Last,Maiden,Sex,Gen,Spouse,Divorced,Mother,Father,DOB,DOD,Branch
 40,Michele,Tahan,,F,3,41,TRUE,10,9,12/10/1968,,A Tahan
 41,Kevin,Fahrenfeld,,M,3,40,TRUE,,,,,A Tahan
 42,Mark,Tahan,,M,3,43,FALSE,10,9,9/25/1965,,A Tahan
-43,Deirdre,Tahan,?,F,3,42,FALSE,,,6/24/1960,,A Tahan
+43,Deirdre,Tahan,Gengo,F,3,42,FALSE,,,6/24/1960,,A Tahan
 44,Lisa,Scangarello,Tahan,F,3,45,FALSE,10,9,5/4/1963,,A Tahan
 45,Carmen,Scangarello,,M,3,44,FALSE,,,11/30/1958,,A Tahan
 46,Gerry,Homsany,,M,4,47,FALSE,13,12,8/30/1968,,Homsany
