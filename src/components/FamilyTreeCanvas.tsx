@@ -2744,6 +2744,11 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
             const detailContent = detailLines.length > 0 ? detailLines : ['Details unavailable']
             const showDetailLines = !isMobile && isTouchExpanded
 
+            const showMaidenName = (isHovered || isSelected) && Boolean(person.maidenName)
+            const displayName = showMaidenName
+              ? `${person.firstName} ${person.maidenName}`
+              : person.fullName
+
             return (
               <g
                 key={person.id}
@@ -2815,7 +2820,12 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
                   opacity={textOpacity}
                   style={{ letterSpacing: '0.02em' }}
                 >
-                  {person.fullName}
+                  {displayName}
+                  {person.maidenName && !showMaidenName && (
+                    <tspan dx="2" dy="-4" fontSize="10" fill="white" opacity="0.7">
+                      *
+                    </tspan>
+                  )}
                 </text>
                 {relationshipLabel ? (
                   (() => {

@@ -8,6 +8,7 @@ interface RawRow {
   ID?: string
   First?: string
   Last?: string
+  Maiden?: string
   Sex?: string
   Gen?: string
   Spouse?: string
@@ -217,6 +218,7 @@ const toPerson = (row: RawRow): Person | null => {
 
   const firstName = cleanValue(row.First) ?? 'Unknown'
   const lastName = cleanValue(row.Last) ?? ''
+  const maidenName = cleanValue(row.Maiden)
   const generation = Number.parseInt(row.Gen ?? '', 10)
 
   const spouseId = cleanValue(row.Spouse)
@@ -232,6 +234,7 @@ const toPerson = (row: RawRow): Person | null => {
     numericId: Number.parseInt(id, 10),
     firstName,
     lastName,
+    maidenName,
     fullName: buildFullName(firstName, lastName),
     sex,
     generation: Number.isFinite(generation) ? generation : 0,

@@ -6,6 +6,7 @@ export interface Person {
   firstName: string
   lastName: string
   fullName: string
+  maidenName?: string
   suffix?: string
   sex: PersonSex
   generation: number
