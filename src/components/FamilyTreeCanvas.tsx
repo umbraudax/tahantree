@@ -901,6 +901,8 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       .on('zoom', (event: { transform: ZoomTransform }) => {
         transformRef.current = event.transform
         innerRef.current?.setAttribute('transform', event.transform.toString())
+      })
+      .on('end', (event: { transform: ZoomTransform }) => {
         captureViewportAnchor(event.transform)
       })
 
@@ -1631,7 +1633,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       setSearchFocused(false)
       setSearchActiveIndex(null)
       searchInputRef.current?.blur()
-      if (isMobileLandscape) {
+      if (isMobile) {
         if (typeof window === 'undefined') {
           resetControlSheetPosition()
         } else {
@@ -1710,7 +1712,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       setSearchFocused(false)
       setSearchActiveIndex(null)
       searchInputRef.current?.blur()
-      if (isMobileLandscape) {
+      if (isMobile) {
         if (typeof window === 'undefined') {
           resetControlSheetPosition()
         } else {
@@ -2599,7 +2601,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
             ))}
           </mask>
         </defs>
-        <g ref={innerRef}>
+        <g ref={innerRef} style={{ willChange: 'transform' }}>
           <rect
             x={(contentBounds?.minLeft ?? 0) - 4000}
             y={(contentBounds?.minTop ?? 0) - 4000}
