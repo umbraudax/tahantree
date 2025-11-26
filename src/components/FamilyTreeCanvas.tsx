@@ -363,6 +363,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     offset: { x: 0, y: 0 },
     world: null,
   })
+  const [keyboardOffset, setKeyboardOffset] = useState(0)
 
   const captureViewportAnchor = useCallback(
     (transform: ZoomTransform | null) => {
@@ -668,6 +669,27 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       activePointers.clear()
       edgeGuardPointers.clear()
       releaseInteractions()
+    }
+  }, [isMobile])
+
+  useEffect(() => {
+    if (!isMobile) return
+    if (typeof window === 'undefined' || !window.visualViewport) return
+
+    const handleVisualViewportChange = () => {
+      const visualViewport = window.visualViewport
+      if (!visualViewport) return
+
+      const offset = Math.max(0, window.innerHeight - visualViewport.height)
+      setKeyboardOffset(offset)
+    }
+
+    window.visualViewport.addEventListener('resize', handleVisualViewportChange)
+    window.visualViewport.addEventListener('scroll', handleVisualViewportChange)
+
+    return () => {
+      window.visualViewport?.removeEventListener('resize', handleVisualViewportChange)
+      window.visualViewport?.removeEventListener('scroll', handleVisualViewportChange)
     }
   }, [isMobile])
 
@@ -1982,7 +2004,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
                   setSearchFocused(false)
                 }}
                 onKeyDown={handleSearchInputKeyDown}
-                className="w-full rounded-full border border-white/20 bg-black/45 px-3 py-2 text-xs text-white placeholder-white/60 outline-none transition focus:border-white focus:ring-2 focus:ring-white/50"
+                className="w-full rounded-full border border-white/20 bg-black/45 px-3 py-2 text-[16px] text-white placeholder-white/60 outline-none transition focus:border-white focus:ring-2 focus:ring-white/50"
               />
               {showSearchResults && (
                 <div
@@ -2150,7 +2172,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
             setSearchFocused(false)
           }}
           onKeyDown={handleSearchInputKeyDown}
-          className="w-full rounded-full border border-white/20 bg-black/45 px-3 py-2 text-xs text-white placeholder-white/60 outline-none transition focus:border-white focus:ring-2 focus:ring-white/50"
+          className="w-full rounded-full border border-white/20 bg-black/45 px-3 py-2 text-[16px] text-white placeholder-white/60 outline-none transition focus:border-white focus:ring-2 focus:ring-white/50"
         />
         {showSearchResults && (
           <div
@@ -2242,6 +2264,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   const mobileControlSheetStyle: CSSProperties | undefined = isMobile
     ? {
       maxHeight: mobileSheetMaxHeight ? `${mobileSheetMaxHeight}px` : '75vh',
+      bottom: `${keyboardOffset}px`,
       ...(isControlSheetOpen ? { transform: `translateY(${controlSheetDragOffset}px)` } : {}),
     }
     : undefined
