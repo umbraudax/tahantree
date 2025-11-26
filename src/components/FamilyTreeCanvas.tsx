@@ -943,7 +943,6 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       hasInitializedTransform.current = true
     } else {
       innerRef.current.setAttribute('transform', transformRef.current.toString())
-      captureViewportAnchor(transformRef.current)
     }
 
     return () => {
