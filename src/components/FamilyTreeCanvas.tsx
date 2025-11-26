@@ -3304,7 +3304,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
             <div
               className="rounded-t-3xl border border-white/20 bg-black/65 px-5 pt-4 shadow-[0_-12px_40px_rgba(0,0,0,0.2)] backdrop-blur"
               style={{
-                paddingBottom: 'calc(6.5rem + env(safe-area-inset-bottom, 0px))',
+                paddingBottom: 'calc(8.5rem + env(safe-area-inset-bottom, 0px))',
               }}
             >
               <div className="mb-4 flex justify-center">
