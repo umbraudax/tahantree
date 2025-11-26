@@ -1891,7 +1891,8 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
         if (current !== personId) {
           return current
         }
-        if (!isMobile && selectionMode === 'none' && !isShiftSelecting && pinnedHighlightPersonId) {
+        // Allow pinning on mobile as well to prevent "insta deselect" from emulated mouse events
+        if (selectionMode === 'none' && !isShiftSelecting && pinnedHighlightPersonId) {
           return pinnedHighlightPersonId
         }
         return null
@@ -1901,7 +1902,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
         lastPointerHalfRef.current = null
       }
     },
-    [collapsePerson, isMobile, isShiftSelecting, pinnedHighlightPersonId, selectionMode],
+    [collapsePerson, isShiftSelecting, pinnedHighlightPersonId, selectionMode],
   )
 
   const personA = nodeAId ? graph.peopleById[nodeAId] ?? null : null
@@ -2488,7 +2489,8 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
           return
         }
 
-        setPinnedHighlightPersonId(null)
+        // Pin the highlight on mobile touch to prevent it from being cleared by emulated mouse events
+        setPinnedHighlightPersonId(personId)
         setHoveredPersonId(personId)
         setHoveredSelection(null)
         setSelectedPersonId(null)
