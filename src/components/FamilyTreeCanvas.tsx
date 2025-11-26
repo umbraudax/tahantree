@@ -352,7 +352,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   const [searchFocused, setSearchFocused] = useState(false)
   const [searchActiveIndex, setSearchActiveIndex] = useState<number | null>(null)
   const controlSheetMaxHeightRef = useRef<number | null>(null)
-  const lastMobileLandscapeRef = useRef(isMobileLandscape)
+
   const personGeometriesRef = useRef<Record<string, PersonGeometry>>({})
   const viewportAnchorRef = useRef<{
     personId: string | null
@@ -846,63 +846,50 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     }
   }, [personGeometries])
   useEffect(() => {
-    if (!isMobile) {
-      lastMobileLandscapeRef.current = isMobileLandscape
-      return
-    }
-    if (!svgRef.current || !zoomBehaviorRef.current || !transformRef.current) {
-      lastMobileLandscapeRef.current = isMobileLandscape
-      return
-    }
-    if (lastMobileLandscapeRef.current === isMobileLandscape) return
-
+    if (!isMobile) return
     const svgElement = svgRef.current
-    const rect = svgElement.getBoundingClientRect()
-    if (rect.width === 0 || rect.height === 0) {
-      lastMobileLandscapeRef.current = isMobileLandscape
-      return
-    }
+    if (!svgElement || !zoomBehaviorRef.current) return
 
-    const currentTransform = transformRef.current
-    const anchor = viewportAnchorRef.current
-    const geometries = personGeometriesRef.current
-    let focusPoint: Point | null = null
-    if (anchor.personId) {
-      const geometry = geometries[anchor.personId]
-      if (geometry) {
-        focusPoint = {
-          x: geometry.center.x + anchor.offset.x,
-          y: geometry.center.y + anchor.offset.y,
+    const observer = new ResizeObserver(() => {
+      const anchor = viewportAnchorRef.current
+      const geometries = personGeometriesRef.current
+      const currentTransform = transformRef.current
+
+      let focusPoint: Point | null = null
+      if (anchor.personId) {
+        const geometry = geometries[anchor.personId]
+        if (geometry) {
+          focusPoint = {
+            x: geometry.center.x + anchor.offset.x,
+            y: geometry.center.y + anchor.offset.y,
+          }
         }
       }
-    }
-    if (!focusPoint && anchor.world) {
-      focusPoint = anchor.world
-    }
-    if (!focusPoint) {
-      focusPoint = {
-        x: (rect.width / 2 - currentTransform.x) / currentTransform.k,
-        y: (rect.height / 2 - currentTransform.y) / currentTransform.k,
+      if (!focusPoint && anchor.world) {
+        focusPoint = anchor.world
       }
-    }
 
-    lastMobileLandscapeRef.current = isMobileLandscape
+      if (!focusPoint) return
 
-    const preserveView = () => {
-      if (!svgRef.current || !zoomBehaviorRef.current) return
-      const nextRect = svgRef.current.getBoundingClientRect()
-      if (nextRect.width === 0 || nextRect.height === 0) return
+      const rect = svgElement.getBoundingClientRect()
+      if (rect.width === 0 || rect.height === 0) return
+
       const scale = currentTransform.k
-      const translateX = nextRect.width / 2 - focusPoint.x * scale
-      const translateY = nextRect.height / 2 - focusPoint.y * scale
-      const nextTransform = zoomIdentity.translate(translateX, translateY).scale(scale)
-      transformRef.current = nextTransform
-      select(svgRef.current).call(zoomBehaviorRef.current.transform as never, nextTransform)
-      captureViewportAnchor(nextTransform)
-    }
+      const translateX = rect.width / 2 - focusPoint.x * scale
+      const translateY = rect.height / 2 - focusPoint.y * scale
 
-    window.requestAnimationFrame(() => window.requestAnimationFrame(preserveView))
-  }, [captureViewportAnchor, isMobile, isMobileLandscape])
+      const nextTransform = zoomIdentity.translate(translateX, translateY).scale(scale)
+
+      if (nextTransform.x !== currentTransform.x || nextTransform.y !== currentTransform.y) {
+        transformRef.current = nextTransform
+        select(svgElement).call(zoomBehaviorRef.current!.transform as never, nextTransform)
+        captureViewportAnchor(nextTransform)
+      }
+    })
+
+    observer.observe(svgElement)
+    return () => observer.disconnect()
+  }, [captureViewportAnchor, isMobile, layout])
 
   useEffect(() => {
     if (!svgRef.current || !innerRef.current || !layout || !contentBounds) return
