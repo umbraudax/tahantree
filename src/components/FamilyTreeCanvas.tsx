@@ -408,6 +408,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
 
   useEffect(() => {
     if (isMobile) {
+      console.log('DEBUG: isMobile changed, closing sheets')
       setControlSheetOpen(false)
       setLegendOpen(false)
     }
@@ -466,6 +467,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
 
   useEffect(() => {
     if (!isMobile) {
+      console.log('DEBUG: !isMobile, closing control sheet')
       setControlSheetOpen(false)
     }
   }, [isMobile])
@@ -1155,6 +1157,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   const openControlSheet = useCallback((options?: { preserveSearchFocus?: boolean }) => {
     const preserveSearchFocus = options?.preserveSearchFocus ?? false
     resetControlSheetPosition()
+    console.log('DEBUG: openControlSheet called')
     setControlSheetOpen(true)
     setBirthdaysSheetOpen(false)
     resetBirthdaysSheetPosition()
@@ -1164,6 +1167,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
   }, [resetBirthdaysSheetPosition, resetControlSheetPosition])
 
   const closeControlSheet = useCallback(() => {
+    console.log('DEBUG: closeControlSheet called')
     setControlSheetOpen(false)
     setSearchFocused(false)
     resetControlSheetPosition()
@@ -1385,6 +1389,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       role: 'A' | 'B',
       options?: { suppressHighlight?: boolean; allowToggle?: boolean },
     ): 'assigned' | 'cleared' | 'unchanged' => {
+      console.log('DEBUG: assignPersonToRole called', { personId, role, options })
       const suppressHighlight = options?.suppressHighlight ?? false
       const allowToggle = options?.allowToggle ?? false
 
@@ -2468,6 +2473,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
 
   const handlePersonPointerUp = useCallback(
     (personId: string, event: ReactPointerEvent<SVGGElement>) => {
+      console.log('DEBUG: handlePersonPointerUp', { personId, pointerType: event.pointerType, selectionMode })
       event.stopPropagation()
 
       const shiftActive = event.shiftKey || isShiftSelecting
