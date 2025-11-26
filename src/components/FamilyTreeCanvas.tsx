@@ -1142,7 +1142,6 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     controlSheetDragState.current = { pointerId: null, startY: 0 }
     setControlSheetDragOffset(0)
     setControlSheetDragging(false)
-    setKeyboardOffset(0)
   }, [])
 
   const resetBirthdaysSheetPosition = useCallback(() => {
@@ -1637,8 +1636,12 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       if (isMobile) {
         if (typeof window === 'undefined') {
           resetControlSheetPosition()
+          setKeyboardOffset(0)
         } else {
-          window.requestAnimationFrame(resetControlSheetPosition)
+          window.requestAnimationFrame(() => {
+            resetControlSheetPosition()
+            setKeyboardOffset(0)
+          })
         }
       }
 
@@ -1716,8 +1719,12 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
       if (isMobile) {
         if (typeof window === 'undefined') {
           resetControlSheetPosition()
+          setKeyboardOffset(0)
         } else {
-          window.requestAnimationFrame(resetControlSheetPosition)
+          window.requestAnimationFrame(() => {
+            resetControlSheetPosition()
+            setKeyboardOffset(0)
+          })
         }
       }
 
