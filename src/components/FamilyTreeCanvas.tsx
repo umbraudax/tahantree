@@ -672,15 +672,30 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     }
   }, [isMobile])
 
+  const isKeyboardDismissing = useRef(false)
+
   useEffect(() => {
     if (!isMobile) return
     if (typeof window === 'undefined' || !window.visualViewport) return
 
     const handleVisualViewportChange = () => {
+      if (isKeyboardDismissing.current) {
+        setKeyboardOffset(0)
+        return
+      }
+
+      // If the search input is not focused, the keyboard should be closed.
+      // Force offset to 0 to prevent floating artifacts.
+      if (document.activeElement !== searchInputRef.current) {
+        setKeyboardOffset(0)
+        return
+      }
+
       const visualViewport = window.visualViewport
       if (!visualViewport) return
 
-      const offset = Math.max(0, window.innerHeight - visualViewport.height)
+      const rawOffset = Math.max(0, window.innerHeight - visualViewport.height)
+      const offset = rawOffset > 150 ? rawOffset : 0
       setKeyboardOffset(offset)
     }
 
@@ -1638,16 +1653,20 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
           resetControlSheetPosition()
           setKeyboardOffset(0)
         } else {
+          isKeyboardDismissing.current = true
           window.requestAnimationFrame(() => {
             resetControlSheetPosition()
             setKeyboardOffset(0)
+            setTimeout(() => {
+              isKeyboardDismissing.current = false
+            }, 800)
           })
         }
       }
 
 
     },
-    [centerOnPerson, isMobileLandscape, resetControlSheetPosition],
+    [centerOnPerson, isMobile, resetControlSheetPosition],
   )
 
   const handleSearchInputKeyDown = useCallback(
@@ -1721,15 +1740,19 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
           resetControlSheetPosition()
           setKeyboardOffset(0)
         } else {
+          isKeyboardDismissing.current = true
           window.requestAnimationFrame(() => {
             resetControlSheetPosition()
             setKeyboardOffset(0)
+            setTimeout(() => {
+              isKeyboardDismissing.current = false
+            }, 800)
           })
         }
       }
 
     },
-    [centerOnPerson, isMobileLandscape, resetControlSheetPosition, searchActiveIndex, searchMatches, searchValue],
+    [centerOnPerson, isMobile, resetControlSheetPosition, searchActiveIndex, searchMatches, searchValue],
   )
 
   const handleCanvasBackgroundClick = useCallback(() => {
@@ -3200,7 +3223,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
             role="dialog"
             aria-label="Family tree controls"
           >
-            <div className="rounded-t-3xl border border-white/20 bg-black/65 px-5 pb-6 pt-4 shadow-[0_-12px_40px_rgba(0,0,0,0.6)] backdrop-blur">
+            <div className="rounded-t-3xl border border-white/20 bg-black/65 px-5 pt-4 shadow-[0_-12px_40px_rgba(0,0,0,0.6)] backdrop-blur pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
               <div className="mb-4 flex justify-center">
                 <div
                   className="flex h-14 w-32 cursor-grab items-center justify-center rounded-full bg-black/45 backdrop-blur active:cursor-grabbing"
