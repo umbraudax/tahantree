@@ -1639,7 +1639,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
         }
       }
 
-      setSelectedPersonId(person.id)
+
     },
     [centerOnPerson, isMobileLandscape, resetControlSheetPosition],
   )
@@ -1717,7 +1717,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
           window.requestAnimationFrame(resetControlSheetPosition)
         }
       }
-      setSelectedPersonId(match.id)
+
     },
     [centerOnPerson, isMobileLandscape, resetControlSheetPosition, searchActiveIndex, searchMatches, searchValue],
   )

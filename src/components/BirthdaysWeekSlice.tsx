@@ -160,7 +160,7 @@ const BirthdaysWeekSlice = ({
         >
           <span className="truncate">{entry.person.fullName}</span>
           <span className="flex flex-col items-end text-[11px] font-normal uppercase tracking-[0.28em] text-white/75">
-            {entry.formattedBirthDate}
+            {entry.upcomingAge ? `Turning ${entry.upcomingAge}` : entry.formattedBirthDate}
           </span>
         </button>
       )
