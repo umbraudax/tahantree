@@ -1142,6 +1142,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
     controlSheetDragState.current = { pointerId: null, startY: 0 }
     setControlSheetDragOffset(0)
     setControlSheetDragging(false)
+    setKeyboardOffset(0)
   }, [])
 
   const resetBirthdaysSheetPosition = useCallback(() => {
@@ -2820,7 +2821,7 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
                   fill={withAlpha(branchColor, fillAlpha)}
                   stroke={withAlpha(branchColor, strokeAlpha)}
                   strokeWidth={strokeWidth}
-                  filter={`url(#glow-${slugifyBranch(unit.branch)})`}
+                  filter={isMobile ? undefined : `url(#glow-${slugifyBranch(unit.branch)})`}
                 />
                 {hoveredHalf && hoveredRole && hoveredFill && (
                   <g style={{ pointerEvents: 'none' }}>
