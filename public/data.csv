@@ -88,8 +88,8 @@ ID,First,Last,Maiden,Sex,Gen,Spouse,Divorced,Mother,Father,DOB,DOD,Branch
 87,AJ,Lauria,,M,4,86,FALSE,,,9/3/1980,,B Tahan
 88,Jeff,Pospiech,,M,4,89,FALSE,27,28,1/28/1988,,B Tahan
 89,Jessica,Pospiech,Bennett,F,4,88,FALSE,,,1/18/1990,,B Tahan
-90,Nicole,Fekhoury,Tahan,F,4,91,FALSE,30,29,2/7/1987,,B Tahan
-91,Elias,Fekhoury,,M,4,90,FALSE,,,5/31/1983,,B Tahan
+90,Nicole,Fakhoury,Tahan,F,4,91,FALSE,30,29,2/7/1987,,B Tahan
+91,Elias,Fakhoury,,M,4,90,FALSE,,,5/31/1983,,B Tahan
 92,Joe,Tahan,,M,4,93,FALSE,30,29,10/6/1990,,B Tahan
 93,Mary,Tahan,O'Connor,F,4,92,FALSE,,,3/4/1990,,B Tahan
 94,Kelsey,Banos,Tahan,F,4,95,FALSE,32,31,2/11/1988,,B Tahan
@@ -144,9 +144,9 @@ ID,First,Last,Maiden,Sex,Gen,Spouse,Divorced,Mother,Father,DOB,DOD,Branch
 143,Kaylee,Lauria,,F,5,,FALSE,86,87,9/28/2014,,B Tahan
 144,Cody,Lauria,,M,5,,FALSE,86,87,3/16/2016,,B Tahan
 145,Anna,Pospiech,,F,5,,FALSE,89,88,11/26/2018,,B Tahan
-146,Nilo,Fekhoury,,M,5,,FALSE,90,91,3/2/2021,,B Tahan
-147,Nicolas,Fekhoury,,M,5,,FALSE,90,91,5/10/2022,,B Tahan
-148,Noura,Fekhoury,,F,5,,FALSE,90,91,7/4/2024,,B Tahan
+146,Nilo,Fakhoury,,M,5,,FALSE,90,91,3/2/2021,,B Tahan
+147,Nicolas,Fakhoury,,M,5,,FALSE,90,91,5/10/2022,,B Tahan
+148,Noura,Fakhoury,,F,5,,FALSE,90,91,7/4/2024,,B Tahan
 149,Leia,Tahan,,F,5,,FALSE,93,92,3/30/2024,,B Tahan
 150,Thomas,Tahan,,M,5,,FALSE,93,92,4/4/2025,,B Tahan
 151,Nico,Banos,,M,5,,FALSE,94,95,10/4/2021,,B Tahan
