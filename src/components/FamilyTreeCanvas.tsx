@@ -616,6 +616,13 @@ export const FamilyTreeCanvas = ({ graph }: FamilyTreeCanvasProps) => {
         event.preventDefault()
       }
       activePointers.add(event.pointerId)
+
+      // If the user touched a person node, do NOT capture the pointer on the SVG.
+      // This allows the node to receive the pointerup event for selection.
+      const target = event.target as Element
+      const isPersonNode = target.closest('[data-person-id]')
+      if (isPersonNode) return
+
       if (svgElement.setPointerCapture) {
         try {
           svgElement.setPointerCapture(event.pointerId)
